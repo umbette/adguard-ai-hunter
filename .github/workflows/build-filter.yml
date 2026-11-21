@@ -30,4 +30,4 @@ jobs:
 
       - name: Run Filter Compiler and Guardrail Tests
         run: |
-          pytest tests/test_build_filter.py -v
+          PYTHONPATH=. pytest tests/test_build_filter.py -v
