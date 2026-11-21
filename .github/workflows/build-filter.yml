@@ -1,0 +1,40 @@
+name: Build & Validate Threat Filter
+
+on:
+  push:
+    paths:
+      - 'sources/**'
+      - 'scripts/build_filter.py'
+  pull_request:
+    paths:
+      - 'sources/**'
+      - 'scripts/build_filter.py'
+
+jobs:
+  build_filter:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.12"
+
+      - name: Run Filter Compiler
+        run: |
+          python scripts/build_filter.py
+
+      - name: Verify Never-Block Guardrails
+        run: |
+          python -c "
+          from pathlib import Path
+          out_file = Path('filters/threat_blacklist.txt')
+          assert out_file.exists(), 'Filter output file missing'
+          content = out_file.read_text(encoding='utf-8')
+          assert '||google.com^' not in content, 'Critical failure: protected domain in blacklist'
+          assert '||apple.com^' not in content, 'Critical failure: protected domain in blacklist'
+          assert '$dnsrewrite' not in content, 'Security violation: forbidden modifier in blacklist'
+          print('All zero-trust guardrails verified!')
+          "

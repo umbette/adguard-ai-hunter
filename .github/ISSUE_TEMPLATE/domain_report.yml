@@ -1,0 +1,25 @@
+name: Report Suspicious / DGA Domain
+description: Submit a malicious or DGA domain detected by your AI Hunter instance
+title: "[Threat Report]: <domain.com>"
+labels: ["community-threat-report"]
+body:
+  - type: markdown
+    attributes:
+      value: "Thank you for contributing to the community threat blacklist!"
+  - type: input
+    id: domain
+    attributes:
+      label: Domain Name
+      placeholder: "e.g. x839fjs82kmx.biz"
+    validations:
+      required: true
+  - type: input
+    id: entropy
+    attributes:
+      label: Shannon Entropy Score
+      placeholder: "e.g. 4.12"
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Threat Evidence or Gemini Flash Verdict
+      description: "Paste AI Hunter log excerpt or VirusTotal / URLhaus links if available."

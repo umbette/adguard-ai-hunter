@@ -1,0 +1,52 @@
+# ==============================================================================
+# AI Hunter - Never-Block Protective Whitelist
+# Domains listed here will NEVER be included in the compiled blacklist.
+# ==============================================================================
+
+# Core DNS Providers
+cloudflare.com
+one.one.one.one
+dns.google
+quad9.net
+opendns.com
+
+# Core Operating Systems & Mobile Platforms
+google.com
+apple.com
+icloud.com
+microsoft.com
+windows.com
+windowsupdate.com
+ubuntu.com
+canonical.com
+debian.org
+android.com
+
+# Developer Infrastructure & Package Registries
+github.com
+githubusercontent.com
+docker.com
+docker.io
+pypi.org
+python.org
+npmjs.org
+npmjs.com
+
+# Common Smart Home & Homelab Cloud Services
+home-assistant.io
+nabucasa.com
+adguard.com
+adguardteam.github.io
+tuya.com
+smartthings.com
+philips-hue.com
+
+# Critical Web Infrastructure & CDNs
+cloudflare.net
+fastly.net
+akamaiedge.net
+akamai.net
+cloudfront.net
+amazonaws.com
+googleapis.com
+gstatic.com

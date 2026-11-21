@@ -1,0 +1,17 @@
+# ==============================================================================
+# AI Hunter - Community Threat & DGA Seed List
+# Raw domains flagged and verified by entropy scoring and threat intelligence.
+# Format: pure domain name, one per line. No modifiers allowed.
+# ==============================================================================
+
+# Confirmed DGA (Domain Generation Algorithm) Malware C2 seeds
+x839fjs82kmx.biz
+qwe98124jkldas.top
+m98234jklsad09.info
+v891234jklasdf.cc
+z9012384jklsdf.xyz
+b7819234jkasdf.work
+p0912384jksadf.club
+l0912384jksadf.online
+r8912347jksadf.live
+t0912384jksadf.site

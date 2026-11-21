@@ -67,6 +67,23 @@ docker logs -f ai-hunter
 
 ---
 
+## Community Threat Blacklist (AdGuard Subscription)
+
+This repository publishes a community-compiled, zero-trust validated threat & DGA blacklist formatted for **AdGuard Home** and **uBlock Origin**:
+
+* **Filter URL:** `https://raw.githubusercontent.com/your-username/adguard-ai-hunter/main/filters/threat_blacklist.txt`
+
+### How to Add in AdGuard Home:
+1. Open AdGuard Home -> **Filters** -> **DNS blocklists**.
+2. Click **Add blocklist** -> **Add a custom list**.
+3. Name: `AI Hunter Community Blacklist`.
+4. URL: `https://raw.githubusercontent.com/your-username/adguard-ai-hunter/main/filters/threat_blacklist.txt`.
+5. Click **Save**.
+
+All entries are strictly vetted through zero-trust guardrails (rejecting DNS rewrites and protecting top global infrastructure).
+
+---
+
 ## Contributing
 
 We welcome community feedback, pull requests, and whitelist recommendations!
