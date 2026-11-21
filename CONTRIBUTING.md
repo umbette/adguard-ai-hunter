@@ -11,8 +11,9 @@ We welcome contributions, bug fixes, and whitelist recommendations from the comm
 ## Development & Testing
 
 ```bash
-git clone https://github.com/your-username/ai-hunter.git
+git clone https://github.com/umbette/ai-hunter.git
 cd ai-hunter
 pip install -r requirements.txt -r requirements-dev.txt
 pytest tests -v
 ```
+

@@ -1,6 +1,6 @@
 # AI Hunter Daemon
 
-[![CI Test Suite](https://github.com/your-username/ai-hunter/actions/workflows/ci.yml/badge.svg)](https://github.com/your-username/ai-hunter/actions/workflows/ci.yml)
+[![CI Test Suite](https://github.com/umbette/ai-hunter/actions/workflows/ci.yml/badge.svg)](https://github.com/umbette/ai-hunter/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![AdGuard Home](https://img.shields.io/badge/AdGuard%20Home-Supported-green?logo=adguard)](https://adguard.com/adguard-home.html)
 [![Gemini API](https://img.shields.io/badge/Google%20Gemini-Flash%20Powered-orange?logo=google)](https://ai.google.dev/)
@@ -71,13 +71,13 @@ docker logs -f ai-hunter
 
 This repository publishes a community-compiled, zero-trust validated threat & DGA blacklist formatted for **AdGuard Home** and **uBlock Origin**:
 
-* **Filter URL:** `https://raw.githubusercontent.com/your-username/adguard-ai-hunter/main/filters/threat_blacklist.txt`
+* **Filter URL:** `https://raw.githubusercontent.com/umbette/adguard-ai-hunter/main/filters/threat_blacklist.txt`
 
 ### How to Add in AdGuard Home:
 1. Open AdGuard Home -> **Filters** -> **DNS blocklists**.
 2. Click **Add blocklist** -> **Add a custom list**.
 3. Name: `AI Hunter Community Blacklist`.
-4. URL: `https://raw.githubusercontent.com/your-username/adguard-ai-hunter/main/filters/threat_blacklist.txt`.
+4. URL: `https://raw.githubusercontent.com/umbette/adguard-ai-hunter/main/filters/threat_blacklist.txt`.
 5. Click **Save**.
 
 All entries are strictly vetted through zero-trust guardrails (rejecting DNS rewrites and protecting top global infrastructure).
@@ -94,3 +94,4 @@ We welcome community feedback, pull requests, and whitelist recommendations!
 ## License
 
 Distributed under the [MIT License](LICENSE).
+

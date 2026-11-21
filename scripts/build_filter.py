@@ -100,7 +100,7 @@ def validate_and_compile():
         out.write(f"! Number of rules: {len(sorted_domains)}\n")
         out.write("! Syntax: AdGuard / uBlock Origin compatible\n")
         out.write("! License: MIT License\n")
-        out.write("! Homepage: https://github.com/your-username/adguard-ai-hunter\n")
+        out.write("! Homepage: https://github.com/umbette/adguard-ai-hunter\n")
         out.write("! ------------------------------------------------------------------------------\n\n")
 
         for d in sorted_domains:
@@ -115,3 +115,4 @@ def validate_and_compile():
 
 if __name__ == "__main__":
     validate_and_compile()
+
