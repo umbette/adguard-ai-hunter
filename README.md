@@ -12,26 +12,27 @@ Monitors DNS traffic in real-time streaming mode, performs multi-label Shannon e
 
 ---
 
-## Key Architecture & Features
+## Architecture Principles: 100% Local-First & Zero-Trust
 
-1. **Transactional Read-Modify-Write Rule Injection:**
+1. **Air-Gapped Friendly:** No dynamic remote rule pulls. All configurations, whitelist exceptions, and thresholds are maintained locally in your own `config.yaml` and SQLite database.
+2. **Transactional Read-Modify-Write Rule Injection:**
    - AdGuard Home's `/control/filtering/set_rules` API replaces the entire rule set.
    - AI Hunter executes a strict transactional Read-Modify-Write pattern (`GET status` -> inspect/append -> `POST set_rules`) ensuring user custom rules and standard blocklists are never wiped or corrupted.
-2. **Zero Inbound Exposed Ports:**
+3. **Zero Inbound Exposed Ports:**
    - Instead of exposing an inbound webhook port, AI Hunter establishes an outbound authenticated WebSocket connection to Home Assistant (`/api/websocket`).
    - Listens for interactive notification actions (`BLOCK_DEVICE`, `BLOCK_GLOBAL`, `IGNORE`).
-3. **Multi-Label Shannon Entropy ($H > 3.85$) & Rate Burst Tracker:**
+4. **Multi-Label Shannon Entropy ($H > 3.85$) & Rate Burst Tracker:**
    - Analyzes subdomains and main domain labels independently to catch DGAs hidden in deep subdomains.
    - Tranco Top 10k apex domain bypass to avoid cloud CDN false positives.
    - Sliding-window token-bucket tracking for IoT telemetry beacons.
-4. **Cloud Evaluation with Resilient Heuristic Fallback:**
+5. **Cloud Evaluation with Resilient Heuristic Fallback:**
    - Powered by Gemini Flash with Pydantic structured output.
    - If the external API is unreachable or times out, AI Hunter automatically falls back to local heuristic threat metadata without stalling the pipeline.
-5. **Decision Persistence & Snooze Management:**
+6. **Decision Persistence & Snooze Management:**
    - SQLite backed in WAL mode (`journal_mode=WAL`) at `/app/data/hunter_decisions.db`.
    - Supports apex wildcard domain matching (`*.domain.com`) and client-specific precedence over global rules.
    - 30-day snooze expiration for false-positive whitelisting with periodic automatic cleanup.
-6. **Ultra-Low Resource Footprint:**
+7. **Ultra-Low Resource Footprint:**
    - Bounded Docker container: `cpus: '0.2'`, `memory: 256M`.
    - Idle footprint: `< 20 MiB` RAM and `0.00%` CPU.
 
@@ -66,11 +67,10 @@ docker logs -f ai-hunter
 
 ---
 
-## Contributing & Automated Issue Resolution
+## Contributing
 
-We invite community members to contribute whitelist submissions, false-positive reports, and new detection heuristics!
-- Check [CONTRIBUTING.md](CONTRIBUTING.md) for details.
-- Comment `/auto-fix` or `/implement` on approved issues to trigger automated PR creation through GitHub Actions.
+We welcome community feedback, pull requests, and whitelist recommendations!
+- Check [CONTRIBUTING.md](CONTRIBUTING.md) for details on submitting standard PRs.
 
 ---
 

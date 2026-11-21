@@ -1,12 +1,12 @@
 # Contributing to AI Hunter
 
-We welcome community feedback, domain classifications, and code contributions!
+We welcome contributions, bug fixes, and whitelist recommendations from the community!
 
-## How You Can Contribute
+## How to Contribute
 
-1. **False Positive & Whitelist Submissions:** Open an issue if high-entropy CDNs or trusted services are flagged incorrectly.
-2. **New Heuristics:** Propose new DNS tunneling or DGA detection algorithms.
-3. **Automated PR Generator:** Comment `/auto-fix` or `/implement` on approved issues to trigger our automated bot to generate branch patches and PRs.
+1. **Reporting False Positives:** Open an issue with the domain and service details so other users can reference it.
+2. **Pull Requests:** Fork the repository, create a branch, write unit tests, and submit a PR.
+3. **Manual Verification:** To maintain zero-trust security for homelab users, all PRs are reviewed manually and tested against the test suite.
 
 ## Development & Testing
 
