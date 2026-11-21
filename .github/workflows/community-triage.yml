@@ -1,0 +1,53 @@
+name: Community Triage Bot
+
+on:
+  issues:
+    types: [opened, edited]
+  issue_comment:
+    types: [created]
+
+permissions:
+  issues: write
+  contents: write
+  pull-requests: write
+
+jobs:
+  triage:
+    runs-on: ubuntu-latest
+    if: "!github.event.issue.pull_request"
+    steps:
+      - name: Community Issue Analyzer
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issue = context.payload.issue;
+            const body = issue.body || '';
+            const title = issue.title.toLowerCase();
+
+            if (title.includes('false positive') || title.includes('whitelist') || body.includes('### Domain Name')) {
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                labels: ['false-positive', 'whitelist-candidate']
+              });
+
+              const comment = `👋 Thank you @${issue.user.login} for reporting this domain to **AI Hunter**!
+              
+Our automated triage workflow has tagged this as a whitelist candidate. It will be evaluated against entropy and reputation scoring.
+Comment \`/verify\` if you have diagnostic query logs to attach!`;
+
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                body: comment
+              });
+            } else if (title.includes('bug') || body.includes('### Bug Description')) {
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                labels: ['bug', 'needs-triage']
+              });
+            }

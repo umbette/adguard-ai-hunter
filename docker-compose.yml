@@ -1,0 +1,22 @@
+services:
+  ai-hunter:
+    build: .
+    container_name: ai-hunter
+    restart: unless-stopped
+    network_mode: host
+    env_file:
+      - .env
+    volumes:
+      - ./data:/app/data
+      - ./config.yaml:/app/config.yaml:ro
+      - ./src:/app/src:ro
+    deploy:
+      resources:
+        limits:
+          cpus: '0.2'
+          memory: 256M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"

@@ -1,0 +1,74 @@
+import os
+from typing import Optional
+from pydantic import BaseModel, Field
+from pydantic_settings import BaseSettings
+import yaml
+
+class AdGuardConfig(BaseModel):
+    host: str = "127.0.0.1"
+    port: int = 8080
+    username: str = ""
+    password: str = ""
+    poll_interval_sec: int = 15
+    batch_limit: int = 200
+
+    @property
+    def base_url(self) -> str:
+        return f"http://{self.host}:{self.port}"
+
+class HomeAssistantConfig(BaseModel):
+    base_url: str = "http://127.0.0.1:8123"
+    ws_url: str = "ws://127.0.0.1:8123/api/websocket"
+    token: str = ""
+    notify_service: str = "notify"
+
+class GeminiConfig(BaseModel):
+    api_key: str = ""
+    model: str = "gemini-2.0-flash"
+    timeout_sec: float = 5.0
+
+class HeuristicsConfig(BaseModel):
+    entropy_threshold: float = 3.85
+    rate_burst_threshold: int = 30
+    rate_window_sec: int = 60
+    cleanup_interval_sec: int = 600
+
+class StorageConfig(BaseModel):
+    db_path: str = "/app/data/hunter_decisions.db"
+
+class Settings(BaseSettings):
+    adguard: AdGuardConfig = Field(default_factory=AdGuardConfig)
+    home_assistant: HomeAssistantConfig = Field(default_factory=HomeAssistantConfig)
+    gemini: GeminiConfig = Field(default_factory=GeminiConfig)
+    heuristics: HeuristicsConfig = Field(default_factory=HeuristicsConfig)
+    storage: StorageConfig = Field(default_factory=StorageConfig)
+
+    @classmethod
+    def load(cls, config_path: str = "/app/config.yaml") -> "Settings":
+        data = {}
+        if os.path.exists(config_path):
+            with open(config_path, "r", encoding="utf-8") as f:
+                data = yaml.safe_load(f) or {}
+
+        # Merge environment variables
+        adguard_data = data.get("adguard", {})
+        adguard_data["username"] = os.getenv("ADGUARD_USERNAME", adguard_data.get("username", ""))
+        adguard_data["password"] = os.getenv("ADGUARD_PASSWORD", adguard_data.get("password", ""))
+        data["adguard"] = adguard_data
+
+        ha_data = data.get("home_assistant", {})
+        ha_data["token"] = os.getenv("HASS_TOKEN", ha_data.get("token", ""))
+        ha_data["notify_service"] = os.getenv("HASS_NOTIFY_SERVICE", ha_data.get("notify_service", "notify"))
+        data["home_assistant"] = ha_data
+
+        gemini_data = data.get("gemini", {})
+        gemini_data["api_key"] = os.getenv("GEMINI_API_KEY", gemini_data.get("api_key", ""))
+        data["gemini"] = gemini_data
+
+        storage_data = data.get("storage", {})
+        data_dir = os.getenv("DATA_DIR")
+        if data_dir:
+            storage_data["db_path"] = os.path.join(data_dir, "hunter_decisions.db")
+        data["storage"] = storage_data
+
+        return cls(**data)

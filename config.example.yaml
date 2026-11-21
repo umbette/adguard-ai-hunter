@@ -1,0 +1,23 @@
+adguard:
+  host: "127.0.0.1"
+  port: 8080
+  poll_interval_sec: 15
+  batch_limit: 200
+
+home_assistant:
+  base_url: "http://127.0.0.1:8123"
+  ws_url: "ws://127.0.0.1:8123/api/websocket"
+  notify_service: "notify" # or mobile_app_your_phone
+
+gemini:
+  model: "gemini-2.0-flash"
+  timeout_sec: 10.0
+
+heuristics:
+  entropy_threshold: 3.85
+  rate_burst_threshold: 30
+  rate_window_sec: 60
+  cleanup_interval_sec: 600
+
+storage:
+  db_path: "/app/data/hunter_decisions.db"
