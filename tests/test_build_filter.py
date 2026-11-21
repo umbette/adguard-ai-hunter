@@ -19,3 +19,9 @@ def test_filter_compilation_and_guardrails():
     assert "$important" not in content
     assert "@@" not in content
     assert "! Number of rules:" in content
+
+
+if __name__ == "__main__":
+    test_filter_compilation_and_guardrails()
+    print("Zero-trust guardrails & filter build verified successfully!")
+

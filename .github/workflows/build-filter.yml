@@ -1,11 +1,13 @@
 name: Build & Validate Threat Filter
 
 on:
+  workflow_dispatch:
   push:
     paths:
       - 'sources/**'
       - 'scripts/build_filter.py'
       - 'tests/test_build_filter.py'
+      - '.github/workflows/build-filter.yml'
   pull_request:
     paths:
       - 'sources/**'
@@ -24,10 +26,6 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install test requirements
-        run: |
-          pip install pytest
-
       - name: Run Filter Compiler and Guardrail Tests
         run: |
-          PYTHONPATH=. pytest tests/test_build_filter.py -v
+          python tests/test_build_filter.py
