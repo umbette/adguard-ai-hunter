@@ -1,7 +1,11 @@
 # ==============================================================================
-# AI Hunter - Community Threat & DGA Seed List
-# Raw domains flagged and verified by entropy scoring and threat intelligence.
-# Format: pure domain name, one per line. No modifiers allowed.
+# AI Hunter - DGA Validation & Seed Samples
+# Sample domains flagged by entropy scoring ($H > 3.85$) used for pipeline
+# regression testing and crowdsourced verification.
+#
+# NOTE: AI Hunter is a local anomaly detection daemon, not a primary DNS list.
+# For production network filtering, always run comprehensive CTI feeds
+# (e.g., HaGeZi TIF, RuffKez CTI, OISD) in AdGuard Home.
 # ==============================================================================
 
 # Confirmed DGA (Domain Generation Algorithm) Malware C2 seeds
