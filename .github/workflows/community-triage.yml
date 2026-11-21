@@ -1,0 +1,118 @@
+name: Community Threat Triage
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  issues: write
+
+jobs:
+  triage_issue:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository for validation
+        uses: actions/checkout@v4
+
+      - name: Validate Threat Report
+        if: contains(github.event.issue.labels.*.name, 'community-threat-report')
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+            const issueBody = context.payload.issue.body || '';
+
+            // Extract domain using regex
+            const domainMatch = issueBody.match(/### Domain Name\s*\n+([a-zA-Z0-9.\-_]+)/i);
+            const domain = domainMatch ? domainMatch[1].trim().toLowerCase() : null;
+
+            if (!domain) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.payload.issue.number,
+                body: "⚠️ Impossibile rilevare il nome di dominio dal report. Assicurati di compilare correttamente il campo 'Domain Name'."
+              });
+              return;
+            }
+
+            // Read never_block list
+            const neverBlockPath = path.join(process.env.GITHUB_WORKSPACE, 'sources', 'never_block.txt');
+            let protectedDomains = new Set();
+            if (fs.existsSync(neverBlockPath)) {
+              const lines = fs.readFileSync(neverBlockPath, 'utf8').split('\n');
+              for (const line of lines) {
+                const trimmed = line.trim().toLowerCase();
+                if (trimmed && !trimmed.startsWith('#')) {
+                  protectedDomains.add(trimmed);
+                }
+              }
+            }
+
+            // Check if domain or its parent domain is protected
+            const isProtected = Array.from(protectedDomains).some(prot => domain === prot || domain.endsWith('.' + prot));
+            const rfcRegex = /^(?!\-)(?:[a-zA-Z0-9\-]{1,63}\.)+[a-zA-Z]{2,63}$/;
+            const isValidSyntax = rfcRegex.test(domain);
+
+            if (isProtected) {
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.payload.issue.number,
+                labels: ['protected-domain', 'cannot-block']
+              });
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.payload.issue.number,
+                body: `🛑 **Il dominio \`${domain}\` appartiene alla allowlist protetta (\`never_block.txt\`)!**\n\nNon può essere inserito nella blacklist per preservare la stabilità dell'infrastruttura di rete (DNS radice, CDN o servizi cloud critici).`
+              });
+            } else if (!isValidSyntax) {
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.payload.issue.number,
+                labels: ['invalid-syntax']
+              });
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.payload.issue.number,
+                body: `⚠️ **Il dominio \`${domain}\` non rispetta lo standard RFC 1123 o contiene caratteri non consentiti.**\n\nVerifica il formato del dominio (es. \`badsite.biz\`).`
+              });
+            } else {
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.payload.issue.number,
+                labels: ['verified-threat-candidate', 'community-triage']
+              });
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.payload.issue.number,
+                body: `✅ **Dominio \`${domain}\` validato con successo!**\n\nLa sintassi è valida e non confligge con le protezioni critiche. Il dominio è stato inserito nella coda di aggregazione della blacklist di minaccia della community.`
+              });
+            }
+
+      - name: Welcome General Issues
+        if: "!contains(github.event.issue.labels.*.name, 'community-threat-report')"
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const comment = `### 👋 Grazie per aver aperto questa issue in AI Hunter!\n\n` +
+              `* Se segnali un **falso positivo** di AdGuard, specifica il client, il dominio e il punteggio di entropia.\n` +
+              `* Se suggerisci una nuova funzionalità o euristica, il team esaminerà la proposta per il prossimo rilascio.`;
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.issue.number,
+              labels: ['needs-review']
+            });
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.issue.number,
+              body: comment
+            });
