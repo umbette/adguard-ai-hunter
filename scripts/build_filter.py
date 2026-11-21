@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 """
 AI Hunter - AdGuard Community Filter Compiler
-Strict zero-trust validator and compiler for crowdsourced threat lists.
+Strict zero-trust validator and compiler for crowdsourced and proactive threat lists.
 """
 
 import sys
+import os
 import re
+import shutil
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -19,6 +21,7 @@ SOURCES_DIR = ROOT_DIR / "sources"
 FILTERS_DIR = ROOT_DIR / "filters"
 
 DOMAINS_FILE = SOURCES_DIR / "domains.txt"
+PROACTIVE_FILE = SOURCES_DIR / "proactive_threats.txt"
 NEVER_BLOCK_FILE = SOURCES_DIR / "never_block.txt"
 OUTPUT_FILE = FILTERS_DIR / "threat_blacklist.txt"
 
@@ -52,47 +55,57 @@ def is_protected(domain: str, protected: set[str]) -> bool:
 
 def validate_and_compile():
     protected = load_never_block()
-    if not DOMAINS_FILE.exists():
-        print(f"[ERROR] Source domains file not found: {DOMAINS_FILE}")
+    
+    source_files = []
+    if DOMAINS_FILE.exists():
+        source_files.append(DOMAINS_FILE)
+    if PROACTIVE_FILE.exists():
+        source_files.append(PROACTIVE_FILE)
+
+    if not source_files:
+        print(f"[ERROR] No source domain files found in {SOURCES_DIR}")
         sys.exit(1)
 
     valid_domains = set()
     skipped_count = 0
     protected_count = 0
 
-    with open(DOMAINS_FILE, "r", encoding="utf-8") as f:
-        for line_num, line in enumerate(f, start=1):
-            raw = line.strip()
-            if not raw or raw.startswith("#"):
-                continue
+    for src_file in source_files:
+        with open(src_file, "r", encoding="utf-8") as f:
+            for line_num, line in enumerate(f, start=1):
+                raw = line.strip()
+                if not raw or raw.startswith("#"):
+                    continue
 
-            # 1. Reject forbidden characters
-            if any(c in FORBIDDEN_CHARS for c in raw):
-                print(f"[REJECT Line {line_num}] Contains forbidden filter characters: {raw}")
-                skipped_count += 1
-                continue
+                # 1. Reject forbidden characters
+                if any(c in FORBIDDEN_CHARS for c in raw):
+                    skipped_count += 1
+                    continue
 
-            domain = raw.lower().rstrip(".")
+                domain = raw.lower().rstrip(".")
 
-            # 2. RFC1123 Validation
-            if not RFC1123_DOMAIN_REGEX.match(domain):
-                print(f"[REJECT Line {line_num}] Invalid RFC1123 domain syntax: {raw}")
-                skipped_count += 1
-                continue
+                # 2. RFC1123 Validation
+                if not RFC1123_DOMAIN_REGEX.match(domain):
+                    skipped_count += 1
+                    continue
 
-            # 3. Protection check
-            if is_protected(domain, protected):
-                print(f"[PROTECTED Line {line_num}] Domain is in protected never-block list: {domain}")
-                protected_count += 1
-                continue
+                # 3. Protection check
+                if is_protected(domain, protected):
+                    protected_count += 1
+                    continue
 
-            valid_domains.add(domain)
+                valid_domains.add(domain)
 
     sorted_domains = sorted(valid_domains)
     now_utc = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
 
     FILTERS_DIR.mkdir(parents=True, exist_ok=True)
-    with open(OUTPUT_FILE, "w", encoding="utf-8", newline="\n") as out:
+    
+    # Atomic write pattern with .tmp and .bak
+    temp_output = OUTPUT_FILE.with_suffix(".tmp")
+    bak_output = OUTPUT_FILE.with_suffix(".bak")
+
+    with open(temp_output, "w", encoding="utf-8", newline="\n") as out:
         out.write("! ------------------------------------------------------------------------------\n")
         out.write("! Title: AI Hunter - Community Threat & DGA Blacklist\n")
         out.write("! Description: Validated threat intelligence and DGA domains compiled from AI Hunter\n")
@@ -106,6 +119,13 @@ def validate_and_compile():
         for d in sorted_domains:
             out.write(f"||{d}^\n")
 
+    # Backup current file if exists
+    if OUTPUT_FILE.exists():
+        shutil.copy2(OUTPUT_FILE, bak_output)
+
+    # Atomic swap
+    os.replace(temp_output, OUTPUT_FILE)
+
     print(f"\nCompilation successful:")
     print(f" - Valid rules compiled: {len(sorted_domains)}")
     print(f" - Rejected invalid lines: {skipped_count}")
@@ -115,4 +135,3 @@ def validate_and_compile():
 
 if __name__ == "__main__":
     validate_and_compile()
-
