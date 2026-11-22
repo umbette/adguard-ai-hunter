@@ -213,3 +213,42 @@ def test_offline_psl_snapshot_reproducibility(tmp_path, monkeypatch):
     assert "||pages.dev^" not in content
     assert "||co.uk^" not in content
 
+
+def test_partial_feed_failure_preserves_offline_feed_iocs(tmp_path):
+    """
+    Verifies that when one feed fails and another succeeds, expired IoCs belonging
+    to the unreachable feed are NOT prematurely purged from the database.
+    """
+    from datetime import datetime, timezone, timedelta
+    from scripts.proactive_miner import ThreatStateDB
+    import sqlite3
+
+    db_path = tmp_path / "threat_state.db"
+    db = ThreatStateDB(db_path=db_path)
+
+    past = (datetime.now(timezone.utc) - timedelta(days=1)).isoformat()
+    now_str = datetime.now(timezone.utc).isoformat()
+
+    # Seed 2 expired IoCs from different sources
+    with sqlite3.connect(db_path) as conn:
+        conn.execute("""
+            INSERT INTO mined_iocs (domain, source, malware_family, confidence, first_seen, last_seen, expires_at, status)
+            VALUES (?, ?, 'phishing', 90, ?, ?, ?, 'active')
+        """, ("expired-openphish.com", "openphish", now_str, now_str, past))
+        conn.execute("""
+            INSERT INTO mined_iocs (domain, source, malware_family, confidence, first_seen, last_seen, expires_at, status)
+            VALUES (?, ?, 'malware', 85, ?, ?, ?, 'active')
+        """, ("expired-urlhaus.com", "urlhaus", now_str, now_str, past))
+
+    # Scenario: OpenPhish failed, only URLhaus succeeded
+    purged = db.purge_expired(eligible_sources=["urlhaus"])
+    assert purged == 1
+
+    # OpenPhish expired IoC must be preserved; URLhaus expired IoC must be purged
+    with sqlite3.connect(db_path) as conn:
+        cur = conn.cursor()
+        cur.execute("SELECT domain FROM mined_iocs")
+        remaining = [row[0] for row in cur.fetchall()]
+        assert "expired-openphish.com" in remaining
+        assert "expired-urlhaus.com" not in remaining
+

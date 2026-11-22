@@ -348,11 +348,26 @@ class ThreatStateDB:
 
         return new_count, updated_count
 
-    def purge_expired(self) -> int:
+    def purge_expired(self, eligible_sources: Optional[list[str]] = None) -> int:
+        """
+        Purges expired IoCs from the database.
+        If eligible_sources is provided, purges expired IoCs ONLY for those sources.
+        This guarantees that if a threat feed temporarily fails (partial network outage),
+        its expiring IoCs are NOT prematurely wiped out while the feed is offline.
+        """
         now_str = datetime.now(timezone.utc).isoformat()
         with sqlite3.connect(self.db_path) as conn:
             cur = conn.cursor()
-            cur.execute("DELETE FROM mined_iocs WHERE expires_at < ?", (now_str,))
+            if eligible_sources is not None:
+                if not eligible_sources:
+                    return 0
+                placeholders = ",".join("?" for _ in eligible_sources)
+                cur.execute(
+                    f"DELETE FROM mined_iocs WHERE expires_at < ? AND source IN ({placeholders})",
+                    (now_str, *eligible_sources)
+                )
+            else:
+                cur.execute("DELETE FROM mined_iocs WHERE expires_at < ?", (now_str,))
             purged = cur.rowcount
             conn.commit()
         return purged
@@ -454,7 +469,17 @@ class ProactiveMiner:
 
         # 3. Ingest into SQLite with 30-day sliding TTL and surge protection
         new_cnt, upd_cnt = self.db.insert_or_update_iocs(deduped, max_surge=500)
-        purged_cnt = self.db.purge_expired()
+
+        # Source-specific purge: only purge expired records for feeds that ran successfully
+        successful_sources = [r.feed_name for r in feed_results if r.success]
+        failed_sources = [r.feed_name for r in feed_results if not r.success]
+        if failed_sources:
+            logger.warning(
+                f"Partial feed failure detected (failed feeds: {failed_sources}). "
+                f"Preserving expiring IoCs for unreachable sources; purging expired only for {successful_sources}."
+            )
+
+        purged_cnt = self.db.purge_expired(eligible_sources=successful_sources)
 
         logger.info(f"DB Update: {new_cnt} newly added, {upd_cnt} refreshed TTL, {purged_cnt} expired purged.")
 
