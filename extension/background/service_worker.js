@@ -5,25 +5,30 @@
 
 let BRANDS = {};
 let PUBLIC_SUFFIXES = [];
-let nextSessionRuleId = 100000;
+let loadDataPromise = null;
 
-// Load local brand database and public suffix list on startup
-async function loadData() {
-  try {
-    const brandsUrl = chrome.runtime.getURL("data/brands.json");
-    const brandsResp = await fetch(brandsUrl);
-    BRANDS = await brandsResp.json();
+// Atomically load local brand database and public suffix list on startup
+function ensureDataLoaded() {
+  if (!loadDataPromise) {
+    loadDataPromise = (async () => {
+      try {
+        const brandsUrl = chrome.runtime.getURL("data/brands.json");
+        const brandsResp = await fetch(brandsUrl);
+        BRANDS = await brandsResp.json();
 
-    const suffixesUrl = chrome.runtime.getURL("data/public_suffixes.json");
-    const suffixesResp = await fetch(suffixesUrl);
-    PUBLIC_SUFFIXES = await suffixesResp.json();
+        const suffixesUrl = chrome.runtime.getURL("data/public_suffixes.json");
+        const suffixesResp = await fetch(suffixesUrl);
+        PUBLIC_SUFFIXES = await suffixesResp.json();
 
-    console.log(
-      `[AI Hunter] Loaded verified brand database (${Object.keys(BRANDS).length} brands) and PSL (${PUBLIC_SUFFIXES.length} multi-part suffixes).`
-    );
-  } catch (err) {
-    console.error("[AI Hunter] Failed to load data files:", err);
+        console.log(
+          `[Hunter Shield] Loaded verified brand database (${Object.keys(BRANDS).length} brands) and PSL (${PUBLIC_SUFFIXES.length} multi-part suffixes).`
+        );
+      } catch (err) {
+        console.error("[Hunter Shield] Failed to load data files:", err);
+      }
+    })();
   }
+  return loadDataPromise;
 }
 
 // Public suffix extractor for eTLD+1 using data/public_suffixes.json
@@ -72,11 +77,17 @@ function damerauLevenshtein(a, b) {
   return d[m][n];
 }
 
+// Escape regex special characters to prevent invalid regex or unexpected matching
+function escapeRegex(str) {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 // Boundary-aware keyword matching: requires exact match or separation by hyphens, underscores or digits.
 // Prevents false positives on legitimate words containing a brand substring (e.g. "impostore", "risposte", "amazonaws").
 function keywordMatches(domainCore, kw) {
   if (domainCore === kw) return true;
-  const regex = new RegExp(`(^|[-_0-9])${kw}([-_0-9]|$)`, "i");
+  const escaped = escapeRegex(kw);
+  const regex = new RegExp(`(^|[-_0-9])${escaped}([-_0-9]|$)`, "i");
   return regex.test(domainCore);
 }
 
@@ -121,11 +132,25 @@ function checkBrandImpersonation(hostname) {
 
 // Lifecycle events
 chrome.runtime.onInstalled.addListener(() => {
-  loadData();
+  ensureDataLoaded();
 });
 
 chrome.runtime.onStartup.addListener(() => {
-  loadData();
+  ensureDataLoaded();
+});
+
+// Catch DNR network blocks on main_frame and seamlessly display local blocked.html without requiring host permissions
+chrome.webNavigation.onErrorOccurred.addListener((details) => {
+  if (details.frameId !== 0) return; // Only top-level window
+  if (details.error === "net::ERR_BLOCKED_BY_CLIENT" && details.url && details.url.startsWith("http")) {
+    try {
+      const hostname = new URL(details.url).hostname;
+      const blockedPageUrl = chrome.runtime.getURL(`pages/blocked.html?domain=${encodeURIComponent(hostname)}`);
+      chrome.tabs.update(details.tabId, { url: blockedPageUrl });
+    } catch (e) {
+      // Ignore URL parsing errors
+    }
+  }
 });
 
 // Evaluate navigations
@@ -148,9 +173,7 @@ chrome.webNavigation.onBeforeNavigate.addListener(async (details) => {
       return;
     }
 
-    if (Object.keys(BRANDS).length === 0) {
-      await loadData();
-    }
+    await ensureDataLoaded();
 
     const result = checkBrandImpersonation(hostname);
     if (result.spoofed) {
@@ -158,7 +181,7 @@ chrome.webNavigation.onBeforeNavigate.addListener(async (details) => {
       await chrome.storage.session.set({ [warningKey]: result });
       chrome.action.setBadgeText({ text: "!", tabId: details.tabId });
       chrome.action.setBadgeBackgroundColor({ color: "#f57c00", tabId: details.tabId });
-      console.warn(`[AI Hunter Shield] Brand impersonation alert for tab ${details.tabId}:`, result);
+      console.warn(`[Hunter Shield] Brand impersonation alert for tab ${details.tabId}:`, result);
     } else {
       await chrome.storage.session.remove(warningKey);
       chrome.action.setBadgeText({ text: "", tabId: details.tabId });

@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "AI Hunter Shield",
+  "name": "Hunter Shield",
   "version": "0.1.0",
   "description": "Protezione locale da phishing, truffe e domini ingannevoli. Elaborazione 100% in-browser, zero telemetria.",
   "permissions": [
@@ -22,9 +22,7 @@
     {
       "resources": [
         "pages/blocked.html",
-        "pages/blocked.js",
-        "data/brands.json",
-        "data/public_suffixes.json"
+        "pages/blocked.js"
       ],
       "matches": ["<all_urls>"]
     }
