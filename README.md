@@ -1,120 +1,172 @@
-# AI Hunter Daemon
+# AI Hunter
 
-[![CI Test Suite](https://github.com/umbette/ai-hunter/actions/workflows/ci.yml/badge.svg)](https://github.com/umbette/ai-hunter/actions/workflows/ci.yml)
+[![CI Test Suite](https://github.com/umbette/adguard-ai-hunter/actions/workflows/ci.yml/badge.svg)](https://github.com/umbette/adguard-ai-hunter/actions/workflows/ci.yml)
+[![Tests: 39 Passing](https://img.shields.io/badge/Tests-39%20Passing-brightgreen.svg)](tests/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Home Assistant Add-on](https://img.shields.io/badge/Home%20Assistant-Add--on%20Ready-blue?logo=home-assistant)](ha-addon/)
 [![AdGuard Home](https://img.shields.io/badge/AdGuard%20Home-Supported-green?logo=adguard)](https://adguard.com/adguard-home.html)
-[![Gemini API](https://img.shields.io/badge/Google%20Gemini-Flash%20Powered-orange?logo=google)](https://ai.google.dev/)
-[![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker)](Dockerfile)
+[![Manifest V3](https://img.shields.io/badge/Chrome%20Extension-Manifest%20V3-yellow?logo=google-chrome)](extension/)
+[![Docker](https://img.shields.io/badge/Docker-Multi--Arch-2496ED?logo=docker)](Dockerfile)
 
-Autonomous, lightweight, local-first DNS behavioral anomaly detector, DGA hunter, and privacy watchdog designed for **AdGuard Home** and **Home Assistant**.
+**Autonomous Smart Home Security, Anti-Dynamic Pricing, Crypto Vault & Threat Shield for AdGuard Home and Home Assistant.**
 
-Monitors DNS traffic in real-time streaming mode, performs multi-label Shannon entropy evaluation ($H > 3.85$) and velocity burst tracking on unseen domains, verifies anomalies with **Gemini Flash**, and dispatches actionable 1-click mobile push alerts via Home Assistant identifying the exact LAN client IP.
-
-<p align="center">
-  <img src="docs/assets/ai-hunter-demo.gif" alt="AdGuard AI Hunter Live Anomaly Detection" width="800" style="border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">
-</p>
+AI Hunter is a 100% local-first, zero-cloud-telemetry network watchdog and behavioral anomaly detector. It bridges your local DNS resolver (**AdGuard Home**) with your smart home automation (**Home Assistant**) to detect real-world threats that static blocklists miss: predatory airline/hotel price discrimination, Web3 wallet drainers, deceptive family phishing SMS links, and invasive Smart TV surveillance.
 
 ---
 
-## 🛡️ Multi-Layer Threat Architecture (Zero-Trust & Anti-Breakage)
+## 🌟 Key Protection Pillars
 
-AI Hunter combines real-time streaming heuristics with proactive zero-day ingestion and strict anti-breakage guardrails:
+### 1. 🛡️ Anti-Dynamic Pricing & Travel Protection
+Online booking engines, airlines, and hotel aggregators use behavioral retargeting and cross-app attribution networks to profile purchasing intent and increase fares dynamically when you search repeatedly.
+* **Intercepts 18+ Profiling Networks:** Blocks data brokers including Criteo, AppsFlyer, Adjust, Kochava, Branch Metrics, Singular, SessionCam, QuantumMetric, and Demdex.
+* **Per-Device Containment:** Flags tracking attempts specifically on booking devices (e.g., iPhone, MacBook) and deploys surgical rules (`||domain^$client=IP`) without breaking site functionality.
 
-<p align="center">
-  <img src="docs/assets/architecture-diagram.svg" alt="Zero-Trust Multi-Layer Defense Architecture" width="900">
-</p>
+### 2. 🔐 Crypto Vault & Financial Shield
+Protects high-value crypto wallets (MetaMask, Phantom, Ledger, Trezor), DeFi protocols (Uniswap, Curve, Aave), and digital banks (Revolut, Binance, Coinbase).
+* **Official RPC Node Integrity:** Whitelist enforcement for verified blockchain RPC endpoints (`mainnet.infura.io`, `eth.llamarpc.com`, `cloudflare-eth.com`, `polygon-rpc.com`) prevents malicious RPC hijacking.
+* **Unicode NFKD Homograph Detection:** Unmasks deceptive IDN Punycode mirror domains (e.g. `xn--uniswp-tta.org` -> `uniswáp.org`) before signatures are broadcast.
+* **Wallet Drainer Regex Signatures:** Detects automated phishing kits (`claim-airdrop`, `connect-wallet`, `token-reward`, `ledger-live-update`).
 
----
+### 3. 👵 Family & Caregiver Anti-Phishing Watchdog
+Protects family members and elderly parents who are vulnerable to deceptive SMS, WhatsApp, and delivery phishing traps.
+* **Zero-Trust Brand Spoofing Heuristics:** Blocks clones of national postal services (Poste Italiane, BRT, DHL, GLS), digital identity providers (SPID, Lepida, ArubaPEC), tax portals (Agenzia delle Entrate, INPS), and e-commerce platforms.
+* **Contextual Push Notifications:** Generates real-time, device-labeled alerts on your mobile phone via Home Assistant Companion (*"🚨 Phishing attempt blocked on 📱 Galaxy A14 (Mamma)"*) with instant 1-click triage buttons.
 
-## 💡 How AI Hunter Differs from DNS Blocklists (HaGeZi, RuffKez CTI, OISD, etc.)
+### 4. 📺 Device Resolution & Smart TV Stealth
+Standard DNS resolvers only show raw IP addresses (`192.168.1.45`), making device identification tedious.
+* **Contextual Device Categorization:** Correlates AdGuard Home client registries and non-blocking reverse PTR lookups to tag queries with human-friendly device names and icons:
+  * 📺 **Smart TV / Streaming Box**
+  * 📱 **Smartphone / Tablet**
+  * 💻 **Computer / Workstation**
+  * 💡 **IoT / Smart Home Gadget**
+* **ACR & Microphone Muting:** Blocks Automatic Content Recognition (ACR) telemetries on Samsung and LG TVs without interrupting Netflix, YouTube, or Prime Video playback.
 
-> **TL;DR:** AI Hunter is **not a DNS blocklist** and is not meant to replace curated threat feeds like HaGeZi TIF or RuffKez CTI. It is a **local runtime anomaly detector (NIDS layer)** designed to run *alongside* your existing DNS blocklists.
-
-| Feature | Standard DNS Threat Feeds (HaGeZi, RuffKez CTI, OISD) | AI Hunter Daemon |
-| :--- | :--- | :--- |
-| **Primary Role** | **First line of defense:** Blocks known malicious domains, phishing, scam sites, and tracked C2s. | **Behavioral watchdog:** Catches zero-day algorithmic domains (DGAs) and anomalous device beaconing in real time. |
-| **Operation** | Static or hourly compiled lists of known Indicators of Compromise (IoCs). | Real-time streaming evaluation of AdGuard Home live query logs. |
-| **Detection Method** | Threat intelligence feeds, OSINT aggregation, honeypots. | Local Shannon entropy ($H > 3.85$), burst analysis, and Gemini Flash contextual verification. |
-| **LAN Visibility** | None (AdGuard blocks or allows, but you don't get device triage context). | Identifies the exact internal client IP (e.g. rogue IoT smart plug) and pushes actionable 1-click triage alerts to Home Assistant. |
-| **Zero-Day Catch** | Blocked only after the domain is observed, reported, and compiled into the feed. | Immediate — catches high-entropy DGA strings generated by malware beacons before they are indexed anywhere. |
-
-**Recommended Setup:** Keep your favorite blocklists (HaGeZi TIF, RuffKez CTI) active in AdGuard Home. AI Hunter sits quietly on top of them, monitoring traffic that bypasses static lists and alerting you if a specific device on your network starts behaving suspiciously.
-
----
-
-## Architecture Principles: 100% Local-First & Zero-Trust
-
-1. **Air-Gapped Friendly:** No dynamic remote rule pulls. All configurations, whitelist exceptions, and thresholds are maintained locally in your own `config.yaml` and SQLite database.
-2. **Transactional Read-Modify-Write Rule Injection:**
-   - AdGuard Home's `/control/filtering/set_rules` API replaces the entire rule set.
-   - AI Hunter executes a strict transactional Read-Modify-Write pattern (`GET status` -> inspect/append -> `POST set_rules`) ensuring user custom rules and standard blocklists are never wiped or corrupted.
-3. **Zero Inbound Exposed Ports:**
-   - Instead of exposing an inbound webhook port, AI Hunter establishes an outbound authenticated WebSocket connection to Home Assistant (`/api/websocket`).
-   - Listens for interactive notification actions (`BLOCK_DEVICE`, `BLOCK_GLOBAL`, `IGNORE`).
-4. **Multi-Label Shannon Entropy ($H > 3.85$) & Rate Burst Tracker:**
-   - Analyzes subdomains and main domain labels independently to catch DGAs hidden in deep subdomains.
-   - Tranco Top 10k apex domain bypass to avoid cloud CDN false positives.
-   - Sliding-window token-bucket tracking for IoT telemetry beacons.
-5. **Cloud Evaluation with Resilient Heuristic Fallback:**
-   - Powered by Gemini Flash with Pydantic structured output.
-   - If the external API is unreachable or times out, AI Hunter automatically falls back to local heuristic threat metadata without stalling the pipeline.
-6. **Decision Persistence & Snooze Management:**
-   - SQLite backed in WAL mode (`journal_mode=WAL`) at `/app/data/hunter_decisions.db`.
-   - Supports apex wildcard domain matching (`*.domain.com`) and client-specific precedence over global rules.
-   - 30-day snooze expiration for false-positive whitelisting with periodic automatic cleanup.
-7. **Ultra-Low Resource Footprint:**
-   - Bounded Docker container: `cpus: '0.2'`, `memory: 256M`.
-   - Idle footprint: `< 20 MiB` RAM and `0.00%` CPU.
+### 5. ⚡ Local-First Behavioral Anomaly & DGA Detection
+* **Multi-Label Shannon Entropy ($H > 3.85$):** Evaluates subdomain and domain core randomness in real-time streaming mode to intercept algorithmic domain generation (DGAs) used by malware and botnets.
+* **Sliding Window Burst Tracking:** Detects anomalous high-frequency DNS query spikes from rogue IoT devices.
+* **Gemini Flash Triage:** Asynchronous classification with strict JSON schemas and automatic heuristic fallback if offline.
 
 ---
 
-## Quick Start (Docker Compose)
+## 🏛️ Architecture & Privacy Guarantees
 
-### 1. Configuration
+```
++---------------------------------------------------------------------------------+
+|                                 HOME NETWORK                                    |
+|                                                                                 |
+|  [📱 Mobile]   [📺 Smart TV]   [💻 PC]   [💡 IoT]                               |
+|        │             │            │         │                                   |
+|        ▼             ▼            ▼         ▼                                   |
+|  ┌────────────────────────────────────────────────────────┐                     |
+|  │                  ADGUARD HOME RESOLVER                 │                     |
+|  │  - Static Filter Blocklists (HaGeZi, OISD, AI Hunter)  │                     |
+|  │  - Low-latency local cache (< 1ms)                     │                     |
+|  └───────────────────────────┬────────────────────────────┘                     |
+|                              │ Query Log Stream                                 |
+|                              ▼                                                  |
+|  ┌────────────────────────────────────────────────────────┐                     |
+|  │                   AI HUNTER DAEMON                     │                     |
+|  │  • Device Resolver (Smart TV 📺 / Mobile 📱)           │                     |
+|  │  • Anti-Dynamic Pricing Engine                         │                     |
+|  │  • Crypto & Financial Vault                            │                     |
+|  │  • Multi-Label Shannon Entropy ($H > 3.85$)            │                     |
+|  └───────────────────────────┬────────────────────────────┘                     |
+|                              │ Outbound WebSocket (No open ports)               |
+|                              ▼                                                  |
+|  ┌────────────────────────────────────────────────────────┐                     |
+|  │                 HOME ASSISTANT CORE                    │                     |
+|  │  - Rich Push Notification with Device Context          │                     |
+|  │  - Interactive 1-Click Triage: [Blocca per 📺]         │                     |
+|  └────────────────────────────────────────────────────────┘                     |
++---------------------------------------------------------------------------------+
+```
+
+* **100% Local-First & Zero Inbound Ports:** Communicates with Home Assistant over an authenticated outbound WebSocket (`ws://.../api/websocket`). No open inbound firewall ports required.
+* **Transactional Read-Modify-Write Rule Injection:** Interacts with AdGuard Home via atomic `GET` -> patch -> `POST` cycles, ensuring custom user rules and standard blocklists are never overwritten.
+* **Air-Gap Friendly:** Stores decisions locally in SQLite WAL mode (`hunter_decisions.db`).
+
+---
+
+## 🚀 Installation & Deployment
+
+### Option A: Home Assistant Add-on (Recommended)
+
+AI Hunter is packaged as an official multi-arch Home Assistant Add-on (`aarch64`, `amd64`, `armv7`).
+
+1. In Home Assistant, navigate to **Settings** ➔ **Add-ons** ➔ **Add-on Store**.
+2. Click the three dots (top right) ➔ **Repositories** ➔ Add:
+   ```text
+   https://github.com/umbette/adguard-ai-hunter
+   ```
+3. Select **AI Hunter**, configure your AdGuard credentials, and click **Start**.
+
+### Option B: Docker Compose (Standalone Server / Proxmox / Unraid)
+
 ```bash
+git clone https://github.com/umbette/adguard-ai-hunter.git
+cd adguard-ai-hunter
 cp .env.example .env
 cp config.example.yaml config.yaml
 ```
-Edit `.env` with your credentials:
+
+Configure `.env`:
 ```ini
 ADGUARD_USERNAME=admin
 ADGUARD_PASSWORD=your_password
-HASS_TOKEN=your_home_assistant_long_lived_access_token
+HASS_TOKEN=your_home_assistant_token
 HASS_NOTIFY_SERVICE=notify
 GEMINI_API_KEY=your_gemini_api_key
 DATA_DIR=/app/data
 ```
 
-### 2. Launch Container
+Launch with Docker Compose:
 ```bash
 docker compose up -d
 ```
 
-### 3. Verify Logs
+---
+
+## 🧩 Companion Chrome Extension: Hunter Shield (MV3)
+
+For endpoint protection when traveling or using public Wi-Fi outside your home network, this repository includes **Hunter Shield**, an ultra-lightweight Manifest V3 Chrome/Edge extension located in [`extension/`](extension/).
+
+* **Declarative Net Request (DNR):** 0 host permissions required (`action: "block"`).
+* **Zero Cloud Telemetry:** Operates 100% offline using a compiled snapshot of the Public Suffix List (8,700+ suffixes) and verified brand heuristics (23 financial, postal, and e-commerce brands).
+* **1-Click Session Bypass:** Built-in collision-free unblocking for false positives.
+
+To install in developer mode:
+1. Open `chrome://extensions/` and enable **Developer mode**.
+2. Click **Load unpacked** and select the [`extension/`](extension/) directory.
+
+---
+
+## 📡 Community Filter Blacklist
+
+AI Hunter compiles high-confidence IoCs and confirmed algorithmic threat domains into a standard AdGuard / uBlock Origin compatible blocklist:
+
+* **Filter URL:**  
+  `https://raw.githubusercontent.com/umbette/adguard-ai-hunter/main/filters/threat_blacklist.txt`
+
+Add this URL directly into **AdGuard Home** (Filters ➔ DNS Blocklists) for static upstream blocking.
+
+---
+
+## 🧪 Test Suite & Verification
+
+The codebase includes comprehensive unit, integration, and sandboxed browser tests:
+
 ```bash
-docker logs -f ai-hunter
+# Run Python backend test suite (33 tests)
+PYTHONPATH=. .venv/bin/pytest -v tests/
+
+# Run Manifest V3 sandboxed browser runtime tests (6 tests)
+node --test tests/test_extension_runtime.mjs
 ```
 
----
-
-## 📡 Automated Threat List Export (Experimental Utility)
-
-As a companion utility, this repository provides an automated CI compiler (`scripts/build_filter.py`) that exports validated, crowdsourced DGA candidates into standard AdGuard/uBlock format:
-
-* **Filter URL:** `https://raw.githubusercontent.com/umbette/adguard-ai-hunter/main/filters/threat_blacklist.txt`
-
-> **Clarification:** This file is an experimental export of confirmed high-entropy DGA samples flagged by the community. It is **not** a replacement for comprehensive CTI threat feeds like HaGeZi or RuffKez CTI. The primary purpose and core functionality of this project is the real-time local detection daemon described above.
+**Total:** 39 passed in ~1.3s.
 
 ---
 
-## Contributing
+## 📄 License
 
-We welcome community feedback, pull requests, and whitelist recommendations!
-- Check [CONTRIBUTING.md](CONTRIBUTING.md) for details on submitting standard PRs.
-
----
-
-## License
-
-Distributed under the [MIT License](LICENSE).
-
+Distributed under the [MIT License](LICENSE). Contributions, bug reports, and whitelist pull requests are welcome!
