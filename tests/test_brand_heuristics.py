@@ -27,16 +27,18 @@ def damerau_levenshtein(a: str, b: str) -> int:
     return d[m][n]
 
 
-def get_etld_plus_one(hostname: str, suffixes: list[str]) -> str:
+def get_etld_plus_one(hostname: str, suffixes: set[str] | list[str]) -> str:
     if not hostname:
         return ""
     parts = hostname.lower().split(".")
     if len(parts) <= 1:
         return hostname.lower()
 
-    for i in range(min(len(parts) - 1, 3), 1, -1):
+    suffixes_set = set(suffixes) if isinstance(suffixes, list) else suffixes
+
+    for i in range(min(len(parts) - 1, 4), 1, -1):
         candidate = ".".join(parts[-i:])
-        if candidate in suffixes:
+        if candidate in suffixes_set:
             return ".".join(parts[-(i + 1):])
 
     return ".".join(parts[-2:])
@@ -95,7 +97,12 @@ def test_brand_heuristics_against_false_positives():
     assert evaluate_domain("intesasampaolo.com", brands, suffixes)
     assert evaluate_domain("brt-tracking-pacco.org", brands, suffixes)
 
-    # 3. Multi-part public suffix extraction
+    # 3. Multi-part public suffix extraction across global ccTLDs and platforms
     assert get_etld_plus_one("login.service.gov.it", suffixes) == "service.gov.it"
     assert get_etld_plus_one("my-app.pages.dev", suffixes) == "my-app.pages.dev"
     assert get_etld_plus_one("portal.co.uk", suffixes) == "portal.co.uk"
+    assert get_etld_plus_one("auth.bank.co.in", suffixes) == "bank.co.in"
+    assert get_etld_plus_one("empresa.com.br", suffixes) == "empresa.com.br"
+    assert get_etld_plus_one("shop.com.cn", suffixes) == "shop.com.cn"
+    assert get_etld_plus_one("secure.org.il", suffixes) == "secure.org.il"
+    assert get_etld_plus_one("news.co.za", suffixes) == "news.co.za"

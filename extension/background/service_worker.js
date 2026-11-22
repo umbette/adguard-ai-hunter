@@ -4,10 +4,11 @@
  */
 
 let BRANDS = {};
-let PUBLIC_SUFFIXES = [];
+let PUBLIC_SUFFIXES = new Set();
+let BLOCKED_DOMAINS = new Set();
 let loadDataPromise = null;
 
-// Atomically load local brand database and public suffix list on startup
+// Atomically load local brand database, public suffix list, and DNR ruleset on startup
 function ensureDataLoaded() {
   if (!loadDataPromise) {
     loadDataPromise = (async () => {
@@ -18,10 +19,25 @@ function ensureDataLoaded() {
 
         const suffixesUrl = chrome.runtime.getURL("data/public_suffixes.json");
         const suffixesResp = await fetch(suffixesUrl);
-        PUBLIC_SUFFIXES = await suffixesResp.json();
+        const suffixesArr = await suffixesResp.json();
+        PUBLIC_SUFFIXES = new Set(suffixesArr);
+
+        // Load static DNR rules to enable precise disambiguation against other content blockers
+        const rulesUrl = chrome.runtime.getURL("rules/ruleset.json");
+        const rulesResp = await fetch(rulesUrl);
+        const rules = await rulesResp.json();
+        BLOCKED_DOMAINS = new Set();
+        for (const r of rules) {
+          if (r.condition && r.condition.urlFilter) {
+            let filter = r.condition.urlFilter;
+            if (filter.startsWith("||")) filter = filter.slice(2);
+            if (filter.endsWith("^")) filter = filter.slice(0, -1);
+            BLOCKED_DOMAINS.add(filter.toLowerCase());
+          }
+        }
 
         console.log(
-          `[Hunter Shield] Loaded verified brand database (${Object.keys(BRANDS).length} brands) and PSL (${PUBLIC_SUFFIXES.length} multi-part suffixes).`
+          `[Hunter Shield] Loaded verified brand database (${Object.keys(BRANDS).length} brands), PSL (${PUBLIC_SUFFIXES.size} multi-part suffixes), and ${BLOCKED_DOMAINS.size} DNR blocked domains.`
         );
       } catch (err) {
         console.error("[Hunter Shield] Failed to load data files:", err);
@@ -37,10 +53,10 @@ function getETLDPlusOne(hostname) {
   const parts = hostname.toLowerCase().split(".");
   if (parts.length <= 1) return hostname.toLowerCase();
 
-  // Match against multi-part public suffixes (e.g. pages.dev, gov.it, co.uk)
-  for (let i = Math.min(parts.length - 1, 3); i >= 2; i--) {
+  // Match against multi-part public suffixes (e.g. pages.dev, gov.it, co.uk, com.br, co.in)
+  for (let i = Math.min(parts.length - 1, 4); i >= 2; i--) {
     const candidateSuffix = parts.slice(-i).join(".");
-    if (PUBLIC_SUFFIXES.includes(candidateSuffix)) {
+    if (PUBLIC_SUFFIXES.has(candidateSuffix)) {
       return parts.slice(-(i + 1)).join(".");
     }
   }
@@ -139,14 +155,22 @@ chrome.runtime.onStartup.addListener(() => {
   ensureDataLoaded();
 });
 
-// Catch DNR network blocks on main_frame and seamlessly display local blocked.html without requiring host permissions
-chrome.webNavigation.onErrorOccurred.addListener((details) => {
+// Catch DNR network blocks on main_frame and seamlessly display local blocked.html without requiring host permissions.
+// Disambiguates against uBlock Origin and other blockers by verifying the domain is in Hunter Shield's ruleset.
+chrome.webNavigation.onErrorOccurred.addListener(async (details) => {
   if (details.frameId !== 0) return; // Only top-level window
   if (details.error === "net::ERR_BLOCKED_BY_CLIENT" && details.url && details.url.startsWith("http")) {
     try {
-      const hostname = new URL(details.url).hostname;
-      const blockedPageUrl = chrome.runtime.getURL(`pages/blocked.html?domain=${encodeURIComponent(hostname)}`);
-      chrome.tabs.update(details.tabId, { url: blockedPageUrl });
+      await ensureDataLoaded();
+      const hostname = new URL(details.url).hostname.toLowerCase();
+      const etld1 = getETLDPlusOne(hostname);
+
+      // Disambiguation: ONLY redirect if domain or eTLD+1 matches Hunter Shield's blocked rules.
+      // Other blockers (e.g. uBlock Origin) will NOT trigger our blocked page.
+      if (BLOCKED_DOMAINS.has(hostname) || BLOCKED_DOMAINS.has(etld1)) {
+        const blockedPageUrl = chrome.runtime.getURL(`pages/blocked.html?domain=${encodeURIComponent(hostname)}`);
+        chrome.tabs.update(details.tabId, { url: blockedPageUrl });
+      }
     } catch (e) {
       // Ignore URL parsing errors
     }
@@ -236,8 +260,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       return true;
     }
 
-    // Query existing session rules asynchronously to compute a collision-free ID across worker restarts
-    chrome.declarativeNetRequest.getSessionRules((existingRules) => {
+    // Query existing session rules and session storage counter to compute a collision-free ID across worker restarts
+    chrome.declarativeNetRequest.getSessionRules(async (existingRules) => {
       const alreadyAllowed = (existingRules || []).some(
         r => r.condition && r.condition.urlFilter === `||${domain}^` && r.action && r.action.type === "allow"
       );
@@ -246,11 +270,14 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         return;
       }
 
-      const maxId = (existingRules || []).reduce((max, r) => Math.max(max, r.id || 0), 100000);
-      const ruleId = maxId + 1;
+      // Persist counter in session storage to guarantee monotonic IDs even under concurrent calls
+      const storage = await chrome.storage.session.get(["lastSessionRuleId"]);
+      const existingMax = (existingRules || []).reduce((max, r) => Math.max(max, r.id || 0), 100000);
+      const nextId = Math.max(existingMax, storage.lastSessionRuleId || 100000) + 1;
+      await chrome.storage.session.set({ lastSessionRuleId: nextId });
 
       const allowRule = {
-        id: ruleId,
+        id: nextId,
         priority: 2, // Higher than static priority 1 rules
         action: { type: "allow" },
         condition: {
@@ -262,11 +289,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         addRules: [allowRule]
       }, () => {
         if (chrome.runtime.lastError) {
-          console.error("[AI Hunter] Failed to add session bypass rule:", chrome.runtime.lastError);
+          console.error("[Hunter Shield] Failed to add session bypass rule:", chrome.runtime.lastError);
           sendResponse({ success: false, error: chrome.runtime.lastError.message });
         } else {
-          console.log(`[AI Hunter] Added session bypass allow rule (id ${ruleId}) for ${domain}`);
-          sendResponse({ success: true, ruleId });
+          console.log(`[Hunter Shield] Added session bypass allow rule (id ${nextId}) for ${domain}`);
+          sendResponse({ success: true, ruleId: nextId });
         }
       });
     });
