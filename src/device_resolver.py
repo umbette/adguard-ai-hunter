@@ -15,8 +15,12 @@ DEVICE_KEYWORDS = [
     (["tv", "samsung", "tizen", "lg", "webos", "sony", "bravia", "appletv", "apple-tv", "chromecast", "firetv", "roku", "shield"], "📺", "SMART_TV"),
     # Mobile & Tablets
     (["iphone", "ipad", "android", "galaxy", "pixel", "xiaomi", "redmi", "oppo", "huawei", "oneplus", "phone"], "📱", "MOBILE"),
+    # Gaming Consoles (Nintendo Switch, PS5, Xbox, Steam Deck)
+    (["switch", "nintendo", "playstation", "ps5", "ps4", "ps3", "xbox", "steamdeck", "steam-deck"], "🎮", "GAMING_CONSOLE"),
+    # Robot Vacuums (Roborock, Dreame, Ecovacs, Roomba)
+    (["roborock", "dreame", "ecovacs", "deebot", "roomba", "irobot", "mova", "valetudo", "vacuum"], "🧹", "VACUUM_ROBOT"),
     # Smart Home & IoT
-    (["camera", "cam", "reolink", "ring", "nest", "tuya", "shelly", "sonoff", "tasmota", "hue", "philips", "echo", "alexa", "homepod", "vacuum", "roborock", "esp32", "esp8266"], "💡", "IOT"),
+    (["camera", "cam", "reolink", "ring", "nest", "tuya", "shelly", "sonoff", "tasmota", "hue", "philips", "echo", "alexa", "homepod", "esp32", "esp8266"], "💡", "IOT"),
     # Computers & Laptops
     (["macbook", "imac", "mac", "pc", "laptop", "desktop", "thinkpad", "dell", "windows", "linux", "workstation"], "💻", "COMPUTER"),
     # 3D Printers & Maker Lab (Bambu Lab, Prusa, Voron, Klipper)

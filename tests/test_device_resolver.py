@@ -24,6 +24,10 @@ def test_categorize_device():
     assert resolver.categorize_device("MacBook-Pro-M2") == ("💻", "COMPUTER")
     assert resolver.categorize_device("Bambu-Lab-X1C") == ("🖨️", "3D_PRINTER")
     assert resolver.categorize_device("Prusa-MK4-Lab") == ("🖨️", "3D_PRINTER")
+    assert resolver.categorize_device("Nintendo-Switch-OLED") == ("🎮", "GAMING_CONSOLE")
+    assert resolver.categorize_device("Steam-Deck-512GB") == ("🎮", "GAMING_CONSOLE")
+    assert resolver.categorize_device("Roborock-S8-Pro") == ("🧹", "VACUUM_ROBOT")
+    assert resolver.categorize_device("Ecovacs-Deebot-X2") == ("🧹", "VACUUM_ROBOT")
     assert resolver.categorize_device("HP-LaserJet-Pro") == ("🖨️", "PRINTER")
     assert resolver.categorize_device("Unknown-Generic") == ("🔌", "DEVICE")
 
