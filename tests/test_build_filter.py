@@ -15,6 +15,8 @@ def test_filter_compilation_and_guardrails():
     
     assert "||google.com^" not in content
     assert "||apple.com^" not in content
+    assert "||co.uk^" not in content
+    assert "||com^" not in content
     assert "$dnsrewrite" not in content
     assert "$important" not in content
     assert "@@" not in content

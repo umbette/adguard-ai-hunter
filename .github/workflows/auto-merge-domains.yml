@@ -41,10 +41,7 @@ jobs:
         run: |
           python tests/test_build_filter.py
 
-      - name: Auto-Merge Safe Community PR
+      - name: Validate Safe Community PR
         if: steps.check_files.outputs.safe == 'true'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh pr review ${{ github.event.pull_request.number }} --approve --body "✅ Automated Zero-Trust Audit Passed: All domains RFC 1123 compliant, no forbidden modifiers, critical domains preserved."
-          gh pr merge ${{ github.event.pull_request.number }} --squash --auto
+          echo "✅ Automated Zero-Trust Audit Passed: All domains RFC 1123 and Public Suffix List compliant. Ready for maintainer review."

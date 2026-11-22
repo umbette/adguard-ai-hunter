@@ -142,12 +142,9 @@ class IngestionWorker:
                     is_dga=is_dga
                 )
 
-                # Check classification: if BENIGN or low risk (< 0.40), auto-snooze and DO NOT alert
+                # Check classification: if BENIGN or low risk (< 0.40), dismiss candidate without creating dangerous wildcard rules
                 if audit.classification == "BENIGN" or audit.risk_score < 0.40:
-                    logger.info(f"Auto-whitelisting benign candidate: {domain} (risk={audit.risk_score})")
-                    apex = ".".join(domain.split(".")[-2:]) if len(domain.split(".")) > 2 else domain
-                    expires_at = (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=30)).isoformat()
-                    self.storage.record_decision(f"*.{apex}", "GLOBAL", "ALLOW", expires_at=expires_at, notes=f"Auto-whitelisted (Gemini: {audit.summary[:60]})")
+                    logger.info(f"Dismissing benign candidate without global wildcard injection: {domain} (risk={audit.risk_score})")
                     self.storage.update_candidate_status(candidate_id, "DISMISSED", classification=audit.classification, summary=audit.summary)
                     continue
 

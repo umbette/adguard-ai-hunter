@@ -11,6 +11,8 @@ import shutil
 from datetime import datetime, timezone
 from pathlib import Path
 
+import tldextract
+
 RFC1123_DOMAIN_REGEX = re.compile(
     r"^(?!\-)(?:[a-zA-Z0-9\-]{1,63}\.)+[a-zA-Z]{2,63}$"
 )
@@ -55,6 +57,7 @@ def is_protected(domain: str, protected: set[str]) -> bool:
 
 def validate_and_compile():
     protected = load_never_block()
+    extractor = tldextract.TLDExtract(cache_dir=str(SOURCES_DIR.parent / "data" / ".tld_cache"))
     
     source_files = []
     if DOMAINS_FILE.exists():
@@ -89,7 +92,13 @@ def validate_and_compile():
                     skipped_count += 1
                     continue
 
-                # 3. Protection check
+                # 3. Public Suffix List (PSL) Validation: Reject bare TLDs or Public Suffixes (e.g. co.uk, com)
+                ext = extractor(domain)
+                if not ext.domain or not ext.suffix or domain == ext.suffix:
+                    skipped_count += 1
+                    continue
+
+                # 4. Protection check
                 if is_protected(domain, protected):
                     protected_count += 1
                     continue
