@@ -50,25 +50,8 @@ def compile_dnr_ruleset(db_path: Path = DB_PATH, output_file: Path = DNR_OUTPUT_
         if any(dom_clean.endswith(f".{w}") for w in whitelist):
             continue
 
-        # Rule 1: Redirect main_frame navigation to informative blocked.html
-        redirect_rule = {
-            "id": rule_id,
-            "priority": 1,
-            "action": {
-                "type": "redirect",
-                "redirect": {
-                    "extensionPath": f"/pages/blocked.html?domain={dom_clean}"
-                }
-            },
-            "condition": {
-                "urlFilter": f"||{dom_clean}^",
-                "resourceTypes": ["main_frame"]
-            }
-        }
-        rules.append(redirect_rule)
-        rule_id += 1
-
-        # Rule 2: Hard-block all subresource network requests
+        # Single declarativeNetRequest block rule covering main_frame and all subresources.
+        # Action type "block" requires ZERO host permissions, keeping extension permissions minimal.
         block_rule = {
             "id": rule_id,
             "priority": 1,
@@ -78,6 +61,7 @@ def compile_dnr_ruleset(db_path: Path = DB_PATH, output_file: Path = DNR_OUTPUT_
             "condition": {
                 "urlFilter": f"||{dom_clean}^",
                 "resourceTypes": [
+                    "main_frame",
                     "sub_frame",
                     "stylesheet",
                     "script",
@@ -99,10 +83,10 @@ def compile_dnr_ruleset(db_path: Path = DB_PATH, output_file: Path = DNR_OUTPUT_
     with open(output_file, "w", encoding="utf-8") as f:
         json.dump(rules, f, indent=2)
 
-    logger.info(f"Successfully compiled {len(rules)} DNR rules ({rule_id // 2} domains) into {output_file}")
+    logger.info(f"Successfully compiled {len(rules)} DNR rules ({len(rules)} domains) into {output_file}")
     return {
         "total_rules": len(rules),
-        "domains_covered": rule_id // 2,
+        "domains_covered": len(rules),
         "output_path": str(output_file)
     }
 

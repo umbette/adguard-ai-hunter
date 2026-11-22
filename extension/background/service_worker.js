@@ -72,6 +72,14 @@ function damerauLevenshtein(a, b) {
   return d[m][n];
 }
 
+// Boundary-aware keyword matching: requires exact match or separation by hyphens, underscores or digits.
+// Prevents false positives on legitimate words containing a brand substring (e.g. "impostore", "risposte", "amazonaws").
+function keywordMatches(domainCore, kw) {
+  if (domainCore === kw) return true;
+  const regex = new RegExp(`(^|[-_0-9])${kw}([-_0-9]|$)`, "i");
+  return regex.test(domainCore);
+}
+
 // Evaluate domain for brand impersonation
 function checkBrandImpersonation(hostname) {
   const etld1 = getETLDPlusOne(hostname);
@@ -83,9 +91,9 @@ function checkBrandImpersonation(hostname) {
       continue;
     }
 
-    // 2. Keyword check: does domainCore contain a brand keyword (e.g. "poste-servizi", "bancoposta-online")?
+    // 2. Keyword check: does domainCore contain a brand keyword with boundary separation (e.g. "poste-servizi", "bancoposta-online")?
     for (const kw of brand.keywords) {
-      if (domainCore.includes(kw)) {
+      if (keywordMatches(domainCore, kw)) {
         return {
           spoofed: true,
           brandName: brand.displayName,
@@ -205,26 +213,39 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       return true;
     }
 
-    const ruleId = nextSessionRuleId++;
-    const allowRule = {
-      id: ruleId,
-      priority: 2, // Higher than static priority 1 rules
-      action: { type: "allow" },
-      condition: {
-        urlFilter: `||${domain}^`
+    // Query existing session rules asynchronously to compute a collision-free ID across worker restarts
+    chrome.declarativeNetRequest.getSessionRules((existingRules) => {
+      const alreadyAllowed = (existingRules || []).some(
+        r => r.condition && r.condition.urlFilter === `||${domain}^` && r.action && r.action.type === "allow"
+      );
+      if (alreadyAllowed) {
+        sendResponse({ success: true, alreadyAllowed: true });
+        return;
       }
-    };
 
-    chrome.declarativeNetRequest.updateSessionRules({
-      addRules: [allowRule]
-    }, () => {
-      if (chrome.runtime.lastError) {
-        console.error("[AI Hunter] Failed to add session bypass rule:", chrome.runtime.lastError);
-        sendResponse({ success: false, error: chrome.runtime.lastError.message });
-      } else {
-        console.log(`[AI Hunter] Added session bypass allow rule (id ${ruleId}) for ${domain}`);
-        sendResponse({ success: true, ruleId });
-      }
+      const maxId = (existingRules || []).reduce((max, r) => Math.max(max, r.id || 0), 100000);
+      const ruleId = maxId + 1;
+
+      const allowRule = {
+        id: ruleId,
+        priority: 2, // Higher than static priority 1 rules
+        action: { type: "allow" },
+        condition: {
+          urlFilter: `||${domain}^`
+        }
+      };
+
+      chrome.declarativeNetRequest.updateSessionRules({
+        addRules: [allowRule]
+      }, () => {
+        if (chrome.runtime.lastError) {
+          console.error("[AI Hunter] Failed to add session bypass rule:", chrome.runtime.lastError);
+          sendResponse({ success: false, error: chrome.runtime.lastError.message });
+        } else {
+          console.log(`[AI Hunter] Added session bypass allow rule (id ${ruleId}) for ${domain}`);
+          sendResponse({ success: true, ruleId });
+        }
+      });
     });
     return true;
   }

@@ -25,8 +25,8 @@ document.addEventListener("DOMContentLoaded", async () => {
       });
     } else {
       container.className = "status-box status-safe";
-      title.textContent = "🛡️ Navigazione Sicura";
-      desc.textContent = "Nessuna imitazione di marchio o minaccia censita rilevata su questo sito.";
+      title.textContent = "Nessun Avviso";
+      desc.textContent = "Nessuna minaccia censita o imitazione di marchio rilevata da questo controllo locale.";
       btnException.style.display = "none";
     }
   });

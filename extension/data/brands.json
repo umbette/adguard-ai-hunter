@@ -2,7 +2,7 @@
   "poste": {
     "displayName": "Poste Italiane / BancoPosta",
     "keywords": ["poste", "postepay", "bancoposta", "posteid"],
-    "officialDomains": ["poste.it", "postepay.it", "bancoposta.it", "posteitaliane.it"]
+    "officialDomains": ["poste.it", "postepay.it", "bancoposta.it", "posteitaliane.it", "postecert.it"]
   },
   "intesa": {
     "displayName": "Intesa Sanpaolo",
@@ -77,7 +77,7 @@
   "amazon": {
     "displayName": "Amazon",
     "keywords": ["amazon", "primevideo"],
-    "officialDomains": ["amazon.it", "amazon.com", "primevideo.com"]
+    "officialDomains": ["amazon.it", "amazon.com", "primevideo.com", "amazonaws.com", "media-amazon.com", "ssl-images-amazon.com", "a2z.com"]
   },
   "subito": {
     "displayName": "Subito.it",
