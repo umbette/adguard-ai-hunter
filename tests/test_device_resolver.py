@@ -19,8 +19,13 @@ def test_categorize_device():
     assert resolver.categorize_device("Apple-TV-Salotto") == ("📺", "SMART_TV")
     assert resolver.categorize_device("iPhone di Mario") == ("📱", "MOBILE")
     assert resolver.categorize_device("Galaxy-S24-Ultra") == ("📱", "MOBILE")
-    assert resolver.categorize_device("Reolink-Front-Camera") == ("💡", "IOT")
-    assert resolver.categorize_device("Shelly-Plug-Cucina") == ("💡", "IOT")
+    assert resolver.categorize_device("Reolink-Front-Camera") == ("📷", "IP_CAMERA")
+    assert resolver.categorize_device("V380-Garage-Cam") == ("📷", "IP_CAMERA")
+    assert resolver.categorize_device("Cosori-AirFryer-WiFi") == ("🍳", "SMART_APPLIANCE")
+    assert resolver.categorize_device("Bimby-TM6-Kitchen") == ("🍳", "SMART_APPLIANCE")
+    assert resolver.categorize_device("Shelly-Plug-Cucina") == ("🔌", "SMART_PLUG")
+    assert resolver.categorize_device("Sonoff-Dual-Relay") == ("🔌", "SMART_PLUG")
+    assert resolver.categorize_device("Tuya-Smart-Hub") == ("💡", "IOT")
     assert resolver.categorize_device("MacBook-Pro-M2") == ("💻", "COMPUTER")
     assert resolver.categorize_device("Bambu-Lab-X1C") == ("🖨️", "3D_PRINTER")
     assert resolver.categorize_device("Prusa-MK4-Lab") == ("🖨️", "3D_PRINTER")
@@ -73,8 +78,8 @@ async def test_resolve_with_adguard_clients(monkeypatch):
     # 2. Configured static client (Camera)
     dev2 = await resolver.resolve("192.168.1.120", session=mock_session)
     assert dev2.name == "Reolink Cam Garage"
-    assert dev2.icon == "💡"
-    assert dev2.device_type == "IOT"
+    assert dev2.icon == "📷"
+    assert dev2.device_type == "IP_CAMERA"
 
     # 3. DHCP auto-client (Mobile)
     dev3 = await resolver.resolve("192.168.1.155", session=mock_session)

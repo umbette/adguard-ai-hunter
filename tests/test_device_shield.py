@@ -4,6 +4,8 @@ from src.device_shield import (
     evaluate_vacuum_telemetry,
     evaluate_bambu_telemetry,
     evaluate_gaming_jitter_telemetry,
+    evaluate_appliance_telemetry,
+    evaluate_camera_p2p_telemetry,
     evaluate_device_shield,
     DeviceShieldMatch
 )
@@ -93,6 +95,48 @@ def test_gaming_jitter_optimizer():
     assert m5 is not None
 
 
+def test_appliance_privacy_shield():
+    # Smart Air Fryer & Multicooker telemetry to ad-networks (Xiaomi, ByteDance, Baidu)
+    m1 = evaluate_appliance_telemetry("ad.intl.xiaomi.com")
+    assert m1 is not None
+    assert m1.shield_type == "APPLIANCE_PRIVACY"
+    assert m1.target_category == "SMART_APPLIANCE"
+
+    m2 = evaluate_appliance_telemetry("log.byteoversea.com")
+    assert m2 is not None
+    assert m2.shield_type == "APPLIANCE_PRIVACY"
+
+    m3 = evaluate_appliance_telemetry("tracking.vesync.com")
+    assert m3 is not None
+    assert m3.shield_type == "APPLIANCE_PRIVACY"
+
+    m4 = evaluate_appliance_telemetry("telemetry.cosori.com")
+    assert m4 is not None
+
+    m5 = evaluate_appliance_telemetry("sub.ctobsnssdk.com")
+    assert m5 is not None
+
+
+def test_camera_p2p_isolation_shield():
+    # Cheap IP camera P2P hole-punching and relay tunnels (ThroughTek Kalay, V380, Xiongmai)
+    m1 = evaluate_camera_p2p_telemetry("iotcplatform.com")
+    assert m1 is not None
+    assert m1.shield_type == "CAMERA_P2P_ISOLATION"
+    assert m1.target_category == "IP_CAMERA"
+
+    m2 = evaluate_camera_p2p_telemetry("relay-01.iotcplatform.com")
+    assert m2 is not None
+
+    m3 = evaluate_camera_p2p_telemetry("v380.net")
+    assert m3 is not None
+
+    m4 = evaluate_camera_p2p_telemetry("xmeye.net")
+    assert m4 is not None
+
+    m5 = evaluate_camera_p2p_telemetry("cs2-network.com")
+    assert m5 is not None
+
+
 def test_benign_domains_not_intercepted():
     # Core gaming services (store, matchmaking, official apex) must NOT be blocked
     assert evaluate_device_shield("steampowered.com") is None
@@ -102,11 +146,14 @@ def test_benign_domains_not_intercepted():
     assert evaluate_device_shield("bambulab.com") is None
     assert evaluate_device_shield("roborock.com") is None
     assert evaluate_device_shield("ecovacs.com") is None
+    assert evaluate_device_shield("xiaomi.com") is None
+    assert evaluate_device_shield("tuya.com") is None
+    assert evaluate_device_shield("vesync.com") is None
     assert evaluate_device_shield("google.com") is None
 
 
 def test_evaluate_device_shield_unified_dispatcher():
-    # Verifies all 4 categories resolve properly via evaluate_device_shield()
+    # Verifies all 6 categories resolve properly via evaluate_device_shield()
     r_nintendo = evaluate_device_shield("receive-lp1.er.srv.nintendo.net")
     assert r_nintendo is not None
     assert r_nintendo.shield_type == "NINTENDO_90DNS"
@@ -122,3 +169,11 @@ def test_evaluate_device_shield_unified_dispatcher():
     r_gaming = evaluate_device_shield("telemetry.steampowered.com")
     assert r_gaming is not None
     assert r_gaming.shield_type == "GAMING_JITTER"
+
+    r_appliance = evaluate_device_shield("ad.intl.xiaomi.com")
+    assert r_appliance is not None
+    assert r_appliance.shield_type == "APPLIANCE_PRIVACY"
+
+    r_cam = evaluate_device_shield("relay.iotcplatform.com")
+    assert r_cam is not None
+    assert r_cam.shield_type == "CAMERA_P2P_ISOLATION"

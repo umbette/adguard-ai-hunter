@@ -19,8 +19,14 @@ DEVICE_KEYWORDS = [
     (["switch", "nintendo", "playstation", "ps5", "ps4", "ps3", "xbox", "steamdeck", "steam-deck"], "🎮", "GAMING_CONSOLE"),
     # Robot Vacuums (Roborock, Dreame, Ecovacs, Roomba)
     (["roborock", "dreame", "ecovacs", "deebot", "roomba", "irobot", "mova", "valetudo", "vacuum"], "🧹", "VACUUM_ROBOT"),
-    # Smart Home & IoT
-    (["camera", "cam", "reolink", "ring", "nest", "tuya", "shelly", "sonoff", "tasmota", "hue", "philips", "echo", "alexa", "homepod", "esp32", "esp8266"], "💡", "IOT"),
+    # Smart Kitchen Appliances & Connected White Goods (Air Fryers, Smart Fridges, Multicookers, Ovens)
+    (["airfryer", "air-fryer", "friggitrice", "multicooker", "bimby", "thermomix", "mambo", "cecotec", "cosori", "aigostar", "fridge", "refrigerator", "smartfridge", "oven", "coffee", "nespresso", "delonghi", "midea", "whirlpool"], "🍳", "SMART_APPLIANCE"),
+    # IP Cameras & Video Doorbells (Reolink, Ring, Tapo, V380, Xiongmai, Yi, Imou)
+    (["camera", "cam", "webcam", "reolink", "ring", "nest", "tapo", "v380", "xiongmai", "imou", "ezviz", "yi-camera", "cctv", "dahua", "hikvision"], "📷", "IP_CAMERA"),
+    # Smart Plugs & Relays (Shelly, Sonoff, Gosund, Meross)
+    (["smartplug", "smart-plug", "plug", "relay", "sonoff", "shelly", "tasmota", "gosund", "meross", "blitzwolf"], "🔌", "SMART_PLUG"),
+    # Smart Home Hubs & IoT (Tuya, Hue, Alexa, Smart Things)
+    (["tuya", "hue", "philips", "echo", "alexa", "homepod", "esp32", "esp8266"], "💡", "IOT"),
     # Computers & Laptops
     (["macbook", "imac", "mac", "pc", "laptop", "desktop", "thinkpad", "dell", "windows", "linux", "workstation"], "💻", "COMPUTER"),
     # 3D Printers & Maker Lab (Bambu Lab, Prusa, Voron, Klipper)

@@ -94,6 +94,55 @@ GAMING_JITTER_SUFFIX_BLOCKS: Tuple[str, ...] = (
     ".telemetry.battle.net",
 )
 
+# ---------------------------------------------------------------------------
+# 5. 🍳 Smart Appliance & Connected Kitchen Privacy Catalog
+# (Air Fryers, Smart Multicookers, Smart Fridges leaking to ad-brokers)
+# ---------------------------------------------------------------------------
+APPLIANCE_EXACT_BLOCKS: Set[str] = {
+    "ad.intl.xiaomi.com",
+    "data.mistat.intl.xiaomi.com",
+    "tracking.miui.com",
+    "log.byteoversea.com",
+    "toblog.ctobsnssdk.com",
+    "hm.baidu.com",
+    "analytics.tuyaeu.com",
+    "analytics.tuyaus.com",
+    "log.tuya.com",
+    "tracking.vesync.com",
+    "telemetry.cosori.com",
+}
+
+APPLIANCE_SUFFIX_BLOCKS: Tuple[str, ...] = (
+    ".byteoversea.com",
+    ".ctobsnssdk.com",
+    ".mistat.intl.xiaomi.com",
+)
+
+# ---------------------------------------------------------------------------
+# 6. 📷 Low-Cost IP Camera P2P Hole-Punching & Video Relay Catalog
+# (ThroughTek Kalay, V380, Xiongmai, CS2 P2P tunneling through foreign relays)
+# ---------------------------------------------------------------------------
+CAMERA_P2P_EXACT_BLOCKS: Set[str] = {
+    "tutk.com",
+    "iotcplatform.com",
+    "p2pcam.net",
+    "v380.net",
+    "xmeye.net",
+    "cs2-network.com",
+    "eye4.so",
+    "dvr163.com",
+}
+
+CAMERA_P2P_SUFFIX_BLOCKS: Tuple[str, ...] = (
+    ".iotcplatform.com",
+    ".p2pcam.net",
+    ".v380.net",
+    ".xmeye.net",
+    ".tutk.com",
+    ".cs2-network.com",
+    ".eye4.so",
+)
+
 
 def evaluate_nintendo_telemetry(hostname: str) -> Optional[DeviceShieldMatch]:
     """Evaluates whether a domain targets Nintendo telemetry or certification servers."""
@@ -155,6 +204,36 @@ def evaluate_gaming_jitter_telemetry(hostname: str) -> Optional[DeviceShieldMatc
     return None
 
 
+def evaluate_appliance_telemetry(hostname: str) -> Optional[DeviceShieldMatch]:
+    """Evaluates whether a domain targets smart appliance profiling and ad tracking networks."""
+    h_lower = hostname.lower().strip()
+    if h_lower in APPLIANCE_EXACT_BLOCKS or any(h_lower.endswith(s) for s in APPLIANCE_SUFFIX_BLOCKS):
+        return DeviceShieldMatch(
+            domain=h_lower,
+            shield_type="APPLIANCE_PRIVACY",
+            target_category="SMART_APPLIANCE",
+            rule_pattern=f"||{h_lower}^",
+            risk_score=0.85,
+            description="Smart Appliance Privacy: blocco profilazione ad/tracker su friggitrici ad aria, multicooker e frigoriferi connessi."
+        )
+    return None
+
+
+def evaluate_camera_p2p_telemetry(hostname: str) -> Optional[DeviceShieldMatch]:
+    """Evaluates whether a domain targets unencrypted P2P relay servers or IP camera hole punching."""
+    h_lower = hostname.lower().strip()
+    if h_lower in CAMERA_P2P_EXACT_BLOCKS or any(h_lower.endswith(s) for s in CAMERA_P2P_SUFFIX_BLOCKS):
+        return DeviceShieldMatch(
+            domain=h_lower,
+            shield_type="CAMERA_P2P_ISOLATION",
+            target_category="IP_CAMERA",
+            rule_pattern=f"||{h_lower}^",
+            risk_score=0.90,
+            description="Camera P2P Isolation: blocco tunnel P2P e relay cloud vulnerabili; streaming locale RTSP/WebRTC preservato."
+        )
+    return None
+
+
 def evaluate_device_shield(hostname: str, device_type: Optional[str] = None) -> Optional[DeviceShieldMatch]:
     """
     Unified dispatcher for specialized device shields.
@@ -181,6 +260,16 @@ def evaluate_device_shield(hostname: str, device_type: Optional[str] = None) -> 
 
     # 4. Check Gaming Launcher Jitter Telemetry
     match = evaluate_gaming_jitter_telemetry(hostname)
+    if match:
+        return match
+
+    # 5. Check Smart Appliance Privacy Shield
+    match = evaluate_appliance_telemetry(hostname)
+    if match:
+        return match
+
+    # 6. Check Low-Cost IP Camera P2P Relay Isolation
+    match = evaluate_camera_p2p_telemetry(hostname)
     if match:
         return match
 
