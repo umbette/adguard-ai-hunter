@@ -294,16 +294,37 @@ class ThreatStateDB:
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS mined_iocs (
                     domain TEXT PRIMARY KEY,
-                    source TEXT NOT NULL,
                     malware_family TEXT,
                     confidence INTEGER DEFAULT 80,
                     first_seen TIMESTAMP NOT NULL,
                     last_seen TIMESTAMP NOT NULL,
-                    expires_at TIMESTAMP NOT NULL,
                     status TEXT DEFAULT 'active'
                 );
             """)
-            conn.execute("CREATE INDEX IF NOT EXISTS idx_expires ON mined_iocs(expires_at);")
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS domain_sources (
+                    domain TEXT NOT NULL,
+                    source TEXT NOT NULL,
+                    first_seen TIMESTAMP NOT NULL,
+                    last_seen TIMESTAMP NOT NULL,
+                    expires_at TIMESTAMP NOT NULL,
+                    confidence INTEGER DEFAULT 80,
+                    PRIMARY KEY (domain, source)
+                );
+            """)
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_ds_expires ON domain_sources(expires_at);")
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_ds_source ON domain_sources(source);")
+
+            # Backward-compatibility migration: if mined_iocs has legacy 'source' column, migrate to domain_sources
+            cur = conn.cursor()
+            cur.execute("PRAGMA table_info(mined_iocs);")
+            cols = [row[1] for row in cur.fetchall()]
+            if "source" in cols and "expires_at" in cols:
+                conn.execute("""
+                    INSERT OR IGNORE INTO domain_sources (domain, source, first_seen, last_seen, expires_at, confidence)
+                    SELECT domain, source, first_seen, last_seen, expires_at, confidence
+                    FROM mined_iocs;
+                """)
 
     def insert_or_update_iocs(self, candidates: list[dict], max_surge: int = 500) -> tuple[int, int]:
         now = datetime.now(timezone.utc)
@@ -325,24 +346,33 @@ class ThreatStateDB:
                 cur.execute("SELECT domain FROM mined_iocs WHERE domain = ?", (dom,))
                 row = cur.fetchone()
 
-                if row:
-                    # Update sliding TTL
-                    cur.execute("""
-                        UPDATE mined_iocs 
-                        SET last_seen = ?, expires_at = ?, confidence = MAX(confidence, ?)
-                        WHERE domain = ?
-                    """, (now_str, expires_str, conf, dom))
-                    updated_count += 1
-                else:
-                    # Surge Circuit Breaker
+                if not row:
+                    # Surge Circuit Breaker applies to brand new distinct domains
                     if new_count >= max_surge:
                         logger.warning(f"Surge limit of {max_surge} new domains reached. Halting new additions.")
                         break
                     cur.execute("""
-                        INSERT INTO mined_iocs (domain, source, malware_family, confidence, first_seen, last_seen, expires_at, status)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, 'active')
-                    """, (dom, source, family, conf, now_str, now_str, expires_str))
+                        INSERT INTO mined_iocs (domain, malware_family, confidence, first_seen, last_seen, status)
+                        VALUES (?, ?, ?, ?, ?, 'active')
+                    """, (dom, family, conf, now_str, now_str))
                     new_count += 1
+                else:
+                    cur.execute("""
+                        UPDATE mined_iocs 
+                        SET last_seen = ?, confidence = MAX(confidence, ?)
+                        WHERE domain = ?
+                    """, (now_str, conf, dom))
+                    updated_count += 1
+
+                # Update or insert source-specific provenance in domain_sources
+                cur.execute("""
+                    INSERT INTO domain_sources (domain, source, first_seen, last_seen, expires_at, confidence)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                    ON CONFLICT(domain, source) DO UPDATE SET
+                        last_seen = excluded.last_seen,
+                        expires_at = excluded.expires_at,
+                        confidence = MAX(domain_sources.confidence, excluded.confidence)
+                """, (dom, source, now_str, now_str, expires_str, conf))
 
             conn.commit()
 
@@ -350,10 +380,10 @@ class ThreatStateDB:
 
     def purge_expired(self, eligible_sources: Optional[list[str]] = None) -> int:
         """
-        Purges expired IoCs from the database.
-        If eligible_sources is provided, purges expired IoCs ONLY for those sources.
-        This guarantees that if a threat feed temporarily fails (partial network outage),
-        its expiring IoCs are NOT prematurely wiped out while the feed is offline.
+        Purges expired IoCs from domain_sources.
+        If eligible_sources is provided, purges expired records ONLY for those sources.
+        Then removes orphaned domains from mined_iocs if no active source supports them anymore.
+        Returns the number of unique domains purged from the active threat state.
         """
         now_str = datetime.now(timezone.utc).isoformat()
         with sqlite3.connect(self.db_path) as conn:
@@ -363,20 +393,41 @@ class ThreatStateDB:
                     return 0
                 placeholders = ",".join("?" for _ in eligible_sources)
                 cur.execute(
-                    f"DELETE FROM mined_iocs WHERE expires_at < ? AND source IN ({placeholders})",
+                    f"DELETE FROM domain_sources WHERE expires_at < ? AND source IN ({placeholders})",
                     (now_str, *eligible_sources)
                 )
             else:
-                cur.execute("DELETE FROM mined_iocs WHERE expires_at < ?", (now_str,))
+                cur.execute("DELETE FROM domain_sources WHERE expires_at < ?", (now_str,))
+
+            # Clean up orphaned master domains with no remaining source entries in domain_sources
+            cur.execute("""
+                DELETE FROM mined_iocs
+                WHERE domain NOT IN (
+                    SELECT DISTINCT domain FROM domain_sources
+                )
+            """)
             purged = cur.rowcount
             conn.commit()
         return purged
 
     def get_active_domains(self) -> list[str]:
-        now_str = datetime.now(timezone.utc).isoformat()
+        """Returns all domains that have at least one unexpired/unpurged source supporting them."""
         with sqlite3.connect(self.db_path) as conn:
             cur = conn.cursor()
-            cur.execute("SELECT domain FROM mined_iocs WHERE expires_at >= ? AND status = 'active' ORDER BY domain ASC", (now_str,))
+            cur.execute("""
+                SELECT DISTINCT m.domain
+                FROM mined_iocs m
+                INNER JOIN domain_sources ds ON m.domain = ds.domain
+                WHERE m.status = 'active'
+                ORDER BY m.domain ASC
+            """)
+            return [row[0] for row in cur.fetchall()]
+
+    def get_domain_sources(self, domain: str) -> list[str]:
+        """Returns all registered source feeds supporting a given domain."""
+        with sqlite3.connect(self.db_path) as conn:
+            cur = conn.cursor()
+            cur.execute("SELECT source FROM domain_sources WHERE domain = ? ORDER BY source ASC", (domain,))
             return [row[0] for row in cur.fetchall()]
 
 
@@ -457,15 +508,16 @@ class ProactiveMiner:
             if r.success:
                 candidates.extend(r.candidates)
 
-        # 2. De-duplicate candidates in memory
+        # 2. De-duplicate candidates per (domain, source) in memory
         seen = set()
         deduped = []
         for c in candidates:
-            if c["domain"] not in seen:
-                seen.add(c["domain"])
+            key = (c["domain"], c.get("source", "feed"))
+            if key not in seen:
+                seen.add(key)
                 deduped.append(c)
 
-        logger.info(f"Total unique sanitized candidate IoCs: {len(deduped)}")
+        logger.info(f"Total unique (domain, source) candidate IoCs: {len(deduped)}")
 
         # 3. Ingest into SQLite with 30-day sliding TTL and surge protection
         new_cnt, upd_cnt = self.db.insert_or_update_iocs(deduped, max_surge=500)

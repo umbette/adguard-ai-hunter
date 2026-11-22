@@ -229,26 +229,133 @@ def test_partial_feed_failure_preserves_offline_feed_iocs(tmp_path):
     past = (datetime.now(timezone.utc) - timedelta(days=1)).isoformat()
     now_str = datetime.now(timezone.utc).isoformat()
 
-    # Seed 2 expired IoCs from different sources
-    with sqlite3.connect(db_path) as conn:
-        conn.execute("""
-            INSERT INTO mined_iocs (domain, source, malware_family, confidence, first_seen, last_seen, expires_at, status)
-            VALUES (?, ?, 'phishing', 90, ?, ?, ?, 'active')
-        """, ("expired-openphish.com", "openphish", now_str, now_str, past))
-        conn.execute("""
-            INSERT INTO mined_iocs (domain, source, malware_family, confidence, first_seen, last_seen, expires_at, status)
-            VALUES (?, ?, 'malware', 85, ?, ?, ?, 'active')
-        """, ("expired-urlhaus.com", "urlhaus", now_str, now_str, past))
+    # Ingest candidates normally to populate mined_iocs and domain_sources
+    db.insert_or_update_iocs([
+        {"domain": "expired-openphish.com", "source": "openphish", "family": "phishing", "confidence": 90},
+        {"domain": "expired-urlhaus.com", "source": "urlhaus", "family": "malware", "confidence": 85}
+    ])
 
-    # Scenario: OpenPhish failed, only URLhaus succeeded
+    # For testing expiry, manually backdate the expires_at timestamp in domain_sources
+    with sqlite3.connect(db_path) as conn:
+        conn.execute("UPDATE domain_sources SET expires_at = ?", (past,))
+
+    # Scenario: OpenPhish failed, only URLhaus succeeded and is eligible for purge
     purged = db.purge_expired(eligible_sources=["urlhaus"])
     assert purged == 1
 
     # OpenPhish expired IoC must be preserved; URLhaus expired IoC must be purged
+    active = db.get_active_domains()
+    assert "expired-openphish.com" in active
+    assert "expired-urlhaus.com" not in active
+
+
+def test_multi_source_domain_provenance_and_independent_expiry(tmp_path):
+    """
+    Verifies that a domain reported by multiple threat feeds is tracked with all its sources,
+    and remains active as long as at least ONE valid unexpired source supports it.
+    """
+    from datetime import datetime, timezone, timedelta
+    from scripts.proactive_miner import ThreatStateDB
+    import sqlite3
+
+    db_path = tmp_path / "multi_threat.db"
+    db = ThreatStateDB(db_path=db_path)
+
+    past = (datetime.now(timezone.utc) - timedelta(days=1)).isoformat()
+
+    # 1. Domain reported by both OpenPhish and URLhaus
+    candidates = [
+        {"domain": "shared-threat.com", "source": "openphish", "family": "phishing", "confidence": 90},
+        {"domain": "shared-threat.com", "source": "urlhaus", "family": "malware", "confidence": 85}
+    ]
+    new_cnt, upd_cnt = db.insert_or_update_iocs(candidates)
+    assert new_cnt == 1  # 1 unique master domain
+    assert upd_cnt == 1  # 1 source update on existing master domain
+
+    sources = db.get_domain_sources("shared-threat.com")
+    assert sources == ["openphish", "urlhaus"]
+    assert "shared-threat.com" in db.get_active_domains()
+
+    # 2. Simulate URLhaus entry expiring while OpenPhish remains unexpired
     with sqlite3.connect(db_path) as conn:
-        cur = conn.cursor()
-        cur.execute("SELECT domain FROM mined_iocs")
-        remaining = [row[0] for row in cur.fetchall()]
-        assert "expired-openphish.com" in remaining
-        assert "expired-urlhaus.com" not in remaining
+        conn.execute("UPDATE domain_sources SET expires_at = ? WHERE source = 'urlhaus'", (past,))
+
+    purged = db.purge_expired(eligible_sources=["urlhaus"])
+    # URLhaus record was purged from domain_sources, but master domain is NOT orphaned because OpenPhish still supports it!
+    assert purged == 0
+    assert db.get_domain_sources("shared-threat.com") == ["openphish"]
+    assert "shared-threat.com" in db.get_active_domains()
+
+    # 3. Simulate OpenPhish also expiring
+    with sqlite3.connect(db_path) as conn:
+        conn.execute("UPDATE domain_sources SET expires_at = ? WHERE source = 'openphish'", (past,))
+
+    # OpenPhish feed is fetched and purged
+    purged = db.purge_expired(eligible_sources=["openphish"])
+    assert purged == 1  # Master domain is now orphaned and completely purged
+    assert db.get_domain_sources("shared-threat.com") == []
+    assert "shared-threat.com" not in db.get_active_domains()
+
+
+def test_run_mining_cycle_integration_partial_and_empty_feeds(tmp_path, monkeypatch):
+    """
+    Integration test exercising run_mining_cycle with:
+    - Case A: All feeds fail -> aborts cycle without modifying DB or rules.
+    - Case B: One feed fails, one feed succeeds with empty candidates -> preserves unreachable feed IoCs, updates active rules.
+    - Case C: Both feeds succeed, one contains a multi-source domain -> validates end-to-end provenance.
+    """
+    from scripts.proactive_miner import ProactiveMiner, ThreatStateDB, FeedFetchResult
+
+    db_path = tmp_path / "cycle_test.db"
+    out_file = tmp_path / "proactive_threats.txt"
+
+    miner = ProactiveMiner()
+    miner.db = ThreatStateDB(db_path=db_path)
+
+    # Patch file export path and disable compiler canary subprocess
+    monkeypatch.setattr("scripts.proactive_miner.PROACTIVE_OUTPUT_FILE", out_file)
+    monkeypatch.setattr(miner, "_compile_and_verify_canary", lambda: None)
+
+    # Seed an existing IoC from openphish
+    miner.db.insert_or_update_iocs([
+        {"domain": "existing-c2.com", "source": "openphish", "family": "phishing", "confidence": 95}
+    ])
+
+    # Case A: Both feeds fail
+    monkeypatch.setattr(miner, "fetch_openphish", lambda: FeedFetchResult("openphish", [], success=False, error="DNS timeout"))
+    monkeypatch.setattr(miner, "fetch_urlhaus_mirror", lambda: FeedFetchResult("urlhaus", [], success=False, error="HTTP 500"))
+
+    res_fail = miner.run_mining_cycle()
+    assert res_fail["status"] == "all_feeds_failed"
+    assert "existing-c2.com" in miner.db.get_active_domains()
+
+    # Case B: OpenPhish fails, URLhaus succeeds with 0 candidates (legitimately empty)
+    monkeypatch.setattr(miner, "fetch_openphish", lambda: FeedFetchResult("openphish", [], success=False, error="Connection reset"))
+    monkeypatch.setattr(miner, "fetch_urlhaus_mirror", lambda: FeedFetchResult("urlhaus", [], success=True))
+
+    res_partial_empty = miner.run_mining_cycle()
+    assert res_partial_empty["candidates_fetched"] == 0
+    assert res_partial_empty["purged_iocs"] == 0
+    assert "existing-c2.com" in miner.db.get_active_domains()
+    assert out_file.exists()
+    assert "existing-c2.com" in out_file.read_text(encoding="utf-8")
+
+    # Case C: Both feeds succeed; both report a shared domain
+    openphish_candidates = [
+        {"domain": "shared-ioc.org", "source": "openphish", "family": "phishing", "confidence": 90}
+    ]
+    urlhaus_candidates = [
+        {"domain": "shared-ioc.org", "source": "urlhaus", "family": "malware", "confidence": 85},
+        {"domain": "unique-urlhaus.org", "source": "urlhaus", "family": "malware", "confidence": 85}
+    ]
+    monkeypatch.setattr(miner, "fetch_openphish", lambda: FeedFetchResult("openphish", openphish_candidates, success=True))
+    monkeypatch.setattr(miner, "fetch_urlhaus_mirror", lambda: FeedFetchResult("urlhaus", urlhaus_candidates, success=True))
+
+    res_both_success = miner.run_mining_cycle()
+    assert res_both_success["candidates_fetched"] == 3  # (shared, openphish), (shared, urlhaus), (unique, urlhaus)
+    assert "shared-ioc.org" in miner.db.get_active_domains()
+    assert "unique-urlhaus.org" in miner.db.get_active_domains()
+    assert miner.db.get_domain_sources("shared-ioc.org") == ["openphish", "urlhaus"]
+    assert miner.db.get_domain_sources("unique-urlhaus.org") == ["urlhaus"]
+
 
