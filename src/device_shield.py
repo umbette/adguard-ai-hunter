@@ -69,6 +69,23 @@ ESSENTIAL_COMPANION_ALLOWLIST: Set[str] = {
     # Connected Vehicles Essential APIs
     "owner-api.teslamotors.com",
     "b2vapi.bmwgroup.com",
+    # Hospitality POS, Payments & Food Delivery Essential APIs
+    "api.sumup.com",
+    "pos.nexi.it",
+    "mpos.nexi.it",
+    "api.satispay.com",
+    "auth.satispay.com",
+    "api.stripe.com",
+    "api.deliveroo.com",
+    "consumer-ow.deliveroo.com",
+    "api.justeat.com",
+    "consumer.just-eat.it",
+    "api.glovoapp.com",
+    "glovoapp.com",
+    "ubereats.com",
+    "leggimenu.it",
+    "qrmenu.net",
+    "dish.co",
 }
 
 
@@ -483,6 +500,50 @@ def evaluate_badbox_malware(hostname: str) -> Optional[DeviceShieldMatch]:
     return None
 
 
+# ---------------------------------------------------------------------------
+# 11. 🍕 Public Venue & Guest Network Policy Guard
+# (Blocks BitTorrent trackers, crypto mining scripts, heavy video ads; preserves POS & delivery)
+# ---------------------------------------------------------------------------
+PUBLIC_VENUE_EXACT_BLOCKS: Set[str] = {
+    "tracker.opentrackr.org",
+    "open.stealth.si",
+    "tracker.torrent.eu.org",
+    "retracker.net",
+    "tracker.openbittorrent.com",
+    "coinhive.com",
+    "coin-hive.com",
+    "crypto-loot.com",
+    "minr.pw",
+    "adcolony.com",
+    "vungle.com",
+    "cpmstar.com",
+}
+
+PUBLIC_VENUE_SUFFIX_BLOCKS: Tuple[str, ...] = (
+    ".opentrackr.org",
+    ".openbittorrent.com",
+    ".coinhive.com",
+    ".crypto-loot.com",
+    ".adcolony.com",
+    ".vungle.com",
+)
+
+
+def evaluate_public_venue_shield(hostname: str) -> Optional[DeviceShieldMatch]:
+    """Evaluates whether a domain targets public guest abuse (torrent bootstrap trackers, cryptomining, video-ad bandwidth hogs)."""
+    h_lower = hostname.lower().strip()
+    if h_lower in PUBLIC_VENUE_EXACT_BLOCKS or any(h_lower.endswith(s) for s in PUBLIC_VENUE_SUFFIX_BLOCKS):
+        return DeviceShieldMatch(
+            domain=h_lower,
+            shield_type="PUBLIC_VENUE_GUEST",
+            target_category="HOSPITALITY_NETWORK",
+            rule_pattern=f"||{h_lower}^",
+            risk_score=0.90,
+            description="Public Venue & Guest Policy: blocco tracker invasivi, background cryptomining e video-ad saturanti su reti pubbliche; preserva POS, comande e app delivery."
+        )
+    return None
+
+
 def evaluate_device_shield(hostname: str, device_type: Optional[str] = None) -> Optional[DeviceShieldMatch]:
     """
     Unified dispatcher for specialized device shields.
@@ -543,6 +604,11 @@ def evaluate_device_shield(hostname: str, device_type: Optional[str] = None) -> 
 
     # 10. Check Badbox / Peachpit AOSP Malware Shield
     match = evaluate_badbox_malware(hostname)
+    if match:
+        return match
+
+    # 11. Check Public Venue & Guest Network Policy Guard
+    match = evaluate_public_venue_shield(hostname)
     if match:
         return match
 

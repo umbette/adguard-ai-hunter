@@ -281,3 +281,45 @@ devices:
         - "emp-ad.lgsmartad.com"
         - "ibs.lgappstv.com"
         - "rdx2.lgtvsdp.com"
+
+  # ---------------------------------------------------------------------------
+  # 8. Public Venue & Guest Wi-Fi Networks (Restaurants, Pizzerias, Retail, Cafes)
+  # ---------------------------------------------------------------------------
+  - id: public_venue_guest
+    name: "Public Venue & Guest Network Policy"
+    category: hospitality_network
+    vendor: "Generic Venue / Sentinel Work"
+    models: ["Restaurant Guest Wi-Fi", "Pizzeria Public Hotspot", "Cafe Customer Wi-Fi", "Coworking Guest"]
+    control_plane:
+      description: "POS terminals, digital payments (SumUp, Nexi, Satispay), waiter ordering tablets, food delivery apps (Deliveroo, JustEat, Glovo), and local menu caches"
+      allowed_domains:
+        - "api.sumup.com"
+        - "pos.nexi.it"
+        - "mpos.nexi.it"
+        - "api.satispay.com"
+        - "auth.satispay.com"
+        - "api.stripe.com"
+        - "api.deliveroo.com"
+        - "consumer-ow.deliveroo.com"
+        - "api.justeat.com"
+        - "consumer.just-eat.it"
+        - "api.glovoapp.com"
+        - "glovoapp.com"
+        - "ubereats.com"
+        - "leggimenu.it"
+        - "qrmenu.net"
+        - "dish.co"
+    data_plane:
+      description: "BitTorrent bootstrap trackers, background crypto-mining scripts, aggressive video-ad bandwidth hogs, and public botnet beacons"
+      blocked_domains:
+        - "tracker.opentrackr.org"
+        - "open.stealth.si"
+        - "tracker.torrent.eu.org"
+        - "retracker.net"
+        - "tracker.openbittorrent.com"
+        - "coinhive.com"
+        - "crypto-loot.com"
+        - "minr.pw"
+        - "adcolony.com"
+        - "vungle.com"
+    notes: "Requires Layer-2 Client Isolation on the Wi-Fi Access Point/VLAN to prevent peer-to-peer scanning between guest devices and kitchen POS terminals."

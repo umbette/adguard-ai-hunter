@@ -1,8 +1,8 @@
 # Sentinel
 
 [![CI Test Suite](https://github.com/umbette/sentinel/actions/workflows/ci.yml/badge.svg)](https://github.com/umbette/sentinel/actions/workflows/ci.yml)
-[![Tests: 61 Passing](https://img.shields.io/badge/Tests-61%20Passing-brightgreen.svg)](tests/)
-[![Shields: 14 Active](https://img.shields.io/badge/Shields-14%20Active-10b981.svg)](#-14-specialized-cyber-defense--privacy-shields)
+[![Tests: 62 Passing](https://img.shields.io/badge/Tests-62%20Passing-brightgreen.svg)](tests/)
+[![Shields: 15 Active](https://img.shields.io/badge/Shields-15%20Active-10b981.svg)](#-15-specialized-cyber-defense--privacy-shields)
 [![Privacy: Zero--Telemetry](https://img.shields.io/badge/Privacy-Zero--Telemetry-blueviolet.svg)](#-zero-knowledge-device-catalog--1-click-unbreak)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Home Assistant Add-on](https://img.shields.io/badge/Home%20Assistant-Add--on%20Ready-blue?logo=home-assistant)](ha-addon/)
@@ -10,15 +10,15 @@
 [![Manifest V3](https://img.shields.io/badge/Chrome%20Extension-Sentinel%20Shield-yellow?logo=google-chrome)](extension/)
 [![Docker](https://img.shields.io/badge/Docker-Multi--Arch-2496ED?logo=docker)](Dockerfile)
 
-**Autonomous Cyber Defense Console, 14 Hardware & IoT Privacy Shields, Dynamic Pricing Protection, Crypto Vault & Zero-Knowledge Unbreak Catalog for Home Assistant & Local DNS Resolvers.**
+**Autonomous Cyber Defense Console, 15 Hardware & IoT Privacy Shields, Dynamic Pricing Protection, Crypto Vault & Zero-Knowledge Unbreak Catalog for Home Assistant & Local DNS Resolvers.**
 
 Sentinel is a 100% local-first, zero-cloud-telemetry network security watchdog, behavioral anomaly detector, and privacy console. It bridges your local DNS resolver (**AdGuard Home**, **Pi-hole**, or standalone) with your smart home automation (**Home Assistant**) to detect and neutralize real-world threats that static blocklists miss: predatory airline/hotel price discrimination, Web3 wallet drainers, deceptive family phishing SMS links, automotive driver profiling, and invasive smart gadget surveillance.
 
 ---
 
-## 🌟 14 Specialized Cyber Defense & Privacy Shields
+## 🌟 15 Specialized Cyber Defense & Privacy Shields
 
-Sentinel operates an array of 14 deterministic, specialized hardware and software shields engineered to neutralize targeted data exfiltration without breaking device usability:
+Sentinel operates an array of 15 deterministic, specialized hardware and software shields engineered to neutralize targeted data exfiltration without breaking device usability:
 
 | Shield | Category | Scope & Protection Target |
 | :--- | :--- | :--- |
@@ -36,6 +36,7 @@ Sentinel operates an array of 14 deterministic, specialized hardware and softwar
 | **📦 Badbox & Budget AOSP TV C2** | Factory Malware | Cuts Command & Control (C2) beaconing on sub-€150 Android TV boxes infected with Badbox/Peachpit residential proxy botnets. |
 | **⚡ Gaming Latency Optimizer** | PC Gaming | Suppresses background launcher telemetries (Steam, Epic Games) that create micro-stutter and network jitter during competitive matches. |
 | **🌙 Kids Bedtime Blackout** | Parental Controls | Scheduled evening DNS blackout for TikTok, Instagram, Roblox, and Discord on children's devices. |
+| **🍕 Public Venue & Guest Policy** | Retail & Hospitality | Blocks bandwidth-saturating video ads, background cryptomining, and public abuse on guest Wi-Fi while pre-empting POS and food delivery orders. |
 
 ---
 
@@ -199,14 +200,14 @@ Add this URL directly into your DNS resolver (Filters ➔ DNS Blocklists) for st
 The codebase is thoroughly validated by comprehensive automated test suites:
 
 ```bash
-# Run Python backend unit & integration tests (55 tests)
+# Run Python backend unit & integration tests (56 tests)
 PYTHONPATH=. .venv/bin/pytest -v tests/
 
 # Run Manifest V3 sandboxed browser runtime tests (6 tests)
 node --test tests/test_extension_runtime.mjs
 ```
 
-**Total:** 61 passed in ~1.3s (100% pass rate).
+**Total:** 62 passed in ~1.3s (100% pass rate).
 
 ---
 

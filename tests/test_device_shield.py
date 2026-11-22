@@ -10,6 +10,7 @@ from src.device_shield import (
     evaluate_automotive_telemetry,
     evaluate_smart_toy_telemetry,
     evaluate_badbox_malware,
+    evaluate_public_venue_shield,
     is_essential_companion_domain,
     evaluate_device_shield,
     DeviceShieldMatch
@@ -320,9 +321,42 @@ def test_device_profiles_yaml_catalog_loading():
     assert is_essential_companion_domain("api.irobot.com") is True
     assert is_essential_companion_domain("api.smartthings.com") is True
     assert is_essential_companion_domain("thinq.com") is True
+    assert is_essential_companion_domain("api.sumup.com") is True
+    assert "public_venue_guest" in device_ids
 
     # Check runtime addition
     custom_dom = "runtime-companion-api.brand.io"
     assert is_essential_companion_domain(custom_dom) is False
     add_runtime_allowlist_domain(custom_dom)
     assert is_essential_companion_domain(custom_dom) is True
+
+
+def test_public_venue_guest_shield():
+    # 1. Blocks torrent bootstrap trackers
+    m1 = evaluate_public_venue_shield("tracker.opentrackr.org")
+    assert m1 is not None
+    assert m1.shield_type == "PUBLIC_VENUE_GUEST"
+    assert m1.target_category == "HOSPITALITY_NETWORK"
+    assert m1.risk_score == 0.90
+
+    # 2. Blocks background cryptomining
+    m2 = evaluate_public_venue_shield("coinhive.com")
+    assert m2 is not None
+    assert m2.shield_type == "PUBLIC_VENUE_GUEST"
+
+    # 3. Blocks aggressive video ad networks
+    m3 = evaluate_public_venue_shield("adcolony.com")
+    assert m3 is not None
+    assert m3.shield_type == "PUBLIC_VENUE_GUEST"
+
+    # 4. Suffix matching
+    m4 = evaluate_public_venue_shield("sub.openbittorrent.com")
+    assert m4 is not None
+
+    # 5. Pre-emption: Essential POS and delivery apps must NOT be blocked
+    assert evaluate_device_shield("api.sumup.com") is None
+    assert evaluate_device_shield("pos.nexi.it") is None
+    assert evaluate_device_shield("api.satispay.com") is None
+    assert evaluate_device_shield("api.deliveroo.com") is None
+    assert evaluate_device_shield("api.justeat.com") is None
+    assert evaluate_device_shield("glovoapp.com") is None
