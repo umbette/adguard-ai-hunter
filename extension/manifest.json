@@ -4,6 +4,7 @@
   "version": "0.1.0",
   "description": "Protezione locale da phishing, truffe e domini ingannevoli. Elaborazione 100% in-browser, zero telemetria.",
   "permissions": [
+    "activeTab",
     "declarativeNetRequest",
     "storage",
     "webNavigation"

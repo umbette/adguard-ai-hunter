@@ -10,7 +10,13 @@ document.addEventListener("DOMContentLoaded", async () => {
   let activeHostname = "";
   try {
     if (activeTab.url) {
-      activeHostname = new URL(activeTab.url).hostname;
+      const parsedUrl = new URL(activeTab.url);
+      if (parsedUrl.protocol === "chrome-extension:" && parsedUrl.searchParams.has("domain")) {
+        // If the user opened the popup while on the blocked.html warning page, extract original target domain
+        activeHostname = parsedUrl.searchParams.get("domain");
+      } else {
+        activeHostname = parsedUrl.hostname;
+      }
     }
   } catch (e) {}
 
@@ -54,9 +60,17 @@ document.addEventListener("DOMContentLoaded", async () => {
         btnBypassDnr.textContent = "Sblocco in corso...";
         chrome.runtime.sendMessage({ action: "bypassDomain", domain: activeHostname }, (res) => {
           if (res && res.success) {
-            chrome.tabs.reload(activeTab.id, () => {
-              window.close();
-            });
+            // If the user was on blocked.html, redirect back to the unblocked domain
+            if (activeTab.url && activeTab.url.includes("blocked.html")) {
+              const targetUrl = activeHostname.startsWith("http") ? activeHostname : `https://${activeHostname}`;
+              chrome.tabs.update(activeTab.id, { url: targetUrl }, () => {
+                window.close();
+              });
+            } else {
+              chrome.tabs.reload(activeTab.id, () => {
+                window.close();
+              });
+            }
           } else {
             alert("Impossibile sbloccare il dominio: " + (res && res.error ? res.error : "Errore"));
             btnBypassDnr.disabled = false;
