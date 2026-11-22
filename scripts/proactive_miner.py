@@ -410,17 +410,17 @@ class ThreatStateDB:
             conn.commit()
         return purged
 
-    def get_active_domains(self) -> list[str]:
-        """Returns all domains that have at least one unexpired/unpurged source supporting them."""
+    def get_active_domains(self, min_confidence: int = 80) -> list[str]:
+        """Returns all domains that have at least one unexpired/unpurged source supporting them and meet min_confidence."""
         with sqlite3.connect(self.db_path) as conn:
             cur = conn.cursor()
             cur.execute("""
                 SELECT DISTINCT m.domain
                 FROM mined_iocs m
                 INNER JOIN domain_sources ds ON m.domain = ds.domain
-                WHERE m.status = 'active'
+                WHERE m.status = 'active' AND m.confidence >= ?
                 ORDER BY m.domain ASC
-            """)
+            """, (min_confidence,))
             return [row[0] for row in cur.fetchall()]
 
     def get_domain_sources(self, domain: str) -> list[str]:

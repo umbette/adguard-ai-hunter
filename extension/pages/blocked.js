@@ -22,12 +22,15 @@ document.addEventListener("DOMContentLoaded", () => {
   if (btnProceed) {
     btnProceed.addEventListener("click", () => {
       const confirmProceed = confirm(
-        `Attenzione: procedere su ${domain} potrebbe esporre a rischi informatici o truffe.\n\nVuoi davvero continuare?`
+        `Attenzione: procedere su ${domain} potrebbe esporre a rischi informatici o truffe.\n\nVuoi davvero sbloccare questo sito per la sessione corrente?`
       );
-      if (confirmProceed && domain.startsWith("http")) {
-        window.location.href = domain;
-      } else if (confirmProceed) {
-        window.location.href = "https://" + domain;
+      if (confirmProceed) {
+        // Register session bypass rule with higher priority (priority 2 allow rule)
+        // so that the browser does not block the site in an infinite loop
+        chrome.runtime.sendMessage({ action: "bypassDomain", domain: domain }, (res) => {
+          const targetUrl = domain.startsWith("http") ? domain : `https://${domain}`;
+          window.location.href = targetUrl;
+        });
       }
     });
   }

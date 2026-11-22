@@ -1,7 +1,7 @@
 import json
 import pytest
 from pathlib import Path
-from scripts.export_dnr import compile_dnr_ruleset, MAX_DYNAMIC_RULES
+from scripts.export_dnr import compile_dnr_ruleset, MAX_STATIC_RULES
 from scripts.proactive_miner import ThreatStateDB
 
 
@@ -11,7 +11,7 @@ def test_export_dnr_ruleset_structure(tmp_path):
     - Unique positive integer IDs
     - Exactly 1 main_frame redirect rule and 1 subresource block rule per domain
     - Whitelisted domains are strictly excluded
-    - Rules count does not exceed MAX_DYNAMIC_RULES ceiling
+    - Rules count does not exceed MAX_STATIC_RULES ceiling
     """
     db_path = tmp_path / "test_threats.db"
     rules_out = tmp_path / "ruleset.json"
@@ -25,7 +25,7 @@ def test_export_dnr_ruleset_structure(tmp_path):
     ]
     db.insert_or_update_iocs(candidates)
 
-    res = compile_dnr_ruleset(db_path=db_path, output_file=rules_out)
+    res = compile_dnr_ruleset(db_path=db_path, output_file=rules_out, min_confidence=85)
     assert res["total_rules"] == 4  # 2 domains * 2 rules (google.com was excluded)
     assert res["domains_covered"] == 2
     assert rules_out.exists()
@@ -51,8 +51,31 @@ def test_export_dnr_ruleset_structure(tmp_path):
             assert "main_frame" not in r["condition"]["resourceTypes"]
 
 
+def test_export_dnr_filters_confidence(tmp_path):
+    """Verifies that compile_dnr_ruleset only exports IoCs with confidence >= min_confidence."""
+    db_path = tmp_path / "conf_db.db"
+    rules_out = tmp_path / "conf_ruleset.json"
+    db = ThreatStateDB(db_path=db_path)
+
+    candidates = [
+        {"domain": "high-threat.org", "source": "openphish", "family": "phishing", "confidence": 90},
+        {"domain": "exact-threat.org", "source": "urlhaus", "family": "malware", "confidence": 85},
+        {"domain": "low-threat.org", "source": "urlhaus", "family": "malware", "confidence": 75}
+    ]
+    db.insert_or_update_iocs(candidates)
+
+    res = compile_dnr_ruleset(db_path=db_path, output_file=rules_out, min_confidence=85)
+    assert res["total_rules"] == 4  # 2 domains (high-threat.org, exact-threat.org)
+    assert res["domains_covered"] == 2
+
+    content = rules_out.read_text(encoding="utf-8")
+    assert "high-threat.org" in content
+    assert "exact-threat.org" in content
+    assert "low-threat.org" not in content
+
+
 def test_export_dnr_respects_quota(tmp_path, monkeypatch):
-    """Verifies that the exporter truncates rules if they exceed MAX_DYNAMIC_RULES."""
+    """Verifies that the exporter truncates rules if they exceed MAX_STATIC_RULES."""
     db_path = tmp_path / "huge_db.db"
     rules_out = tmp_path / "truncated_ruleset.json"
     db = ThreatStateDB(db_path=db_path)
@@ -65,7 +88,7 @@ def test_export_dnr_respects_quota(tmp_path, monkeypatch):
     db.insert_or_update_iocs(candidates)
 
     # Artificially lower ceiling to 6 rules (3 domains)
-    monkeypatch.setattr("scripts.export_dnr.MAX_DYNAMIC_RULES", 6)
+    monkeypatch.setattr("scripts.export_dnr.MAX_STATIC_RULES", 6)
 
     res = compile_dnr_ruleset(db_path=db_path, output_file=rules_out)
     assert res["total_rules"] == 6

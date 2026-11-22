@@ -1,0 +1,92 @@
+{
+  "poste": {
+    "displayName": "Poste Italiane / BancoPosta",
+    "keywords": ["poste", "postepay", "bancoposta", "posteid"],
+    "officialDomains": ["poste.it", "postepay.it", "bancoposta.it", "posteitaliane.it"]
+  },
+  "intesa": {
+    "displayName": "Intesa Sanpaolo",
+    "keywords": ["intesasanpaolo", "intesasanpaolobank", "isysmart"],
+    "officialDomains": ["intesasanpaolo.com", "intesasanpaolobank.com", "isysmart.com"]
+  },
+  "unicredit": {
+    "displayName": "UniCredit",
+    "keywords": ["unicredit", "unicreditbank"],
+    "officialDomains": ["unicredit.it", "unicredit.eu", "unicreditgroup.eu"]
+  },
+  "bper": {
+    "displayName": "BPER Banca",
+    "keywords": ["bper", "bperbanca"],
+    "officialDomains": ["bper.it"]
+  },
+  "bancobpm": {
+    "displayName": "Banco BPM",
+    "keywords": ["bancobpm", "webank"],
+    "officialDomains": ["bancobpm.it", "webank.it"]
+  },
+  "credem": {
+    "displayName": "Credem Banca",
+    "keywords": ["credem", "credemonline"],
+    "officialDomains": ["credem.it"]
+  },
+  "nexi": {
+    "displayName": "Nexi Payments",
+    "keywords": ["nexi", "cartasi", "nexipay"],
+    "officialDomains": ["nexi.it", "nexipay.it"]
+  },
+  "inps": {
+    "displayName": "INPS",
+    "keywords": ["inps", "serviziinps"],
+    "officialDomains": ["inps.it"]
+  },
+  "agenziaentrate": {
+    "displayName": "Agenzia delle Entrate",
+    "keywords": ["agenziaentrate", "fiscoonline"],
+    "officialDomains": ["agenziaentrate.gov.it", "agenziadelleentrate.gov.it"]
+  },
+  "spid": {
+    "displayName": "SPID / Identità Digitale",
+    "keywords": ["spid", "lepida", "spiditalia"],
+    "officialDomains": ["spid.gov.it", "lepida.it", "sielteid.it", "arubapec.it"]
+  },
+  "brt": {
+    "displayName": "BRT Corriere Espresso",
+    "keywords": ["brt", "bartolini", "brtspedizioni"],
+    "officialDomains": ["brt.it", "dpd.com"]
+  },
+  "dhl": {
+    "displayName": "DHL Express",
+    "keywords": ["dhl", "dhlexpress", "dhltracking"],
+    "officialDomains": ["dhl.com", "dhl.it"]
+  },
+  "gls": {
+    "displayName": "GLS Italy",
+    "keywords": ["gls", "glsitaly", "glscourier"],
+    "officialDomains": ["gls-italy.com", "gls-group.com"]
+  },
+  "telepass": {
+    "displayName": "Telepass",
+    "keywords": ["telepass", "telepasspay"],
+    "officialDomains": ["telepass.com", "telepasspay.com"]
+  },
+  "paypal": {
+    "displayName": "PayPal",
+    "keywords": ["paypal", "paypalme"],
+    "officialDomains": ["paypal.com", "paypal.me"]
+  },
+  "amazon": {
+    "displayName": "Amazon",
+    "keywords": ["amazon", "primevideo"],
+    "officialDomains": ["amazon.it", "amazon.com", "primevideo.com"]
+  },
+  "subito": {
+    "displayName": "Subito.it",
+    "keywords": ["subito", "subitopay"],
+    "officialDomains": ["subito.it"]
+  },
+  "vinted": {
+    "displayName": "Vinted",
+    "keywords": ["vinted"],
+    "officialDomains": ["vinted.it", "vinted.com"]
+  }
+}

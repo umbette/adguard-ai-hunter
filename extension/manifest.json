@@ -18,6 +18,17 @@
       }
     ]
   },
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "pages/blocked.html",
+        "pages/blocked.js",
+        "data/brands.json",
+        "data/public_suffixes.json"
+      ],
+      "matches": ["<all_urls>"]
+    }
+  ],
   "action": {
     "default_popup": "popup/popup.html",
     "default_title": "AI Hunter Shield",

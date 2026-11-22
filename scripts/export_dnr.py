@@ -22,21 +22,21 @@ logger = logging.getLogger("export_dnr")
 EXTENSION_DIR = ROOT_DIR / "extension"
 RULES_DIR = EXTENSION_DIR / "rules"
 DNR_OUTPUT_FILE = RULES_DIR / "ruleset.json"
-MAX_DYNAMIC_RULES = 30000
+MAX_STATIC_RULES = 30000
 
 
-def compile_dnr_ruleset(db_path: Path = DB_PATH, output_file: Path = DNR_OUTPUT_FILE) -> dict:
+def compile_dnr_ruleset(db_path: Path = DB_PATH, output_file: Path = DNR_OUTPUT_FILE, min_confidence: int = 85) -> dict:
     """
-    Compiles active IoCs into Chrome Manifest V3 declarativeNetRequest rules.
+    Compiles active IoCs into Chrome Manifest V3 declarativeNetRequest static rules.
     - main_frame requests: redirected to extension's blocked.html with metadata.
     - subresources: blocked directly at browser network layer.
-    Enforces the <= 30,000 rules quota and strictly filters against never_block whitelist.
+    Enforces the <= 30,000 rules quota for static rulesets and filters by confidence >= min_confidence.
     """
     db = ThreatStateDB(db_path=db_path)
-    active_domains = db.get_active_domains()
+    active_domains = db.get_active_domains(min_confidence=min_confidence)
     whitelist = load_never_block()
 
-    logger.info(f"Loaded {len(active_domains)} active threat domains from DB.")
+    logger.info(f"Loaded {len(active_domains)} active threat domains from DB (min_confidence >= {min_confidence}).")
     logger.info(f"Loaded {len(whitelist)} protected whitelist entries.")
 
     rules = []
@@ -91,8 +91,8 @@ def compile_dnr_ruleset(db_path: Path = DB_PATH, output_file: Path = DNR_OUTPUT_
         rules.append(block_rule)
         rule_id += 1
 
-        if len(rules) >= MAX_DYNAMIC_RULES:
-            logger.warning(f"Reached Manifest V3 DNR rule ceiling ({MAX_DYNAMIC_RULES}). Truncating export.")
+        if len(rules) >= MAX_STATIC_RULES:
+            logger.warning(f"Reached Manifest V3 DNR static rule ceiling ({MAX_STATIC_RULES}). Truncating export.")
             break
 
     output_file.parent.mkdir(parents=True, exist_ok=True)

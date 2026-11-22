@@ -4,31 +4,40 @@
  */
 
 let BRANDS = {};
-const tabWarnings = new Map();
+let PUBLIC_SUFFIXES = [];
+let nextSessionRuleId = 100000;
 
-// Load local brand database on startup
-async function loadBrands() {
+// Load local brand database and public suffix list on startup
+async function loadData() {
   try {
-    const url = chrome.runtime.getURL("data/brands.json");
-    const resp = await fetch(url);
-    BRANDS = await resp.json();
-    console.log("[AI Hunter] Loaded verified brand database:", Object.keys(BRANDS).length, "brands.");
+    const brandsUrl = chrome.runtime.getURL("data/brands.json");
+    const brandsResp = await fetch(brandsUrl);
+    BRANDS = await brandsResp.json();
+
+    const suffixesUrl = chrome.runtime.getURL("data/public_suffixes.json");
+    const suffixesResp = await fetch(suffixesUrl);
+    PUBLIC_SUFFIXES = await suffixesResp.json();
+
+    console.log(
+      `[AI Hunter] Loaded verified brand database (${Object.keys(BRANDS).length} brands) and PSL (${PUBLIC_SUFFIXES.length} multi-part suffixes).`
+    );
   } catch (err) {
-    console.error("[AI Hunter] Failed to load brands.json:", err);
+    console.error("[AI Hunter] Failed to load data files:", err);
   }
 }
 
-// Minimalistic public suffix extractor for eTLD+1
+// Public suffix extractor for eTLD+1 using data/public_suffixes.json
 function getETLDPlusOne(hostname) {
   if (!hostname) return "";
   const parts = hostname.toLowerCase().split(".");
-  if (parts.length <= 2) return hostname.toLowerCase();
+  if (parts.length <= 1) return hostname.toLowerCase();
 
-  // Common two-level TLDs
-  const twoLevelTLDs = ["gov.it", "edu.it", "co.uk", "gov.uk", "com.br", "com.au"];
-  const lastTwo = parts.slice(-2).join(".");
-  if (twoLevelTLDs.includes(lastTwo)) {
-    return parts.slice(-3).join(".");
+  // Match against multi-part public suffixes (e.g. pages.dev, gov.it, co.uk)
+  for (let i = Math.min(parts.length - 1, 3); i >= 2; i--) {
+    const candidateSuffix = parts.slice(-i).join(".");
+    if (PUBLIC_SUFFIXES.includes(candidateSuffix)) {
+      return parts.slice(-(i + 1)).join(".");
+    }
   }
 
   return parts.slice(-2).join(".");
@@ -104,11 +113,11 @@ function checkBrandImpersonation(hostname) {
 
 // Lifecycle events
 chrome.runtime.onInstalled.addListener(() => {
-  loadBrands();
+  loadData();
 });
 
 chrome.runtime.onStartup.addListener(() => {
-  loadBrands();
+  loadData();
 });
 
 // Evaluate navigations
@@ -123,20 +132,27 @@ chrome.webNavigation.onBeforeNavigate.addListener(async (details) => {
     // Check user exceptions
     const storage = await chrome.storage.local.get(["exceptions"]);
     const exceptions = storage.exceptions || [];
+    const warningKey = `tab_${details.tabId}`;
+
     if (exceptions.includes(hostname)) {
-      tabWarnings.delete(details.tabId);
+      await chrome.storage.session.remove(warningKey);
       chrome.action.setBadgeText({ text: "", tabId: details.tabId });
       return;
     }
 
+    if (Object.keys(BRANDS).length === 0) {
+      await loadData();
+    }
+
     const result = checkBrandImpersonation(hostname);
     if (result.spoofed) {
-      tabWarnings.set(details.tabId, result);
+      // Store in chrome.storage.session so state survives service worker sleep/wake lifecycle
+      await chrome.storage.session.set({ [warningKey]: result });
       chrome.action.setBadgeText({ text: "!", tabId: details.tabId });
       chrome.action.setBadgeBackgroundColor({ color: "#f57c00", tabId: details.tabId });
       console.warn(`[AI Hunter Shield] Brand impersonation alert for tab ${details.tabId}:`, result);
     } else {
-      tabWarnings.delete(details.tabId);
+      await chrome.storage.session.remove(warningKey);
       chrome.action.setBadgeText({ text: "", tabId: details.tabId });
     }
   } catch (err) {
@@ -144,16 +160,19 @@ chrome.webNavigation.onBeforeNavigate.addListener(async (details) => {
   }
 });
 
-// Clean up tab tracking on close
+// Clean up tab tracking in session storage on tab close
 chrome.tabs.onRemoved.addListener((tabId) => {
-  tabWarnings.delete(tabId);
+  const warningKey = `tab_${tabId}`;
+  chrome.storage.session.remove(warningKey);
 });
 
-// Message handling for popup UI
+// Message handling for popup UI and bypass requests
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === "getTabWarning") {
-    const warning = tabWarnings.get(request.tabId) || null;
-    sendResponse({ warning });
+    const warningKey = `tab_${request.tabId}`;
+    chrome.storage.session.get([warningKey], (res) => {
+      sendResponse({ warning: res[warningKey] || null });
+    });
     return true;
   }
 
@@ -165,13 +184,46 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         list.push(domain);
         chrome.storage.local.set({ exceptions: list }, () => {
           if (request.tabId) {
-            tabWarnings.delete(request.tabId);
+            const warningKey = `tab_${request.tabId}`;
+            chrome.storage.session.remove(warningKey);
             chrome.action.setBadgeText({ text: "", tabId: request.tabId });
           }
           sendResponse({ success: true });
         });
       } else {
         sendResponse({ success: true });
+      }
+    });
+    return true;
+  }
+
+  // Session-scoped bypass for DNR blocked sites (overrides static block rules via priority 2 allow rule)
+  if (request.action === "bypassDomain") {
+    const domain = (request.domain || "").toLowerCase().trim();
+    if (!domain) {
+      sendResponse({ success: false, error: "Empty domain" });
+      return true;
+    }
+
+    const ruleId = nextSessionRuleId++;
+    const allowRule = {
+      id: ruleId,
+      priority: 2, // Higher than static priority 1 rules
+      action: { type: "allow" },
+      condition: {
+        urlFilter: `||${domain}^`
+      }
+    };
+
+    chrome.declarativeNetRequest.updateSessionRules({
+      addRules: [allowRule]
+    }, () => {
+      if (chrome.runtime.lastError) {
+        console.error("[AI Hunter] Failed to add session bypass rule:", chrome.runtime.lastError);
+        sendResponse({ success: false, error: chrome.runtime.lastError.message });
+      } else {
+        console.log(`[AI Hunter] Added session bypass allow rule (id ${ruleId}) for ${domain}`);
+        sendResponse({ success: true, ruleId });
       }
     });
     return true;
