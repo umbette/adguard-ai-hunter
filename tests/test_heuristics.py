@@ -21,9 +21,10 @@ def test_heuristics_dga_detection(heuristics):
     is_dga_short, ent_short, _ = heuristics.evaluate_entropy("xk92lms08a.biz")
     assert is_dga_short
 
-    # Natural 10-char word (should not trigger DGA)
-    is_word, _, _ = heuristics.evaluate_entropy("california.biz")
-    assert not is_word
+    # Natural 10-12 char dictionary words (should not trigger DGA triage)
+    for natural_word in ("newsletter.com", "california.biz", "photography.net", "accountant.org", "development.io", "university.edu"):
+        is_word, _, _ = heuristics.evaluate_entropy(natural_word)
+        assert not is_word, f"False positive: natural word {natural_word} was flagged as DGA!"
 
     # Algorithmic subdomain under generic CDN
     is_dga, ent, label = heuristics.evaluate_entropy("d3g7k9m2x4q8p1wz.trafficmanager.net")

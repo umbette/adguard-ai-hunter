@@ -97,3 +97,67 @@ def test_adverse_psl_fixtures_rejection(tmp_path):
     assert "||c2-controller.workers.dev^\n" in compiled
     assert "||malware-payload.github.io^\n" in compiled
     assert "||stealer-c2.com^\n" in compiled
+
+
+def test_end_to_end_idn_punycode_pipeline(tmp_path):
+    """
+    End-to-end verification that Internationalized Domain Names (IDNs)
+    are sanitized into valid Punycode, accepted by the compiler, and bare Punycode TLDs are rejected.
+    """
+    from scripts.proactive_miner import DomainSanitizer
+
+    sanitizer = DomainSanitizer()
+
+    # 1. Test Unicode conversion in sanitizer
+    idn_domain = "phishing-bank.中国"
+    sanitized_idn = sanitizer.sanitize(idn_domain)
+    assert sanitized_idn == "phishing-bank.xn--fiqs8s"
+
+    # 2. Test malformed punycode rejection in sanitizer
+    assert sanitizer.sanitize("evil.xn--invalid!!!") is None
+    assert sanitizer.sanitize("evil.xn--") is None
+
+    # 3. Test compilation pipeline
+    test_src = tmp_path / "idn_domains.txt"
+    test_out = tmp_path / "idn_output.txt"
+    test_src.write_text(
+        f"{sanitized_idn}\n"
+        "phish.xn--vermgensberatung-pwb\n"
+        "xn--fiqs8s\n",  # Bare Punycode TLD (must reject)
+        encoding="utf-8"
+    )
+
+    res = validate_and_compile(
+        source_files=[test_src],
+        output_path=test_out
+    )
+
+    assert res["valid"] == 2
+    assert res["skipped"] == 1  # xn--fiqs8s bare suffix rejected
+
+    content = test_out.read_text(encoding="utf-8")
+    assert "||phishing-bank.xn--fiqs8s^\n" in content
+    assert "||phish.xn--vermgensberatung-pwb^\n" in content
+    assert "||xn--fiqs8s^" not in content
+
+
+def test_stream_feed_lines_limits():
+    """Verifies that stream_feed_lines respects byte bounds and line length limits."""
+    import io
+    from scripts.proactive_miner import stream_feed_lines
+
+    # Simulated feed with one valid line, one oversized line (3000 chars), and another valid line
+    data = (
+        b"valid-one.com\n"
+        + b"a" * 3000 + b".com\n"
+        + b"valid-two.com\n"
+    )
+    mock_resp = io.BytesIO(data)
+    lines = list(stream_feed_lines(mock_resp, max_bytes=10000))
+    assert lines == ["valid-one.com", "valid-two.com"]
+
+    # Test byte limit cutoff
+    mock_resp_large = io.BytesIO(b"line1.com\nline2.com\nline3.com\n")
+    lines_cutoff = list(stream_feed_lines(mock_resp_large, max_bytes=12))
+    assert len(lines_cutoff) <= 2
+

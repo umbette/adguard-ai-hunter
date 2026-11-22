@@ -13,8 +13,9 @@ from pathlib import Path
 
 import tldextract
 
+# Security & RFC 1123 Constraints (Supporting standard and IDN Punycode TLDs like xn--...)
 RFC1123_DOMAIN_REGEX = re.compile(
-    r"^(?!\-)(?:[a-zA-Z0-9\-]{1,63}\.)+[a-zA-Z]{2,63}$"
+    r"^(?!\-)(?:[a-zA-Z0-9\-]{1,63}\.)+(?:xn\-\-[a-zA-Z0-9\-]{1,59}|[a-zA-Z]{2,63})$"
 )
 FORBIDDEN_CHARS = set("$^@|/\\*[]()#;,!~%&? \t\r\n\0")
 

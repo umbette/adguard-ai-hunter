@@ -1,7 +1,7 @@
 ! ------------------------------------------------------------------------------
 ! Title: AI Hunter - Community Threat & DGA Blacklist
 ! Description: Validated threat intelligence and DGA domains compiled from AI Hunter
-! Last Modified: 2026-11-22 02:19:52 UTC
+! Last Modified: 2026-11-22 02:23:03 UTC
 ! Number of rules: 510
 ! Syntax: AdGuard / uBlock Origin compatible
 ! License: MIT License

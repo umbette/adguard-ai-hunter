@@ -78,6 +78,51 @@ INFRASTRUCTURE_SUFFIXES = (
     ".in-addr.arpa", ".ip6.arpa", ".arpa", ".local", ".lan", ".home", ".internal", ".home.arpa"
 )
 
+# Stream limits to prevent memory exhaustion / decompression bomb attacks
+MAX_FEED_BYTES = 20 * 1024 * 1024  # 20 MB max per feed
+MAX_FEED_LINES = 100_000           # 100,000 lines max per feed
+MAX_LINE_LENGTH = 2048
+
+
+def stream_feed_lines(resp, max_bytes: int = MAX_FEED_BYTES, max_lines: int = MAX_FEED_LINES):
+    """
+    Streams lines from an HTTP response in fixed 64KB chunks with strict limits
+    on total byte volume, line count, and individual line length to prevent memory exhaustion and DoS.
+    """
+    bytes_read = 0
+    lines_yielded = 0
+    buffer = ""
+
+    while True:
+        chunk = resp.read(65536)
+        if not chunk:
+            break
+        bytes_read += len(chunk)
+        if bytes_read > max_bytes:
+            logger.warning(f"Feed exceeded max bytes limit ({max_bytes} bytes). Terminating stream.")
+            break
+
+        text = chunk.decode("utf-8", errors="ignore")
+        buffer += text
+        lines = buffer.split("\n")
+        buffer = lines.pop()  # Keep partial last line in buffer
+
+        for line in lines:
+            line_str = line.strip()
+            if not line_str or line_str.startswith("#"):
+                continue
+            if len(line_str) <= MAX_LINE_LENGTH:
+                yield line_str
+                lines_yielded += 1
+                if lines_yielded >= max_lines:
+                    logger.warning(f"Feed exceeded max lines limit ({max_lines} lines). Terminating stream.")
+                    return
+
+    if buffer:
+        final_line = buffer.strip()
+        if final_line and not final_line.startswith("#") and len(final_line) <= MAX_LINE_LENGTH:
+            yield final_line
+
 
 class DomainSanitizer:
     """Zero-Trust input sanitizer ensuring RFC 1123 compliance and neutralizing homograph/injection attacks."""
@@ -289,7 +334,7 @@ class ProactiveMiner:
         try:
             req = urllib.request.Request(url, headers={"User-Agent": "AI-Hunter-Proactive-Miner/1.0"})
             with urllib.request.urlopen(req, timeout=12) as resp:
-                for line in resp.read().decode("utf-8", errors="ignore").splitlines():
+                for line in stream_feed_lines(resp):
                     sanitized = self.sanitizer.sanitize(line)
                     if sanitized and not self.shield.is_protected(sanitized):
                         candidates.append({
@@ -310,11 +355,8 @@ class ProactiveMiner:
         try:
             req = urllib.request.Request(url, headers={"User-Agent": "AI-Hunter-Proactive-Miner/1.0"})
             with urllib.request.urlopen(req, timeout=15) as resp:
-                for line in resp.read().decode("utf-8", errors="ignore").splitlines():
-                    clean = line.strip()
-                    if not clean or clean.startswith("#"):
-                        continue
-                    sanitized = self.sanitizer.sanitize(clean)
+                for line in stream_feed_lines(resp):
+                    sanitized = self.sanitizer.sanitize(line)
                     if sanitized and not self.shield.is_protected(sanitized):
                         candidates.append({
                             "domain": sanitized,
