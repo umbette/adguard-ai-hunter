@@ -1,5 +1,5 @@
 /**
- * AI Hunter Shield - Manifest V3 Background Service Worker
+ * Hunter Shield - Manifest V3 Background Service Worker
  * 100% Local Heuristic Inspection & Brand Impersonation Guard
  */
 
