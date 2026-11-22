@@ -10,6 +10,20 @@ Autonomous, lightweight, local-first DNS behavioral anomaly detector, DGA hunter
 
 Monitors DNS traffic in real-time streaming mode, performs multi-label Shannon entropy evaluation ($H > 3.85$) and velocity burst tracking on unseen domains, verifies anomalies with **Gemini Flash**, and dispatches actionable 1-click mobile push alerts via Home Assistant identifying the exact LAN client IP.
 
+<p align="center">
+  <img src="docs/assets/ai-hunter-demo.gif" alt="AdGuard AI Hunter Live Anomaly Detection" width="800" style="border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">
+</p>
+
+---
+
+## 🛡️ Multi-Layer Threat Architecture (Zero-Trust & Anti-Breakage)
+
+AI Hunter combines real-time streaming heuristics with proactive zero-day ingestion and strict anti-breakage guardrails:
+
+<p align="center">
+  <img src="docs/assets/architecture-diagram.svg" alt="Zero-Trust Multi-Layer Defense Architecture" width="900">
+</p>
+
 ---
 
 ## 💡 How AI Hunter Differs from DNS Blocklists (HaGeZi, RuffKez CTI, OISD, etc.)
