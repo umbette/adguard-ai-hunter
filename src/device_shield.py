@@ -46,6 +46,9 @@ NINTENDO_SUFFIX_BLOCKS: Tuple[str, ...] = (
 # ---------------------------------------------------------------------------
 VACUUM_EXACT_BLOCKS: Set[str] = {
     "open.ecovacs.com",
+    "sa-eu-datasink.ecovacs.com",
+    "bigdata-europe.ecovacs.com",
+    "gl-iot-media.ecouser.net",
     "log.dreame.tech",
     "tracking.dreame.tech",
     "log.roborock.com",
@@ -55,7 +58,9 @@ VACUUM_EXACT_BLOCKS: Set[str] = {
 
 VACUUM_SUFFIX_BLOCKS: Tuple[str, ...] = (
     ".open.ecovacs.com",
-    ".ecouser.net",
+    ".datasink.ecovacs.com",
+    ".bigdata.ecovacs.com",
+    ".gl-iot-media.ecouser.net",
     ".tracking.roborock.com",
     ".log.dreame.tech",
 )

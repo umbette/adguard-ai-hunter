@@ -61,6 +61,15 @@ def test_vacuum_privacy_shield():
     m5 = evaluate_vacuum_telemetry("api-telemetry.roborock.com")
     assert m5 is not None
 
+    m6 = evaluate_vacuum_telemetry("bigdata-europe.ecovacs.com")
+    assert m6 is not None
+
+    # CRITICAL: Official companion app control APIs must NOT be blocked
+    assert evaluate_vacuum_telemetry("api-app.ww.ecouser.net") is None
+    assert evaluate_vacuum_telemetry("api-app.dc-eu.ww.ecouser.net") is None
+    assert evaluate_vacuum_telemetry("iot-api-nlp.dc-eu.ww.ecouser.net") is None
+    assert evaluate_vacuum_telemetry("gl-es-api.ecovacs.com") is None
+
 
 def test_bambu_ip_shield():
     # Bambu Lab diagnostics and log uploaders
