@@ -187,6 +187,81 @@ class Dispatcher:
 
         return notified
 
+    async def send_new_device_alert(self, ip: str, name: str, icon: str, category: str, quarantine: bool = False) -> bool:
+        """
+        Sends an actionable mobile push notification to Home Assistant companion app
+        when an unrecognized device connects to the Wi-Fi / network.
+        """
+        session = await self.get_session()
+        base_ha_url = self.settings.home_assistant.base_url
+        headers = {
+            "Authorization": f"Bearer {self.settings.home_assistant.token}",
+            "Content-Type": "application/json"
+        }
+
+        title = f"🔔 Nuovo Dispositivo Wi-Fi: {name}"
+        status_note = "Messo in Quarantena (Isolato)" if quarantine else "Accesso Consentito"
+        message = (
+            f"Un nuovo dispositivo si è collegato alla rete:\n"
+            f"• Nome: {icon} {name}\n"
+            f"• IP: {ip}\n"
+            f"• Categoria: {category}\n"
+            f"• Stato Iniziale: {status_note}"
+        )
+
+        mobile_url = f"{base_ha_url}/api/services/notify/{self.settings.home_assistant.notify_service}"
+        payload = {
+            "title": title,
+            "message": message,
+            "data": {
+                "tag": f"sentinel-device-{ip}",
+                "actions": [
+                    {
+                        "action": f"APPROVA_DEVICE::{ip}",
+                        "title": "✅ Approva Dispositivo"
+                    },
+                    {
+                        "action": f"QUARANTENA_DEVICE::{ip}",
+                        "title": "⛔ Metti in Quarantena"
+                    }
+                ]
+            }
+        }
+
+        notified = False
+        try:
+            async with session.post(mobile_url, headers=headers, json=payload, timeout=5.0) as resp:
+                if resp.status in (200, 201):
+                    logger.info(f"Dispatched new device push alert for {ip} ({name}) to {mobile_url}")
+                    notified = True
+                else:
+                    logger.warning(f"Failed to dispatch mobile notification: HTTP {resp.status}")
+        except Exception as e:
+            logger.warning(f"Error dispatching mobile alert: {e}")
+
+        # Also create persistent notification in Home Assistant UI
+        clean_id = f"sentinel_device_{ip.replace('.', '_')}"
+        persistent_url = f"{base_ha_url}/api/services/persistent_notification/create"
+        persistent_payload = {
+            "notification_id": clean_id,
+            "title": title,
+            "message": (
+                f"### 🔔 Nuovo Dispositivo Connesso alla Rete\n\n"
+                f"* **Dispositivo:** {icon} **{name}** (`{ip}`)\n"
+                f"* **Categoria:** `{category}`\n"
+                f"* **Stato Admission:** `{status_note}`\n\n"
+                f"> *Puoi autorizzare o isolare questo dispositivo dalla notifica sullo smartphone o dalla dashboard di Sentinel.*"
+            )
+        }
+        try:
+            async with session.post(persistent_url, headers=headers, json=persistent_payload, timeout=5.0) as p_resp:
+                if p_resp.status in (200, 201):
+                    logger.info(f"Created persistent notification '{clean_id}' in Home Assistant UI")
+        except Exception as e:
+            logger.warning(f"Error creating persistent notification: {e}")
+
+        return notified
+
     # -------------------------------------------------------------
     # 3. Outbound WebSocket Event Subscription (Zero Inbound Ports)
     # -------------------------------------------------------------
@@ -266,7 +341,17 @@ class Dispatcher:
 
         logger.info(f"Received mobile action: {verb} on domain: {domain} (scope: {client_ip})")
 
-        if verb == "BLOCCA_DEVICE":
+        if verb == "APPROVA_DEVICE":
+            self.storage.set_device_status(domain, "APPROVED", notes="Approved via mobile notification")
+            logger.info(f"Device {domain} approved via mobile notification")
+
+        elif verb == "QUARANTENA_DEVICE":
+            self.storage.set_device_status(domain, "BLOCKED", notes="Quarantined via mobile notification")
+            rule = f"||*$client={domain}"
+            await self.inject_adguard_rule(rule)
+            logger.info(f"Device {domain} quarantined via mobile notification")
+
+        elif verb == "BLOCCA_DEVICE":
             rule = f"||{domain}^$client={client_ip}"
             self.storage.record_decision(domain, client_ip, "BLOCK", notes="Blocked via mobile app (client)")
             await self.inject_adguard_rule(rule)
@@ -285,7 +370,10 @@ class Dispatcher:
             logger.info(f"Recorded 30-day snooze decision for *.{apex} until {expires_at}")
 
         # Dismiss persistent notification from Home Assistant UI upon resolution
-        clean_id = f"hunter_{domain.replace('.', '_')}"
+        if verb in ("APPROVA_DEVICE", "QUARANTENA_DEVICE"):
+            clean_id = f"sentinel_device_{domain.replace('.', '_')}"
+        else:
+            clean_id = f"hunter_{domain.replace('.', '_')}"
         dismiss_url = f"{self.settings.home_assistant.base_url}/api/services/persistent_notification/dismiss"
         try:
             session = await self.get_session()

@@ -41,6 +41,15 @@ class DashboardConfig(BaseModel):
     port: int = 8087
     enabled: bool = True
 
+class AdmissionConfig(BaseModel):
+    enabled: bool = False
+    quarantine_unapproved: bool = False
+    notify_on_new_device: bool = True
+
+class AuditConfig(BaseModel):
+    enabled: bool = True
+    retrospective_hours: int = 48
+
 class Settings(BaseSettings):
     adguard: AdGuardConfig = Field(default_factory=AdGuardConfig)
     home_assistant: HomeAssistantConfig = Field(default_factory=HomeAssistantConfig)
@@ -48,6 +57,8 @@ class Settings(BaseSettings):
     heuristics: HeuristicsConfig = Field(default_factory=HeuristicsConfig)
     storage: StorageConfig = Field(default_factory=StorageConfig)
     dashboard: DashboardConfig = Field(default_factory=DashboardConfig)
+    admission: AdmissionConfig = Field(default_factory=AdmissionConfig)
+    audit: AuditConfig = Field(default_factory=AuditConfig)
 
     @classmethod
     def load(cls, config_path: str = "/app/config.yaml") -> "Settings":

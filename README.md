@@ -1,7 +1,7 @@
 # Sentinel
 
 [![CI Test Suite](https://github.com/umbette/sentinel/actions/workflows/ci.yml/badge.svg)](https://github.com/umbette/sentinel/actions/workflows/ci.yml)
-[![Tests: 62 Passing](https://img.shields.io/badge/Tests-62%20Passing-brightgreen.svg)](tests/)
+[![Tests: 73 Passing](https://img.shields.io/badge/Tests-73%20Passing-brightgreen.svg)](tests/)
 [![Shields: 15 Active](https://img.shields.io/badge/Shields-15%20Active-10b981.svg)](#-15-specialized-cyber-defense--privacy-shields)
 [![Privacy: Zero--Telemetry](https://img.shields.io/badge/Privacy-Zero--Telemetry-blueviolet.svg)](#-zero-knowledge-device-catalog--1-click-unbreak)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
@@ -84,13 +84,15 @@ Using full-tunnel WireGuard or OpenVPN while driving can trigger **Android Auto 
 
 ---
 
-## 📊 Real-Time Cyber Defense Console
+## 📊 Real-Time Cyber Defense Console & Scan on Demand
 
 Sentinel includes a responsive, dark-mode web console running at `http://localhost:8087` (and embedded natively in Home Assistant sidebar via Ingress):
 
+* **🔍 Scan on Demand & Network Exposure Audit:** 1-Click security audit that probes active Wi-Fi/LAN devices, checks for exposed dangerous ports (Telnet 23, RTSP 554, HTTP 80/8080) and rogue UPnP port mappings, performs retrospective Threat Hunting on recent DNS logs, and calculates an overall **Network Health Score (0–100)** with actionable remediation tips.
+* **🔔 Zero-Trust Device Admission Control:** Instant push notification when an unknown device connects to the Wi-Fi for the first time. Optional quarantine mode holds new devices in strict isolation until approved with 1-click **[ ✅ Approva ]** or quarantined with **[ ⛔ Isola ]**.
 * **Brave Shields / Pi-hole Style Metrics:** Total DNS queries, Blocked threat ratio (%), Estimated € Dynamic Pricing savings, and active shield health.
 * **Interactive Threat & Unbreak Center:** Live list of top intercepted domains with 1-click **[ 🔓 Sblocca ]** and **[ 📢 Segnala ]** buttons.
-* **Network Device Leaderboard:** Contextual device icons and protection status across all network clients.
+* **Network Device Leaderboard:** Contextual device icons, IP, category, and real-time protection/admission status across all network clients.
 
 ---
 

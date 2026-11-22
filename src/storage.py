@@ -63,6 +63,32 @@ class StorageEngine:
                 PRIMARY KEY (domain, client_ip)
             );
             CREATE INDEX IF NOT EXISTS idx_cooldown_lookup ON domain_cooldowns(domain, client_ip, expires_at);
+
+            CREATE TABLE IF NOT EXISTS network_devices (
+                ip TEXT PRIMARY KEY,
+                mac TEXT DEFAULT '',
+                hostname TEXT DEFAULT '',
+                vendor TEXT DEFAULT '',
+                category TEXT DEFAULT 'DEVICE',
+                icon TEXT DEFAULT '🔌',
+                approval_status TEXT CHECK(approval_status IN ('APPROVED', 'PENDING', 'BLOCKED')) DEFAULT 'APPROVED',
+                first_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                last_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                notes TEXT DEFAULT ''
+            );
+            CREATE INDEX IF NOT EXISTS idx_devices_status ON network_devices(approval_status);
+
+            CREATE TABLE IF NOT EXISTS audit_history (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                health_score INTEGER NOT NULL,
+                devices_scanned INTEGER DEFAULT 0,
+                open_ports_count INTEGER DEFAULT 0,
+                threats_found INTEGER DEFAULT 0,
+                dns_healthy BOOLEAN DEFAULT 1,
+                report_json TEXT NOT NULL
+            );
+            CREATE INDEX IF NOT EXISTS idx_audit_timestamp ON audit_history(timestamp);
             """)
 
     def get_checkpoint(self, key: str = "last_query_time") -> Optional[str]:
@@ -191,3 +217,82 @@ class StorageEngine:
                 "SELECT action, COUNT(*) as cnt FROM decisions GROUP BY action"
             ).fetchall()
             return {r["action"]: r["cnt"] for r in rows}
+
+    def upsert_device(self, ip: str, mac: str = "", hostname: str = "", vendor: str = "", 
+                      category: str = "DEVICE", icon: str = "🔌", default_status: str = "APPROVED",
+                      notes: str = "") -> tuple[bool, Dict[str, Any]]:
+        """
+        Upserts a device by IP address.
+        Returns (is_new, device_dict).
+        If already exists, updates last_seen and any non-empty metadata.
+        """
+        with self._get_connection() as conn:
+            existing = conn.execute("SELECT * FROM network_devices WHERE ip = ?", (ip,)).fetchone()
+            if existing:
+                conn.execute("""
+                UPDATE network_devices 
+                SET last_seen = CURRENT_TIMESTAMP,
+                    hostname = CASE WHEN (hostname = '' OR hostname IS NULL) AND ? != '' THEN ? ELSE hostname END,
+                    mac = CASE WHEN (mac = '' OR mac IS NULL) AND ? != '' THEN ? ELSE mac END,
+                    vendor = CASE WHEN (vendor = '' OR vendor IS NULL) AND ? != '' THEN ? ELSE vendor END,
+                    category = CASE WHEN category = 'DEVICE' AND ? != 'DEVICE' THEN ? ELSE category END,
+                    icon = CASE WHEN icon = '🔌' AND ? != '🔌' THEN ? ELSE icon END
+                WHERE ip = ?
+                """, (hostname, hostname, mac, mac, vendor, vendor, category, category, icon, icon, ip))
+                row = conn.execute("SELECT * FROM network_devices WHERE ip = ?", (ip,)).fetchone()
+                return False, dict(row)
+            else:
+                conn.execute("""
+                INSERT INTO network_devices (ip, mac, hostname, vendor, category, icon, approval_status, first_seen, last_seen, notes)
+                VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?)
+                """, (ip, mac, hostname, vendor, category, icon, default_status, notes))
+                row = conn.execute("SELECT * FROM network_devices WHERE ip = ?", (ip,)).fetchone()
+                return True, dict(row)
+
+    def get_devices(self, status: Optional[str] = None) -> List[Dict[str, Any]]:
+        with self._get_connection() as conn:
+            if status:
+                rows = conn.execute("SELECT * FROM network_devices WHERE approval_status = ? ORDER BY last_seen DESC", (status,)).fetchall()
+            else:
+                rows = conn.execute("SELECT * FROM network_devices ORDER BY last_seen DESC").fetchall()
+            return [dict(r) for r in rows]
+
+    def get_device(self, ip: str) -> Optional[Dict[str, Any]]:
+        with self._get_connection() as conn:
+            row = conn.execute("SELECT * FROM network_devices WHERE ip = ?", (ip,)).fetchone()
+            return dict(row) if row else None
+
+    def set_device_status(self, ip: str, status: str, notes: Optional[str] = None) -> bool:
+        with self._get_connection() as conn:
+            if notes is not None:
+                cursor = conn.execute("UPDATE network_devices SET approval_status = ?, notes = ? WHERE ip = ?", (status, notes, ip))
+            else:
+                cursor = conn.execute("UPDATE network_devices SET approval_status = ? WHERE ip = ?", (status, ip))
+            return cursor.rowcount > 0
+
+    def is_device_approved(self, ip: str) -> bool:
+        with self._get_connection() as conn:
+            row = conn.execute("SELECT approval_status FROM network_devices WHERE ip = ?", (ip,)).fetchone()
+            if not row:
+                return True
+            return row["approval_status"] == "APPROVED"
+
+    def save_audit_report(self, health_score: int, devices_scanned: int, open_ports: int, 
+                          threats_found: int, dns_healthy: bool, report: Dict[str, Any]) -> int:
+        import json
+        with self._get_connection() as conn:
+            cursor = conn.execute("""
+            INSERT INTO audit_history (health_score, devices_scanned, open_ports_count, threats_found, dns_healthy, report_json)
+            VALUES (?, ?, ?, ?, ?, ?)
+            """, (health_score, devices_scanned, open_ports, threats_found, 1 if dns_healthy else 0, json.dumps(report)))
+            return cursor.lastrowid
+
+    def get_latest_audit(self) -> Optional[Dict[str, Any]]:
+        import json
+        with self._get_connection() as conn:
+            row = conn.execute("SELECT * FROM audit_history ORDER BY id DESC LIMIT 1").fetchone()
+            if row:
+                d = dict(row)
+                d["report"] = json.loads(d["report_json"])
+                return d
+            return None
