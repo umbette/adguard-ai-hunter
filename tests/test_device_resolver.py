@@ -26,9 +26,11 @@ def test_categorize_device():
     assert resolver.categorize_device("Unknown-Generic") == ("🔌", "DEVICE")
 
 @pytest.mark.asyncio
-async def test_resolve_with_adguard_clients():
+async def test_resolve_with_adguard_clients(monkeypatch):
     settings = Settings()
     resolver = DeviceResolver(settings)
+    # Mock reverse PTR to isolate unit test from external AWS/LAN DNS environments
+    monkeypatch.setattr(resolver, "_reverse_ptr_lookup", AsyncMock(return_value=None))
 
     mock_session = MagicMock()
     mock_resp = AsyncMock()
@@ -79,3 +81,16 @@ async def test_resolve_with_adguard_clients():
     assert dev4.name == "192.168.1.200"
     assert dev4.icon == "🔌"
     assert dev4.display_name == "🔌 Dispositivo (192.168.1.200)"
+
+@pytest.mark.asyncio
+async def test_resolve_with_reverse_ptr(monkeypatch):
+    settings = Settings()
+    resolver = DeviceResolver(settings)
+    monkeypatch.setattr(resolver, "_reverse_ptr_lookup", AsyncMock(return_value="MacBook-Pro-M2.local"))
+
+    dev = await resolver.resolve("192.168.1.88")
+    assert dev.name == "MacBook-Pro-M2.local"
+    assert dev.icon == "💻"
+    assert dev.device_type == "COMPUTER"
+    assert dev.display_name == "💻 MacBook-Pro-M2.local (192.168.1.88)"
+
