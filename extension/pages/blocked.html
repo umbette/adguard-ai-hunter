@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <title>Sito Bloccato - AI Hunter Shield</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card-bg: #1e293b;
+      --danger: #ef4444;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --border: #334155;
+      --btn-primary: #3b82f6;
+      --btn-secondary: #475569;
+    }
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 40px;
+      max-width: 580px;
+      width: 90%;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+    }
+    .icon {
+      font-size: 48px;
+      color: var(--danger);
+      margin-bottom: 16px;
+    }
+    h1 {
+      font-size: 24px;
+      margin: 0 0 12px 0;
+      color: var(--text);
+    }
+    p {
+      color: var(--text-muted);
+      line-height: 1.6;
+      margin: 0 0 20px 0;
+    }
+    .domain-badge {
+      display: inline-block;
+      background: #0f172a;
+      border: 1px solid var(--danger);
+      color: #fca5a5;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-family: monospace;
+      font-size: 15px;
+      margin-bottom: 24px;
+      word-break: break-all;
+    }
+    .actions {
+      display: flex;
+      gap: 12px;
+      margin-top: 24px;
+    }
+    button {
+      flex: 1;
+      padding: 12px 20px;
+      font-size: 14px;
+      font-weight: 600;
+      border-radius: 8px;
+      cursor: pointer;
+      border: none;
+      transition: background 0.2s;
+    }
+    .btn-back {
+      background: var(--btn-primary);
+      color: #fff;
+    }
+    .btn-back:hover {
+      background: #2563eb;
+    }
+    .btn-proceed {
+      background: transparent;
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+    }
+    .btn-proceed:hover {
+      background: var(--border);
+      color: var(--text);
+    }
+    .footer {
+      margin-top: 32px;
+      font-size: 12px;
+      color: #64748b;
+      border-top: 1px solid var(--border);
+      padding-top: 16px;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="icon">🛡️</div>
+    <h1>Collegamento Bloccato per Sicurezza</h1>
+    <p>AI Hunter Shield ha interrotto la connessione a questo indirizzo perché è stato identificato come minaccia attiva (phishing, frode o distribuzione di malware).</p>
+    
+    <div class="domain-badge" id="domainDisplay">dominio-sospetto.com</div>
+    
+    <p>Navigare su questo sito potrebbe compromettere la tua sicurezza o sottrarre credenziali personali e coordinate bancarie.</p>
+
+    <div class="actions">
+      <button class="btn-back" id="btnBack">Torna indietro (Consigliato)</button>
+      <button class="btn-proceed" id="btnProceed">Procedi comunque (A tuo rischio)</button>
+    </div>
+
+    <div class="footer">
+      Protezione 100% locale garantita da AI Hunter Shield. Nessuna informazione di navigazione viene trasmessa all'esterno.
+    </div>
+  </div>
+
+  <script src="blocked.js"></script>
+</body>
+</html>
