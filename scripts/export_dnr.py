@@ -24,6 +24,25 @@ RULES_DIR = EXTENSION_DIR / "rules"
 DNR_OUTPUT_FILE = RULES_DIR / "ruleset.json"
 MAX_STATIC_RULES = 30000
 
+# Exhaustive list of all valid declarativeNetRequest resource types defined in Chrome Manifest V3 API
+ALL_RESOURCE_TYPES = [
+    "main_frame",
+    "sub_frame",
+    "stylesheet",
+    "script",
+    "image",
+    "font",
+    "object",
+    "xmlhttprequest",
+    "ping",
+    "csp_report",
+    "media",
+    "websocket",
+    "webtransport",
+    "webbundle",
+    "other"
+]
+
 
 def compile_dnr_ruleset(db_path: Path = DB_PATH, output_file: Path = DNR_OUTPUT_FILE, min_confidence: int = 85) -> dict:
     """
@@ -60,16 +79,7 @@ def compile_dnr_ruleset(db_path: Path = DB_PATH, output_file: Path = DNR_OUTPUT_
             },
             "condition": {
                 "urlFilter": f"||{dom_clean}^",
-                "resourceTypes": [
-                    "main_frame",
-                    "sub_frame",
-                    "stylesheet",
-                    "script",
-                    "image",
-                    "xmlhttprequest",
-                    "websocket",
-                    "other"
-                ]
+                "resourceTypes": ALL_RESOURCE_TYPES
             }
         }
         rules.append(block_rule)

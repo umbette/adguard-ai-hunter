@@ -45,6 +45,9 @@ def test_export_dnr_ruleset_structure(tmp_path):
         assert r["action"]["type"] == "block"
         assert "main_frame" in r["condition"]["resourceTypes"]
         assert "sub_frame" in r["condition"]["resourceTypes"]
+        assert "font" in r["condition"]["resourceTypes"]
+        assert "media" in r["condition"]["resourceTypes"]
+        assert "ping" in r["condition"]["resourceTypes"]
 
 
 def test_export_dnr_filters_confidence(tmp_path):
