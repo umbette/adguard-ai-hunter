@@ -19,7 +19,9 @@ DEVICE_KEYWORDS = [
     (["camera", "cam", "reolink", "ring", "nest", "tuya", "shelly", "sonoff", "tasmota", "hue", "philips", "echo", "alexa", "homepod", "vacuum", "roborock", "esp32", "esp8266"], "💡", "IOT"),
     # Computers & Laptops
     (["macbook", "imac", "mac", "pc", "laptop", "desktop", "thinkpad", "dell", "windows", "linux", "workstation"], "💻", "COMPUTER"),
-    # Printers
+    # 3D Printers & Maker Lab (Bambu Lab, Prusa, Voron, Klipper)
+    (["bambu", "bambulab", "x1c", "p1s", "p1p", "a1-mini", "prusa", "creality", "ender", "voron", "klipper", "octoprint", "elegoo"], "🖨️", "3D_PRINTER"),
+    # Standard Paper Printers
     (["printer", "epson", "hp", "canon", "brother"], "🖨️", "PRINTER"),
 ]
 

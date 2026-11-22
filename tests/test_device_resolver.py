@@ -22,6 +22,8 @@ def test_categorize_device():
     assert resolver.categorize_device("Reolink-Front-Camera") == ("💡", "IOT")
     assert resolver.categorize_device("Shelly-Plug-Cucina") == ("💡", "IOT")
     assert resolver.categorize_device("MacBook-Pro-M2") == ("💻", "COMPUTER")
+    assert resolver.categorize_device("Bambu-Lab-X1C") == ("🖨️", "3D_PRINTER")
+    assert resolver.categorize_device("Prusa-MK4-Lab") == ("🖨️", "3D_PRINTER")
     assert resolver.categorize_device("HP-LaserJet-Pro") == ("🖨️", "PRINTER")
     assert resolver.categorize_device("Unknown-Generic") == ("🔌", "DEVICE")
 
