@@ -88,5 +88,30 @@
     "displayName": "Vinted",
     "keywords": ["vinted"],
     "officialDomains": ["vinted.it", "vinted.com"]
+  },
+  "metamask": {
+    "displayName": "MetaMask",
+    "keywords": ["metamask"],
+    "officialDomains": ["metamask.io"]
+  },
+  "revolut": {
+    "displayName": "Revolut",
+    "keywords": ["revolut"],
+    "officialDomains": ["revolut.com"]
+  },
+  "binance": {
+    "displayName": "Binance",
+    "keywords": ["binance"],
+    "officialDomains": ["binance.com", "binance.us", "binance.je"]
+  },
+  "ledger": {
+    "displayName": "Ledger",
+    "keywords": ["ledgerlive", "ledger-live"],
+    "officialDomains": ["ledger.com"]
+  },
+  "trezor": {
+    "displayName": "Trezor",
+    "keywords": ["trezorsuite", "trezor-suite"],
+    "officialDomains": ["trezor.io"]
   }
 }

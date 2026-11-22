@@ -50,3 +50,15 @@ cloudfront.net
 amazonaws.com
 googleapis.com
 gstatic.com
+
+# Official Crypto & Web3 Infrastructure (Critical RPC endpoints)
+infura.io
+llamarpc.com
+ankr.com
+ethereum-rpc.publicnode.com
+solana.com
+helius.xyz
+polygon-rpc.com
+arbitrum.io
+optimism.io
+

@@ -88,6 +88,9 @@ def test_brand_heuristics_against_false_positives():
     assert not evaluate_domain("poste.it", brands, suffixes)
     assert not evaluate_domain("bper.it", brands, suffixes)
     assert not evaluate_domain("spid.gov.it", brands, suffixes)
+    assert not evaluate_domain("metamask.io", brands, suffixes)
+    assert not evaluate_domain("revolut.com", brands, suffixes)
+    assert not evaluate_domain("binance.com", brands, suffixes)
 
     # 2. Known spoofing / phishing attempts MUST be flagged
     assert evaluate_domain("poste-servizio.com", brands, suffixes)
@@ -96,6 +99,8 @@ def test_brand_heuristics_against_false_positives():
     assert evaluate_domain("paypa1.com", brands, suffixes)
     assert evaluate_domain("intesasampaolo.com", brands, suffixes)
     assert evaluate_domain("brt-tracking-pacco.org", brands, suffixes)
+    assert evaluate_domain("metamask-login.com", brands, suffixes)
+    assert evaluate_domain("revolut-security.net", brands, suffixes)
 
     # 3. Multi-part public suffix extraction across global ccTLDs and platforms
     assert get_etld_plus_one("login.service.gov.it", suffixes) == "service.gov.it"

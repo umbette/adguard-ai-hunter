@@ -8,6 +8,8 @@ from src.storage import StorageEngine
 from src.heuristics import HeuristicsEngine
 from src.gemini_client import GeminiClassifier
 from src.dispatcher import Dispatcher
+from src.dynamic_pricing import evaluate_dynamic_pricing_tracker
+from src.crypto_shield import evaluate_crypto_financial_threat
 
 logger = logging.getLogger("ai_hunter.ingestion")
 
@@ -116,10 +118,42 @@ class IngestionWorker:
                 # Already handled by prior human approval / whitelist
                 continue
 
-            # 2. Track rate burst
+            # 2. Check Crypto Vault & Financial Threat (High Priority)
+            crypto_match = evaluate_crypto_financial_threat(domain)
+            if crypto_match:
+                now_ts = datetime.datetime.now().timestamp()
+                if (now_ts - self._notified_cache.get(domain, 0)) >= 600:
+                    self._notified_cache[domain] = now_ts
+                    logger.warning(f"🚨 CRYPTO / FINANCIAL THREAT DETECTED: {domain} from {client_ip} ({crypto_match.threat_type})")
+                    await self.dispatcher.send_mobile_alert(
+                        domain=domain,
+                        client_ip=client_ip,
+                        classification="CRYPTO_FINANCIAL_ALERT",
+                        summary=f"🚨 {crypto_match.description}",
+                        suggested_rule=f"||{domain}^"
+                    )
+                continue
+
+            # 3. Check Anti-Dynamic Pricing & Cross-App Fingerprinting
+            pricing_match = evaluate_dynamic_pricing_tracker(domain)
+            if pricing_match:
+                now_ts = datetime.datetime.now().timestamp()
+                if (now_ts - self._notified_cache.get(domain, 0)) >= 600:
+                    self._notified_cache[domain] = now_ts
+                    logger.info(f"🛡️ Dynamic pricing tracker intercepted: {domain} from {client_ip} ({pricing_match.tracker_name})")
+                    await self.dispatcher.send_mobile_alert(
+                        domain=domain,
+                        client_ip=client_ip,
+                        classification="DYNAMIC_PRICING",
+                        summary=f"🛡️ {pricing_match.tracker_name}: {pricing_match.description}",
+                        suggested_rule=f"||{domain}^$client={client_ip}"
+                    )
+                continue
+
+            # 4. Track rate burst
             is_burst, burst_count = self.heuristics.record_query_and_check_burst(client_ip, domain)
 
-            # 3. Evaluate multi-label entropy
+            # 5. Evaluate multi-label entropy
             is_dga, entropy, flagged_label = self.heuristics.evaluate_entropy(domain)
 
             if is_dga or is_burst:
