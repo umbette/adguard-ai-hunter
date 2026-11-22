@@ -1,14 +1,14 @@
-name: Auto-Validate & Merge Community Threat PRs
+name: Auto-Validate Community Threat PRs
 
 on:
-  pull_request_target:
+  pull_request:
     types: [opened, synchronize, reopened]
     paths:
       - 'sources/domains.txt'
 
 permissions:
-  contents: write
-  pull-requests: write
+  contents: read
+  pull-requests: read
 
 jobs:
   validate_and_merge:

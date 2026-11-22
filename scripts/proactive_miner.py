@@ -83,9 +83,9 @@ class DomainSanitizer:
     """Zero-Trust input sanitizer ensuring RFC 1123 compliance and neutralizing homograph/injection attacks."""
 
     def __init__(self):
-        # Local tldextract cache
+        # Local tldextract cache with private PSL domains enabled
         cache_dir = DATA_DIR / ".tld_cache"
-        self.extractor = tldextract.TLDExtract(cache_dir=str(cache_dir))
+        self.extractor = tldextract.TLDExtract(cache_dir=str(cache_dir), include_psl_private_domains=True)
 
     def sanitize(self, raw_input: str) -> str | None:
         if not raw_input or not isinstance(raw_input, str) or len(raw_input) > 2048:

@@ -44,3 +44,24 @@ def test_snooze_expiration(temp_storage):
 
     match_active = temp_storage.match_decision("active.com", "192.168.1.1")
     assert match_active is not None
+
+def test_cooldown_set_and_check(temp_storage):
+    assert not temp_storage.is_in_cooldown("benign-api.net", "192.168.1.100")
+    
+    # Set client-specific cooldown
+    temp_storage.set_cooldown("benign-api.net", "192.168.1.100", duration_seconds=3600)
+    assert temp_storage.is_in_cooldown("benign-api.net", "192.168.1.100")
+    assert not temp_storage.is_in_cooldown("benign-api.net", "192.168.1.105")
+    
+    # Set global cooldown
+    temp_storage.set_cooldown("global-benign.org", "GLOBAL", duration_seconds=3600)
+    assert temp_storage.is_in_cooldown("global-benign.org", "192.168.1.100")
+    assert temp_storage.is_in_cooldown("global-benign.org", "192.168.1.200")
+
+def test_cooldown_expiration_and_cleanup(temp_storage):
+    # Set cooldown that expired 1 second ago
+    temp_storage.set_cooldown("expired-cooldown.com", "192.168.1.50", duration_seconds=-1)
+    assert not temp_storage.is_in_cooldown("expired-cooldown.com", "192.168.1.50")
+    
+    cleaned = temp_storage.cleanup_expired_cooldowns()
+    assert cleaned >= 1

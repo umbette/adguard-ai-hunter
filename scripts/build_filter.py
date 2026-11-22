@@ -28,19 +28,21 @@ NEVER_BLOCK_FILE = SOURCES_DIR / "never_block.txt"
 OUTPUT_FILE = FILTERS_DIR / "threat_blacklist.txt"
 
 
-def load_never_block() -> set[str]:
+def load_never_block(never_block_path: Path = None) -> set[str]:
+    if never_block_path is None:
+        never_block_path = NEVER_BLOCK_FILE
     protected = set()
-    if not NEVER_BLOCK_FILE.exists():
-        print(f"[WARN] Never-block file not found at {NEVER_BLOCK_FILE}")
+    if not never_block_path.exists():
+        print(f"[WARN] Never-block file not found at {never_block_path}")
         return protected
 
-    with open(NEVER_BLOCK_FILE, "r", encoding="utf-8") as f:
+    with open(never_block_path, "r", encoding="utf-8") as f:
         for line in f:
             clean = line.strip().lower()
             if not clean or clean.startswith("#"):
                 continue
             protected.add(clean)
-    print(f"Loaded {len(protected)} protected domains from {NEVER_BLOCK_FILE.name}")
+    print(f"Loaded {len(protected)} protected domains from {never_block_path.name}")
     return protected
 
 
@@ -55,15 +57,28 @@ def is_protected(domain: str, protected: set[str]) -> bool:
     return False
 
 
-def validate_and_compile():
-    protected = load_never_block()
-    extractor = tldextract.TLDExtract(cache_dir=str(SOURCES_DIR.parent / "data" / ".tld_cache"))
+def validate_and_compile(
+    source_files: list[Path] = None,
+    never_block_path: Path = None,
+    output_path: Path = None
+) -> dict:
+    if never_block_path is None:
+        never_block_path = NEVER_BLOCK_FILE
+    if output_path is None:
+        output_path = OUTPUT_FILE
+
+    protected = load_never_block(never_block_path)
+    extractor = tldextract.TLDExtract(
+        cache_dir=str(SOURCES_DIR.parent / "data" / ".tld_cache"),
+        include_psl_private_domains=True
+    )
     
-    source_files = []
-    if DOMAINS_FILE.exists():
-        source_files.append(DOMAINS_FILE)
-    if PROACTIVE_FILE.exists():
-        source_files.append(PROACTIVE_FILE)
+    if source_files is None:
+        source_files = []
+        if DOMAINS_FILE.exists():
+            source_files.append(DOMAINS_FILE)
+        if PROACTIVE_FILE.exists():
+            source_files.append(PROACTIVE_FILE)
 
     if not source_files:
         print(f"[ERROR] No source domain files found in {SOURCES_DIR}")
@@ -92,7 +107,7 @@ def validate_and_compile():
                     skipped_count += 1
                     continue
 
-                # 3. Public Suffix List (PSL) Validation: Reject bare TLDs or Public Suffixes (e.g. co.uk, com)
+                # 3. Public Suffix List (PSL) Validation: Reject bare TLDs or Public/Private Suffixes (e.g. co.uk, com, pages.dev)
                 ext = extractor(domain)
                 if not ext.domain or not ext.suffix or domain == ext.suffix:
                     skipped_count += 1
@@ -108,11 +123,11 @@ def validate_and_compile():
     sorted_domains = sorted(valid_domains)
     now_utc = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
 
-    FILTERS_DIR.mkdir(parents=True, exist_ok=True)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
     
     # Atomic write pattern with .tmp and .bak
-    temp_output = OUTPUT_FILE.with_suffix(".tmp")
-    bak_output = OUTPUT_FILE.with_suffix(".bak")
+    temp_output = output_path.with_suffix(".tmp")
+    bak_output = output_path.with_suffix(".bak")
 
     with open(temp_output, "w", encoding="utf-8", newline="\n") as out:
         out.write("! ------------------------------------------------------------------------------\n")
@@ -129,17 +144,23 @@ def validate_and_compile():
             out.write(f"||{d}^\n")
 
     # Backup current file if exists
-    if OUTPUT_FILE.exists():
-        shutil.copy2(OUTPUT_FILE, bak_output)
+    if output_path.exists():
+        shutil.copy2(output_path, bak_output)
 
     # Atomic swap
-    os.replace(temp_output, OUTPUT_FILE)
+    os.replace(temp_output, output_path)
 
     print(f"\nCompilation successful:")
     print(f" - Valid rules compiled: {len(sorted_domains)}")
     print(f" - Rejected invalid lines: {skipped_count}")
     print(f" - Filtered protected domains: {protected_count}")
-    print(f" - Output file: {OUTPUT_FILE}")
+    print(f" - Output file: {output_path}")
+
+    return {
+        "valid": len(sorted_domains),
+        "skipped": skipped_count,
+        "protected": protected_count
+    }
 
 
 if __name__ == "__main__":

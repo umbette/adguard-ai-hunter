@@ -116,6 +116,10 @@ class IngestionWorker:
             is_dga, entropy, flagged_label = self.heuristics.evaluate_entropy(domain)
 
             if is_dga or is_burst:
+                # Check persistent SQLite cooldown (e.g. previously evaluated as benign)
+                if self.storage.is_in_cooldown(domain, client_ip):
+                    continue
+
                 # Debounce notifications (10 minutes per domain)
                 now_ts = datetime.datetime.now().timestamp()
                 last_alert = self._notified_cache.get(domain, 0)
@@ -142,10 +146,11 @@ class IngestionWorker:
                     is_dga=is_dga
                 )
 
-                # Check classification: if BENIGN or low risk (< 0.40), dismiss candidate without creating dangerous wildcard rules
+                # Check classification: if BENIGN or low risk (< 0.40), dismiss candidate with 24h cooldown without creating dangerous wildcard rules
                 if audit.classification == "BENIGN" or audit.risk_score < 0.40:
-                    logger.info(f"Dismissing benign candidate without global wildcard injection: {domain} (risk={audit.risk_score})")
+                    logger.info(f"Dismissing benign candidate with 24h cooldown: {domain} (risk={audit.risk_score})")
                     self.storage.update_candidate_status(candidate_id, "DISMISSED", classification=audit.classification, summary=audit.summary)
+                    self.storage.set_cooldown(domain, client_ip, duration_seconds=86400, reason="BENIGN")
                     continue
 
                 # Only send interactive Home Assistant push notification for actionable threats / telemetry

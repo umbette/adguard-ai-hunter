@@ -52,6 +52,16 @@ class StorageEngine:
                 value TEXT NOT NULL,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
+
+            CREATE TABLE IF NOT EXISTS domain_cooldowns (
+                domain TEXT NOT NULL,
+                client_ip TEXT NOT NULL,
+                expires_at TIMESTAMP NOT NULL,
+                reason TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (domain, client_ip)
+            );
+            CREATE INDEX IF NOT EXISTS idx_cooldown_lookup ON domain_cooldowns(domain, client_ip, expires_at);
             """)
 
     def get_checkpoint(self, key: str = "last_query_time") -> Optional[str]:
@@ -137,4 +147,30 @@ class StorageEngine:
         now_iso = datetime.datetime.now(datetime.timezone.utc).isoformat()
         with self._get_connection() as conn:
             cursor = conn.execute("DELETE FROM decisions WHERE expires_at IS NOT NULL AND expires_at <= ?", (now_iso,))
+            return cursor.rowcount
+
+    def set_cooldown(self, domain: str, client_ip: str = "GLOBAL", duration_seconds: int = 86400, reason: str = "BENIGN"):
+        domain = domain.lower().strip(".")
+        expires_at = (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(seconds=duration_seconds)).isoformat()
+        with self._get_connection() as conn:
+            conn.execute("""
+            INSERT OR REPLACE INTO domain_cooldowns (domain, client_ip, expires_at, reason, created_at)
+            VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+            """, (domain, client_ip, expires_at, reason))
+
+    def is_in_cooldown(self, domain: str, client_ip: str = "GLOBAL") -> bool:
+        domain = domain.lower().strip(".")
+        now_iso = datetime.datetime.now(datetime.timezone.utc).isoformat()
+        with self._get_connection() as conn:
+            row = conn.execute("""
+            SELECT 1 FROM domain_cooldowns 
+            WHERE domain = ? AND (client_ip = ? OR client_ip = 'GLOBAL') AND expires_at > ?
+            LIMIT 1
+            """, (domain, client_ip, now_iso)).fetchone()
+            return row is not None
+
+    def cleanup_expired_cooldowns(self) -> int:
+        now_iso = datetime.datetime.now(datetime.timezone.utc).isoformat()
+        with self._get_connection() as conn:
+            cursor = conn.execute("DELETE FROM domain_cooldowns WHERE expires_at <= ?", (now_iso,))
             return cursor.rowcount
