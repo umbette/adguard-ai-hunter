@@ -1,7 +1,7 @@
 ! ------------------------------------------------------------------------------
 ! Title: Sentinel Core - Community Threat & DGA Blacklist
 ! Description: Validated threat intelligence and DGA domains compiled from Sentinel Core
-! Last Modified: 2026-11-22 15:32:08 UTC
+! Last Modified: 2026-11-22 20:14:58 UTC
 ! Number of rules: 510
 ! Syntax: AdGuard / uBlock Origin compatible
 ! License: MIT License
