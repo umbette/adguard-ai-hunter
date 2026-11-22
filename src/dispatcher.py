@@ -1,4 +1,5 @@
 import asyncio
+import base64
 import json
 import logging
 import datetime
@@ -39,7 +40,8 @@ class Dispatcher:
             rule_clean = f"{rule_clean} # ai-hunter"
 
         session = await self.get_session()
-        auth_header = aiohttp.BasicAuth(self.settings.adguard.username, self.settings.adguard.password).encode()
+        creds = f"{self.settings.adguard.username}:{self.settings.adguard.password}".encode("utf-8")
+        auth_header = f"Basic {base64.b64encode(creds).decode('ascii')}"
         headers = {"Authorization": auth_header}
         base_url = self.settings.adguard.base_url
 
