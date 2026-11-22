@@ -10,6 +10,7 @@ from src.config import Settings
 from src.storage import StorageEngine
 from src.device_resolver import DeviceResolver
 from src.audit import NetworkAuditEngine
+from src.offenders import OffendersAnalyticsEngine
 from src.device_shield import (
     evaluate_device_shield,
     is_essential_companion_domain,
@@ -498,6 +499,25 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       </div>
     </div>
 
+    <!-- Offenders Analytics Panel (Hall of Shame) -->
+    <div class="panel" style="margin-bottom: 28px;">
+      <div class="panel-header" style="flex-wrap: wrap; gap: 10px;">
+        <div>
+          <div class="panel-title">🏆 Hall of Shame • Top Threat & Tracking Offenders</div>
+          <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;" id="offendersSummaryText">Analisi dei vettori di tracciamento ed esfiltrazione dati</div>
+        </div>
+        <div style="display: flex; gap: 6px;" id="offenderTabs">
+          <button class="btn-action" id="tabBrand" onclick="switchOffenderTab('brand')" style="background: rgba(99, 102, 241, 0.3); border-color: var(--indigo); color: #fff; padding: 5px 12px; font-size: 12px;">🏷️ Per Marca</button>
+          <button class="btn-action" id="tabDevice" onclick="switchOffenderTab('device')" style="background: rgba(255, 255, 255, 0.05); color: #94a3b8; padding: 5px 12px; font-size: 12px;">📱 Per Dispositivo</button>
+          <button class="btn-action" id="tabCategory" onclick="switchOffenderTab('category')" style="background: rgba(255, 255, 255, 0.05); color: #94a3b8; padding: 5px 12px; font-size: 12px;">🛡️ Per Categoria</button>
+          <button class="btn-action" id="tabGeography" onclick="switchOffenderTab('geography')" style="background: rgba(255, 255, 255, 0.05); color: #94a3b8; padding: 5px 12px; font-size: 12px;">🌍 Per Geografia</button>
+        </div>
+      </div>
+      <div id="offendersList" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; margin-top: 14px;">
+        <!-- Populated by JS -->
+      </div>
+    </div>
+
     <!-- Bottom: Device Leaderboard -->
     <div class="panel" style="margin-bottom: 28px;">
       <div class="panel-header">
@@ -870,20 +890,150 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       }
     }
 
+    let currentOffenderTab = 'brand';
+    let cachedOffendersData = null;
+
+    async function fetchOffenders() {
+      try {
+        const resp = await fetch('/api/offenders');
+        if (!resp.ok) return;
+        cachedOffendersData = await resp.json();
+        if (cachedOffendersData.summary) {
+          const sumEl = document.getElementById('offendersSummaryText');
+          if (sumEl) sumEl.innerText = cachedOffendersData.summary;
+        }
+        renderOffenders();
+      } catch (e) {
+        console.error("Offenders fetch error:", e);
+      }
+    }
+
+    function switchOffenderTab(tabName) {
+      currentOffenderTab = tabName;
+      ['brand', 'device', 'category', 'geography'].forEach(t => {
+        const btn = document.getElementById('tab' + t.charAt(0).toUpperCase() + t.slice(1));
+        if (btn) {
+          if (t === tabName) {
+            btn.style.background = 'rgba(99, 102, 241, 0.35)';
+            btn.style.borderColor = 'var(--indigo)';
+            btn.style.color = '#fff';
+          } else {
+            btn.style.background = 'rgba(255, 255, 255, 0.05)';
+            btn.style.borderColor = 'transparent';
+            btn.style.color = '#94a3b8';
+          }
+        }
+      });
+      renderOffenders();
+    }
+
+    function renderOffenders() {
+      if (!cachedOffendersData) return;
+      const listEl = document.getElementById('offendersList');
+      if (!listEl) return;
+
+      let items = [];
+      if (currentOffenderTab === 'brand') {
+        items = cachedOffendersData.by_brand || [];
+        listEl.innerHTML = items.map(item => `
+          <div class="device-item" style="flex-direction: column; align-items: stretch; gap: 8px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 20px;">${item.icon || '🏷️'}</span>
+                <div>
+                  <div style="font-weight: 700; font-size: 13px;">${item.brand}</div>
+                  <div style="font-size: 11px; color: var(--text-muted);">${item.flag || ''} ${item.country || ''} • ${item.category || ''}</div>
+                </div>
+              </div>
+              <span style="font-weight: 800; font-size: 13px; color: var(--indigo);">${item.percentage}%</span>
+            </div>
+            <div style="background: rgba(255,255,255,0.06); height: 5px; border-radius: 999px; overflow: hidden;">
+              <div style="background: linear-gradient(90deg, #6366f1, #10b981); width: ${item.percentage}%; height: 100%;"></div>
+            </div>
+            <div style="font-size: 10px; color: var(--text-muted); text-align: right;">${Number(item.count).toLocaleString()} tentativi bloccati</div>
+          </div>
+        `).join('');
+      } else if (currentOffenderTab === 'device') {
+        items = cachedOffendersData.by_device || [];
+        listEl.innerHTML = items.map(item => `
+          <div class="device-item" style="flex-direction: column; align-items: stretch; gap: 8px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 20px;">${item.icon || '📱'}</span>
+                <div>
+                  <div style="font-weight: 700; font-size: 13px;">${item.name || item.ip}</div>
+                  <div style="font-size: 11px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace;">${item.ip || ''}</div>
+                </div>
+              </div>
+              <span style="font-weight: 800; font-size: 13px; color: var(--emerald);">${item.percentage}%</span>
+            </div>
+            <div style="background: rgba(255,255,255,0.06); height: 5px; border-radius: 999px; overflow: hidden;">
+              <div style="background: linear-gradient(90deg, #10b981, #f59e0b); width: ${item.percentage}%; height: 100%;"></div>
+            </div>
+            <div style="font-size: 10px; color: var(--text-muted); text-align: right;">${Number(item.count).toLocaleString()} blocchi</div>
+          </div>
+        `).join('');
+      } else if (currentOffenderTab === 'category') {
+        items = cachedOffendersData.by_category || [];
+        listEl.innerHTML = items.map(item => `
+          <div class="device-item" style="flex-direction: column; align-items: stretch; gap: 8px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 20px;">${item.icon || '🛡️'}</span>
+                <div>
+                  <div style="font-weight: 700; font-size: 13px;">${item.name}</div>
+                  <div style="font-size: 11px; color: var(--text-muted);">${item.category_id}</div>
+                </div>
+              </div>
+              <span style="font-weight: 800; font-size: 13px; color: var(--amber);">${item.percentage}%</span>
+            </div>
+            <div style="background: rgba(255,255,255,0.06); height: 5px; border-radius: 999px; overflow: hidden;">
+              <div style="background: linear-gradient(90deg, #f59e0b, #f43f5e); width: ${item.percentage}%; height: 100%;"></div>
+            </div>
+            <div style="font-size: 10px; color: var(--text-muted); text-align: right;">${Number(item.count).toLocaleString()} minacce</div>
+          </div>
+        `).join('');
+      } else if (currentOffenderTab === 'geography') {
+        items = cachedOffendersData.by_geography || [];
+        listEl.innerHTML = items.map(item => `
+          <div class="device-item" style="flex-direction: column; align-items: stretch; gap: 8px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 24px;">${item.flag || '🌍'}</span>
+                <div>
+                  <div style="font-weight: 700; font-size: 13px;">${item.country_name} (${item.country_code})</div>
+                  <div style="font-size: 11px; color: var(--text-muted);">Destinazione esfiltrazione</div>
+                </div>
+              </div>
+              <span style="font-weight: 800; font-size: 13px; color: #f43f5e;">${item.percentage}%</span>
+            </div>
+            <div style="background: rgba(255,255,255,0.06); height: 5px; border-radius: 999px; overflow: hidden;">
+              <div style="background: linear-gradient(90deg, #f43f5e, #6366f1); width: ${item.percentage}%; height: 100%;"></div>
+            </div>
+            <div style="font-size: 10px; color: var(--text-muted); text-align: right;">${Number(item.count).toLocaleString()} connessioni bloccate</div>
+          </div>
+        `).join('');
+      }
+    }
+
     // Initial load and periodic polling every 4 seconds
     updateDashboard();
-    setInterval(updateDashboard, 4000);
+    fetchOffenders();
+    setInterval(() => { updateDashboard(); fetchOffenders(); }, 4000);
   </script>
 </body>
 </html>
 """
 
 class SentinelDashboard:
-    def __init__(self, settings: Settings, storage: StorageEngine, resolver: DeviceResolver, audit_engine: Optional[NetworkAuditEngine] = None):
+    def __init__(self, settings: Settings, storage: StorageEngine, resolver: DeviceResolver, 
+                 audit_engine: Optional[NetworkAuditEngine] = None,
+                 offenders_engine: Optional[OffendersAnalyticsEngine] = None):
         self.settings = settings
         self.storage = storage
         self.resolver = resolver
         self.audit_engine = audit_engine or NetworkAuditEngine(settings, storage, resolver)
+        self.offenders_engine = offenders_engine or OffendersAnalyticsEngine()
         self.app = web.Application()
         self.runner: Optional[web.AppRunner] = None
         self._site: Optional[web.TCPSite] = None
@@ -900,6 +1050,7 @@ class SentinelDashboard:
         self.app.router.add_get("/api/devices", self.handle_api_devices)
         self.app.router.add_post("/api/devices/approve", self.handle_api_approve_device)
         self.app.router.add_post("/api/devices/block", self.handle_api_block_device)
+        self.app.router.add_get("/api/offenders", self.handle_api_offenders)
 
     async def handle_index(self, request: web.Request) -> web.Response:
         return web.Response(text=HTML_TEMPLATE, content_type="text/html")
@@ -1179,6 +1330,19 @@ class SentinelDashboard:
             return web.json_response({"status": "success", "ip": ip, "approval_status": "BLOCKED"})
         except Exception as e:
             return web.json_response({"status": "error", "message": str(e)}, status=500)
+
+    async def handle_api_offenders(self, request: web.Request) -> web.Response:
+        """Returns 4-vector analytics breakdown of offenders by Brand, Device, Category, and Geography."""
+        try:
+            stats = await self._fetch_adguard_stats()
+            top_blocked = stats.get("top_blocked_domains", [])
+            devices = self.storage.get_devices() if hasattr(self.storage, "get_devices") else []
+            overview = self.offenders_engine.compute_offenders_overview(top_blocked, devices)
+            return web.json_response(overview)
+        except Exception as e:
+            logger.error(f"Error computing offenders overview: {e}")
+            overview = self.offenders_engine.compute_offenders_overview([])
+            return web.json_response(overview)
 
     async def start(self):
         host = self.settings.dashboard.host
