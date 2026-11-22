@@ -1,13 +1,19 @@
 import asyncio
 import base64
 import logging
+import re
+import urllib.parse
 from typing import Dict, Any, List, Optional
 import aiohttp
 from aiohttp import web
 from src.config import Settings
 from src.storage import StorageEngine
 from src.device_resolver import DeviceResolver
-from src.device_shield import evaluate_device_shield
+from src.device_shield import (
+    evaluate_device_shield,
+    is_essential_companion_domain,
+    add_runtime_allowlist_domain
+)
 
 logger = logging.getLogger("ai_hunter.dashboard")
 
@@ -174,7 +180,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     /* Two-Column Layout */
     .main-grid {
       display: grid;
-      grid-template-columns: 2fr 1fr;
+      grid-template-columns: 2fr 1.2fr;
       gap: 24px;
       margin-bottom: 28px;
     }
@@ -231,7 +237,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     .shield-meta h4 { font-size: 13px; font-weight: 700; margin-bottom: 2px; }
     .shield-meta p { font-size: 11px; color: var(--text-muted); line-height: 1.3; }
 
-    /* Top Blocked List */
+    /* Top Blocked List with 1-Click Unbreak */
     .threat-list { list-style: none; }
     .threat-item {
       display: flex;
@@ -242,22 +248,104 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       font-size: 13px;
     }
     .threat-item:last-child { border-bottom: none; }
+    .threat-info {
+      display: flex;
+      flex-direction: column;
+      max-width: 220px;
+    }
     .threat-domain {
       font-family: 'JetBrains Mono', monospace;
       color: #e2e8f0;
-      max-width: 200px;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
-    .threat-count {
-      background: rgba(244, 63, 94, 0.15);
-      color: #fda4af;
-      padding: 3px 8px;
-      border-radius: 6px;
-      font-family: 'JetBrains Mono', monospace;
+    .threat-count-label {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+    .threat-actions {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    /* Sleek Action Buttons */
+    .btn-action {
+      border: none;
+      outline: none;
+      cursor: pointer;
+      font-size: 11px;
       font-weight: 700;
+      padding: 5px 9px;
+      border-radius: 6px;
+      transition: all 0.15s ease-in-out;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .btn-unbreak {
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      color: var(--emerald);
+    }
+    .btn-unbreak:hover {
+      background: rgba(16, 185, 129, 0.35);
+      color: #ffffff;
+    }
+    .btn-report {
+      background: rgba(99, 102, 241, 0.15);
+      border: 1px solid rgba(99, 102, 241, 0.4);
+      color: #a5b4fc;
+    }
+    .btn-report:hover {
+      background: rgba(99, 102, 241, 0.35);
+      color: #ffffff;
+    }
+
+    /* Modal Overlay (Zero-Knowledge Reporting) */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.78);
+      backdrop-filter: blur(5px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+    }
+    .modal-box {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      width: 90%;
+      max-width: 540px;
+      padding: 24px;
+      box-shadow: 0 12px 50px rgba(0,0,0,0.6);
+    }
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    .modal-header h3 { font-size: 16px; font-weight: 700; }
+    .modal-close {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 22px;
+      cursor: pointer;
+    }
+    .zk-notice {
+      background: rgba(99, 102, 241, 0.1);
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      border-radius: 8px;
+      padding: 10px 12px;
       font-size: 12px;
+      color: #cbd5e1;
+      margin-bottom: 16px;
+      line-height: 1.45;
     }
 
     /* Protected Devices Leaderboard */
@@ -353,15 +441,28 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         </div>
       </div>
 
-      <!-- Right: Top Neutralized Threats (Pi-hole / AdGuard inspired) -->
+      <!-- Right: Top Neutralized Threats & Unbreak Center -->
       <div class="panel">
         <div class="panel-header">
-          <div class="panel-title">🚫 Top Minacce Bloccate</div>
-          <div class="panel-tag">Ultime 24h</div>
+          <div class="panel-title">🚫 Top Minacce & Unbreak App</div>
+          <div class="panel-tag">Zero-Knowledge Feedback</div>
         </div>
         <ul class="threat-list" id="threatList">
           <li class="threat-item"><span>Caricamento statistiche...</span></li>
         </ul>
+
+        <!-- Fast Unbreak Input Form -->
+        <div style="margin-top: 18px; padding-top: 14px; border-top: 1px solid rgba(255, 255, 255, 0.06);">
+          <div style="font-size: 12px; font-weight: 700; color: #cbd5e1; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between;">
+            <span>⚡ Risoluzione Rapida Companion App</span>
+            <span style="font-size: 10px; background: rgba(16, 185, 129, 0.2); color: var(--emerald); padding: 2px 6px; border-radius: 4px;">Locale 1-Click</span>
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <input type="text" id="customUnbreakInput" placeholder="es. api-app.ww.ecouser.net" style="flex: 1; background: #07090e; border: 1px solid var(--card-border); border-radius: 8px; padding: 8px 12px; color: #fff; font-family: 'JetBrains Mono', monospace; font-size: 12px;" />
+            <button class="btn-action btn-unbreak" onclick="unbreakCustomDomain()" style="padding: 8px 14px;">🔓 Sblocca</button>
+          </div>
+          <div id="unbreakToast" style="margin-top: 8px; font-size: 11px; color: var(--emerald); display: none;"></div>
+        </div>
       </div>
     </div>
 
@@ -377,8 +478,47 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     </div>
 
     <footer>
-      Sentinel Core v0.3.1 • Zero-Data Pure DNS Architecture • Nessuna telemetria cloud esterna
+      Sentinel Core v0.3.1 • Zero-Data Pure DNS Architecture • Nessuna telemetria cloud centrale
     </footer>
+  </div>
+
+  <!-- Zero-Knowledge Community Reporting Modal -->
+  <div id="reportModal" class="modal-overlay" style="display: none;">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3>📢 Condividi Fix con la Community</h3>
+        <button class="modal-close" onclick="closeReportModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="zk-notice">
+          <strong>🔒 Garanzia Zero-Knowledge:</strong> Sentinel non raccoglie né invia alcun dato a server centrali. Nessun indirizzo IP, identificativo MAC, timestamp o informazione personale è inclusa. Questa operazione prepara una segnalazione open source su GitHub sotto il tuo pieno controllo.
+        </div>
+        <div style="margin-bottom: 12px;">
+          <label style="font-size: 12px; color: var(--text-muted); display: block; margin-bottom: 4px;">Dominio di Controllo Sbloccato:</label>
+          <input type="text" id="reportDomain" readonly style="width: 100%; background: #07090e; border: 1px solid var(--card-border); border-radius: 8px; padding: 8px 12px; color: #fff; font-family: 'JetBrains Mono', monospace; font-size: 13px;" />
+        </div>
+        <div style="margin-bottom: 12px;">
+          <label style="font-size: 12px; color: var(--text-muted); display: block; margin-bottom: 4px;">Dispositivo o App Interessata:</label>
+          <select id="reportDeviceCategory" style="width: 100%; background: #07090e; border: 1px solid var(--card-border); border-radius: 8px; padding: 8px 12px; color: #fff; font-size: 13px;">
+            <option value="Robot Aspirapolvere (Ecovacs, Roborock, Dreame)">Robot Aspirapolvere (Ecovacs, Roborock, Dreame)</option>
+            <option value="Stampante 3D (Bambu Lab, Prusa)">Stampante 3D (Bambu Lab, Prusa)</option>
+            <option value="Smart Kitchen / Friggitrice (Cosori, VeSync, Xiaomi)">Smart Kitchen / Friggitrice (Cosori, VeSync, Xiaomi)</option>
+            <option value="Auto Connessa / Companion App (Tesla, BMW, Ford)">Auto Connessa / Companion App (Tesla, BMW, Ford)</option>
+            <option value="Smart Home Relay / Hub (Shelly, Tuya, Sonoff)">Smart Home Relay / Hub (Shelly, Tuya, Sonoff)</option>
+            <option value="Smart TV (Samsung, LG, Sony)">Smart TV (Samsung, LG, Sony)</option>
+            <option value="Altro Dispositivo IoT">Altro Dispositivo IoT</option>
+          </select>
+        </div>
+        <div style="margin-bottom: 16px;">
+          <label style="font-size: 12px; color: var(--text-muted); display: block; margin-bottom: 4px;">Dettagli sul problema risolto (opzionale):</label>
+          <input type="text" id="reportNotes" placeholder="Es. L'app Ecovacs Home non si connetteva da rete cellulare; sbloccando questo dominio si è risolto." style="width: 100%; background: #07090e; border: 1px solid var(--card-border); border-radius: 8px; padding: 8px 12px; color: #fff; font-size: 12px;" />
+        </div>
+        <div style="display: flex; gap: 10px; justify-content: flex-end;">
+          <button class="btn-action" onclick="closeReportModal()" style="background: rgba(255,255,255,0.08); color: #ccc; padding: 8px 14px;">Annulla</button>
+          <button class="btn-action btn-unbreak" onclick="submitReportModal()" style="padding: 8px 14px;">🚀 Crea Issue Anonima su GitHub</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script>
@@ -407,13 +547,19 @@ HTML_TEMPLATE = """<!DOCTYPE html>
           </div>
         `).join('');
 
-        // Populate Top Blocked
+        // Populate Top Blocked with 1-Click Unbreak & Report buttons
         const threatListEl = document.getElementById('threatList');
         if (data.top_blocked && data.top_blocked.length > 0) {
           threatListEl.innerHTML = data.top_blocked.map(t => `
             <li class="threat-item">
-              <span class="threat-domain" title="${t.domain}">${t.domain}</span>
-              <span class="threat-count">${Number(t.count).toLocaleString()}</span>
+              <div class="threat-info">
+                <span class="threat-domain" title="${t.domain}">${t.domain}</span>
+                <span class="threat-count-label">${Number(t.count).toLocaleString()} blocchi</span>
+              </div>
+              <div class="threat-actions">
+                <button class="btn-action btn-unbreak" onclick="unbreakDomain('${t.domain}')" title="Sblocca localmente questo dominio per ripristinare l'app">🔓 Sblocca</button>
+                <button class="btn-action btn-report" onclick="openReportModal('${t.domain}')" title="Segnala alla community su GitHub in modo 100% anonimo">📢 Segnala</button>
+              </div>
             </li>
           `).join('');
         }
@@ -440,6 +586,80 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       }
     }
 
+    async function unbreakDomain(domain) {
+      if (!domain) return;
+      try {
+        const resp = await fetch('/api/unbreak', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ domain: domain })
+        });
+        const data = await resp.json();
+        if (resp.ok && data.status === 'success') {
+          showToast(`🔓 Sbloccato: ${domain} (regola @@||${domain}^ attiva su AdGuard)`);
+          updateDashboard();
+        } else {
+          alert("Errore nello sblocco: " + (data.message || "Errore sconosciuto"));
+        }
+      } catch (e) {
+        alert("Errore di connessione durante lo sblocco: " + e);
+      }
+    }
+
+    async function unbreakCustomDomain() {
+      const input = document.getElementById('customUnbreakInput');
+      const dom = (input.value || '').trim();
+      if (!dom) return;
+      await unbreakDomain(dom);
+      input.value = '';
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('unbreakToast');
+      if (toast) {
+        toast.innerText = msg;
+        toast.style.display = 'block';
+        setTimeout(() => { toast.style.display = 'none'; }, 5000);
+      }
+    }
+
+    function openReportModal(domain) {
+      document.getElementById('reportDomain').value = domain;
+      document.getElementById('reportModal').style.display = 'flex';
+    }
+
+    function closeReportModal() {
+      document.getElementById('reportModal').style.display = 'none';
+    }
+
+    async function submitReportModal() {
+      const domain = document.getElementById('reportDomain').value;
+      const devCat = document.getElementById('reportDeviceCategory').value;
+      const notes = document.getElementById('reportNotes').value;
+      
+      try {
+        const resp = await fetch('/api/report_unbreak', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            domain: domain,
+            device_name: devCat,
+            device_category: devCat,
+            notes: notes
+          })
+        });
+        const data = await resp.json();
+        if (resp.ok && data.github_issue_url) {
+          window.open(data.github_issue_url, '_blank');
+          closeReportModal();
+        } else {
+          alert("Errore nella preparazione del report: " + (data.message || ""));
+        }
+      } catch (e) {
+        alert("Errore di rete durante la segnalazione: " + e);
+      }
+    }
+
     // Initial load and periodic polling every 4 seconds
     updateDashboard();
     setInterval(updateDashboard, 4000);
@@ -461,6 +681,9 @@ class SentinelDashboard:
     def _setup_routes(self):
         self.app.router.add_get("/", self.handle_index)
         self.app.router.add_get("/api/stats", self.handle_api_stats)
+        self.app.router.add_get("/api/blocked_queries", self.handle_api_blocked_queries)
+        self.app.router.add_post("/api/unbreak", self.handle_api_unbreak)
+        self.app.router.add_post("/api/report_unbreak", self.handle_api_report_unbreak)
 
     async def handle_index(self, request: web.Request) -> web.Response:
         return web.Response(text=HTML_TEMPLATE, content_type="text/html")
@@ -488,7 +711,7 @@ class SentinelDashboard:
                         
                         top_raw = data.get("top_blocked_domains", [])
                         parsed_top = []
-                        for item in top_raw[:8]:
+                        for item in top_raw[:12]:
                             for domain, count in item.items():
                                 parsed_top.append({"domain": domain, "count": count})
                         stats["top_blocked_domains"] = parsed_top
@@ -505,14 +728,13 @@ class SentinelDashboard:
         percentage = round((blocked_queries / dns_queries * 100), 1) if dns_queries > 0 else 0.0
 
         # Estimate savings on dynamic pricing & travel fare inflation:
-        # Average saving of ~€2.50 per intercepted pricing tracker or baseline calculation
         pricing_enablers_count = sum(
             t["count"] for t in stats["top_blocked_domains"] 
             if any(k in t["domain"] for k in ("xiaomi", "criteo", "appsflyer", "adjust", "demdex", "everest"))
         )
         estimated_savings = 80 + int(pricing_enablers_count * 0.15)
 
-        # Device categorization
+        # Device categorization sample
         devices_sample = [
             {"name": "Samsung Smart TV", "ip": "192.168.1.104", "icon": "📺"},
             {"name": "iPhone 15 Pro (Mario)", "ip": "192.168.1.142", "icon": "📱"},
@@ -537,6 +759,120 @@ class SentinelDashboard:
             "system_status": "MASSIMA PROTEZIONE ATTIVA"
         }
         return web.json_response(payload)
+
+    async def handle_api_blocked_queries(self, request: web.Request) -> web.Response:
+        """Returns recent blocked domains for user unbreak inspection."""
+        stats = await self._fetch_adguard_stats()
+        top_blocked = stats.get("top_blocked_domains", [])
+        
+        results = []
+        for item in top_blocked:
+            dom = item.get("domain", "")
+            results.append({
+                "domain": dom,
+                "count": item.get("count", 0),
+                "is_unbroken": is_essential_companion_domain(dom),
+                "category": "Tracker / Telemetria"
+            })
+        return web.json_response({"blocked_domains": results})
+
+    async def handle_api_unbreak(self, request: web.Request) -> web.Response:
+        """1-Click Unbreak: instantly adds @@||domain^ to AdGuard Home user rules and in-memory allowlist."""
+        try:
+            body = await request.json()
+            domain = body.get("domain", "").strip().lower()
+            if not domain or not re.match(r"^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$", domain):
+                return web.json_response({"status": "error", "message": "Formato dominio non valido."}, status=400)
+
+            # 1. Update in-memory allowlist immediately
+            add_runtime_allowlist_domain(domain)
+
+            # 2. Update AdGuard Home user_rules via REST API
+            base_url = self.settings.adguard.base_url
+            creds = f"{self.settings.adguard.username}:{self.settings.adguard.password}".encode("utf-8")
+            headers = {
+                "Authorization": f"Basic {base64.b64encode(creds).decode('ascii')}",
+                "Content-Type": "application/json"
+            }
+            allow_rule = f"@@||{domain}^"
+
+            adguard_updated = False
+            try:
+                timeout = aiohttp.ClientTimeout(total=3.0)
+                async with aiohttp.ClientSession(timeout=timeout) as session:
+                    async with session.get(f"{base_url}/control/filtering/status", headers=headers) as resp:
+                        if resp.status == 200:
+                            filt_data = await resp.json()
+                            user_rules = filt_data.get("user_rules", [])
+                            if allow_rule not in user_rules:
+                                user_rules.append(allow_rule)
+                                async with session.post(
+                                    f"{base_url}/control/filtering/set_rules",
+                                    headers=headers,
+                                    json={"rules": user_rules}
+                                ) as post_resp:
+                                    if post_resp.status == 200:
+                                        adguard_updated = True
+                            else:
+                                adguard_updated = True
+            except Exception as ag_err:
+                logger.warning(f"AdGuard Home unbreak sync notice: {ag_err}")
+
+            return web.json_response({
+                "status": "success",
+                "domain": domain,
+                "rule": allow_rule,
+                "adguard_synced": adguard_updated,
+                "message": f"Dominio '{domain}' sbloccato con successo! Regola '{allow_rule}' applicata."
+            })
+        except Exception as e:
+            logger.error(f"Unbreak exception: {e}")
+            return web.json_response({"status": "error", "message": str(e)}, status=500)
+
+    async def handle_api_report_unbreak(self, request: web.Request) -> web.Response:
+        """Prepares a zero-knowledge sanitized GitHub issue report link for community unbreak sharing."""
+        try:
+            body = await request.json()
+            domain = body.get("domain", "").strip().lower()
+            device_name = body.get("device_name", "Dispositivo IoT").strip()
+            device_category = body.get("device_category", "Altro").strip()
+            notes = body.get("notes", "Sbloccato per ripristinare il corretto funzionamento dell'applicazione companion.").strip()
+
+            if not domain or not re.match(r"^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$", domain):
+                return web.json_response({"status": "error", "message": "Formato dominio non valido."}, status=400)
+
+            issue_title = f"[Device Compatibility] Unbreak rule for {device_name} ({domain})"
+            issue_body = (
+                f"### 📱 Dispositivo / Applicazione\n"
+                f"- **Modello / Categoria**: {device_name} ({device_category})\n\n"
+                f"### 🌐 Dominio di Controllo Sbloccato\n"
+                f"`{domain}`\n\n"
+                f"### 🛠️ Regola AdGuard Home Applicata\n"
+                f"`@@||{domain}^`\n\n"
+                f"### 📝 Dettagli del Problema Risolto\n"
+                f"{notes}\n\n"
+                f"---\n"
+                f"🔒 *Segnalazione Zero-Knowledge generata dalla console Sentinel Core: nessun indirizzo IP, identificativo MAC, timestamp o informazione personale è inclusa.*"
+            )
+
+            encoded_title = urllib.parse.quote(issue_title)
+            encoded_body = urllib.parse.quote(issue_body)
+            github_issue_url = (
+                f"https://github.com/umbette/sentinel/issues/new"
+                f"?title={encoded_title}&body={encoded_body}&labels=device-compatibility,zero-knowledge-unbreak"
+            )
+
+            return web.json_response({
+                "status": "success",
+                "domain": domain,
+                "device_name": device_name,
+                "issue_title": issue_title,
+                "issue_body": issue_body,
+                "github_issue_url": github_issue_url
+            })
+        except Exception as e:
+            logger.error(f"Report unbreak exception: {e}")
+            return web.json_response({"status": "error", "message": str(e)}, status=500)
 
     async def start(self):
         host = self.settings.dashboard.host

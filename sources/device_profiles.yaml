@@ -1,0 +1,283 @@
+# ==============================================================================
+# Sentinel - Community Device Profiles & Companion App Compatibility Catalog
+# Zero-telemetry, open-source crowdsourced IoT compatibility database.
+#
+# Schema:
+#   id: unique identifier
+#   name: human-readable device name
+#   category: device category (e.g., robot_vacuum, 3d_printer, smart_kitchen, automotive, smart_home, smart_tv)
+#   vendor: hardware manufacturer
+#   models: list of representative models
+#   control_plane:
+#     description: what these APIs do (login, start/stop, status sync)
+#     allowed_domains: list of domains that MUST NOT be blocked for the companion app to work
+#   data_plane:
+#     description: what telemetry/exfiltration Sentinel neutralizes
+#     blocked_domains: list of telemetry, video upload, LiDAR floorplan, or ad-tracking domains
+#   notes: implementation quirks, split-tunneling or network isolation advice
+# ==============================================================================
+
+version: "1.0.0"
+
+devices:
+  # ---------------------------------------------------------------------------
+  # 1. Robot Vacuums & Mops
+  # ---------------------------------------------------------------------------
+  - id: ecovacs_deebot
+    name: "Ecovacs Deebot Vacuums"
+    category: robot_vacuum
+    vendor: "Ecovacs"
+    models: ["Deebot X1 Omni", "Deebot T20", "Deebot T30 Pro", "Deebot N8 Pro"]
+    control_plane:
+      description: "App login, real-time map fetching, remote cleaning commands (Ecovacs Home app)"
+      allowed_domains:
+        - "api-app.ww.ecouser.net"
+        - "api-app.dc-eu.ww.ecouser.net"
+        - "iot-api-nlp.dc-eu.ww.ecouser.net"
+        - "codepush-base.dc-na.ww.ecouser.net"
+        - "gl-es-api.ecovacs.com"
+    data_plane:
+      description: "LiDAR floorplan upload to Chinese cloud, video streams, and behavioral analytics"
+      blocked_domains:
+        - "open.ecovacs.com"
+        - "sa-eu-datasink.ecovacs.com"
+        - "bigdata-europe.ecovacs.com"
+        - "gl-iot-media.ecouser.net"
+    notes: "Never block api-app.* subdomains as they break login and remote start from 4G/5G."
+
+  - id: roborock_vacuum
+    name: "Roborock S-Series & Q-Series"
+    category: robot_vacuum
+    vendor: "Roborock"
+    models: ["S8 Pro Ultra", "S7 MaxV", "Q Revo", "Q7 Max"]
+    control_plane:
+      description: "MQTT command broker, authentication, and status sync (Roborock app)"
+      allowed_domains:
+        - "api-eu.roborock.com"
+        - "api.roborock.com"
+        - "mqtt-eu.roborock.com"
+        - "rrc-eu.roborock.com"
+    data_plane:
+      description: "Continuous telemetry, crash reporting, and user behavior analytics"
+      blocked_domains:
+        - "tracking.roborock.com"
+        - "api-telemetry.roborock.com"
+        - "log.roborock.com"
+
+  - id: dreame_vacuum
+    name: "Dreame Bot Vacuums"
+    category: robot_vacuum
+    vendor: "Dreame Technology"
+    models: ["Dreame L10s Ultra", "Dreame L20 Ultra", "Dreame X40 Ultra"]
+    control_plane:
+      description: "Dreamehome cloud authentication, pairing, and schedule synchronization"
+      allowed_domains:
+        - "api.dreame.tech"
+        - "iot.dreame.tech"
+        - "dreamehome-api.dreame.tech"
+    data_plane:
+      description: "Big data logs and camera streaming analytics"
+      blocked_domains:
+        - "log.dreame.tech"
+        - "data.dreame.tech"
+
+  - id: irobot_roomba
+    name: "iRobot Roomba & Braava"
+    category: robot_vacuum
+    vendor: "iRobot"
+    models: ["Roomba j7+", "Roomba j9+", "Roomba Combo i8"]
+    control_plane:
+      description: "iRobot OS cloud synchronization and cleaning dispatch"
+      allowed_domains:
+        - "api.irobot.com"
+        - "disc-prod.k8s.irobot.com"
+    data_plane:
+      description: "Obstacle image analysis exfiltration and targeted telemetry"
+      blocked_domains:
+        - "telemetry.irobot.com"
+        - "analytics.irobot.com"
+
+  # ---------------------------------------------------------------------------
+  # 2. 3D Printers
+  # ---------------------------------------------------------------------------
+  - id: bambulab_printer
+    name: "Bambu Lab 3D Printers"
+    category: 3d_printer
+    vendor: "Bambu Lab"
+    models: ["X1-Carbon", "P1S", "P1P", "A1 Mini", "A1"]
+    control_plane:
+      description: "Bambu Handy mobile app pairing, login, and print queue monitoring"
+      allowed_domains:
+        - "api.bambulab.com"
+        - "user-cloud.bambulab.com"
+    data_plane:
+      description: "Diagnostic logs, CAD model telemetry, and camera analytics"
+      blocked_domains:
+        - "log.bambulab.com"
+        - "analytics.bambulab.com"
+        - "crash.bambulab.com"
+    notes: "For maximum privacy, enable 'LAN Only Mode' in printer firmware settings."
+
+  - id: prusa_printer
+    name: "Prusa 3D Printers"
+    category: 3d_printer
+    vendor: "Prusa Research"
+    models: ["Original Prusa MK4", "Prusa XL", "Prusa Mini+"]
+    control_plane:
+      description: "Prusa Connect cloud telemetry and G-code upload"
+      allowed_domains:
+        - "connect.prusa3d.com"
+    data_plane:
+      description: "Third-party analytics and tracking"
+      blocked_domains:
+        - "analytics.prusa3d.com"
+
+  # ---------------------------------------------------------------------------
+  # 3. Smart Kitchen & Appliances
+  # ---------------------------------------------------------------------------
+  - id: cosori_vesync_airfryer
+    name: "Cosori / VeSync Smart Kitchen"
+    category: smart_kitchen
+    vendor: "VeSync / Etekcity"
+    models: ["Cosori Dual Blaze Smart Air Fryer", "Cosori TurboBlaze Smart", "VeSync Smart Kettle"]
+    control_plane:
+      description: "VeSync mobile app temperature control, preset recipe dispatch, and timer status"
+      allowed_domains:
+        - "smart-api.vesync.com"
+        - "api.vesync.com"
+    data_plane:
+      description: "Cooking habit profiling, device telemetry, and marketing trackers"
+      blocked_domains:
+        - "tracking.vesync.com"
+        - "telemetry.cosori.com"
+        - "hm.baidu.com"
+
+  # ---------------------------------------------------------------------------
+  # 4. Smart Home Relays & Plugs
+  # ---------------------------------------------------------------------------
+  - id: shelly_smart_home
+    name: "Shelly Smart Relays & Plugs"
+    category: smart_home
+    vendor: "Allterco / Shelly"
+    models: ["Shelly Plus 1PM", "Shelly Pro 4PM", "Shelly Plug S", "Shelly EM"]
+    control_plane:
+      description: "Shelly Cloud app control, energy monitoring, and firmware updates"
+      allowed_domains:
+        - "shelly-cloud.com"
+        - "shelly.cloud"
+    data_plane:
+      description: "External ad attribution and third-party trackers"
+      blocked_domains:
+        - "tracking.shelly.cloud"
+
+  - id: tuya_smartlife
+    name: "Tuya / Smart Life Ecosystem"
+    category: smart_home
+    vendor: "Tuya"
+    models: ["Generic Zigbee/WiFi Plugs", "Smart Bulbs", "Temp/Humidity Sensors"]
+    control_plane:
+      description: "Smart Life / Tuya Smart app device pairing and real-time state sync"
+      allowed_domains:
+        - "openapi.tuyaeu.com"
+        - "m2.tuyaeu.com"
+        - "tuya.com"
+    data_plane:
+      description: "Data exfiltration, aggressive ad sdk telemetry, and device profiling"
+      blocked_domains:
+        - "log.tuyaeu.com"
+        - "data.tuyaeu.com"
+        - "ad.intl.xiaomi.com"
+
+  - id: sonoff_ewelink
+    name: "Sonoff / eWeLink Devices"
+    category: smart_home
+    vendor: "Itead / CoolKit"
+    models: ["Sonoff Basic R4", "Sonoff Mini", "Sonoff POW Elite"]
+    control_plane:
+      description: "eWeLink cloud relay switching and power metering"
+      allowed_domains:
+        - "api.coolkit.cc"
+        - "eu-api.coolkit.cc"
+    data_plane:
+      description: "Usage statistics and third-party ad telemetry"
+      blocked_domains:
+        - "log.coolkit.cc"
+
+  # ---------------------------------------------------------------------------
+  # 5. Connected Vehicles (Automotive)
+  # ---------------------------------------------------------------------------
+  - id: connected_automotive
+    name: "Connected Vehicles & Mobile Telematics"
+    category: automotive
+    vendor: "Multi-OEM (Tesla, BMW, GM, Ford)"
+    models: ["Tesla Model 3/Y/S/X", "BMW i4/iX/3-Series", "Connected Cars"]
+    control_plane:
+      description: "Official vehicle companion apps (pre-conditioning, unlock, charge scheduling)"
+      allowed_domains:
+        - "owner-api.teslamotors.com"
+        - "auth.tesla.com"
+        - "b2vapi.bmwgroup.com"
+        - "customer.bmwgroup.com"
+    data_plane:
+      description: "Predatory driver profiling, hard-braking data sale to insurance brokers"
+      blocked_domains:
+        - "telemetry.lexisnexis.com"
+        - "risk.lexisnexis.com"
+        - "telematics.verisk.com"
+        - "api.otonomo.io"
+        - "telemetry.otonomo.io"
+    notes: "Blocks secret sale of driving telemetry to LexisNexis Risk Solutions while keeping the smartphone car app 100% operational."
+
+  # ---------------------------------------------------------------------------
+  # 6. In-Car Smartphone Projection (Android Auto & Apple CarPlay)
+  # ---------------------------------------------------------------------------
+  - id: wireless_projection
+    name: "Wireless Android Auto & Apple CarPlay"
+    category: automotive_projection
+    vendor: "Google / Apple / Car OEMs"
+    models: ["All wireless Android Auto & Apple CarPlay head units"]
+    control_plane:
+      description: "Wi-Fi Direct P2P video/touch streaming between phone and head unit"
+      allowed_domains: []
+    data_plane:
+      description: "N/A (Local Wi-Fi Direct socket)"
+      blocked_domains: []
+    notes: "Requires WireGuard Split Tunneling on smartphone. Exclude 'Android Auto' (com.google.android.projection.gearhead) from VPN to prevent Communication Error 21 on Wi-Fi Direct (192.168.43.1 / 192.168.49.1)."
+
+  # ---------------------------------------------------------------------------
+  # 7. Smart TVs
+  # ---------------------------------------------------------------------------
+  - id: samsung_tizen_tv
+    name: "Samsung Smart TVs (Tizen OS)"
+    category: smart_tv
+    vendor: "Samsung"
+    models: ["Neo QLED", "Crystal UHD", "The Frame", "OLED S90"]
+    control_plane:
+      description: "SmartThings smartphone remote control and streaming apps"
+      allowed_domains:
+        - "api.smartthings.com"
+        - "smartthings.com"
+    data_plane:
+      description: "ACR (Automatic Content Recognition), screen frame sampling, home screen ad insertion"
+      blocked_domains:
+        - "samsungacr.com"
+        - "smetrics.samsung.com"
+        - "config.samsungads.com"
+        - "lcprd1.samsungcloudsolution.net"
+
+  - id: lg_webos_tv
+    name: "LG Smart TVs (webOS)"
+    category: smart_tv
+    vendor: "LG Electronics"
+    models: ["LG OLED C-Series / G-Series", "QNED", "NanoCell"]
+    control_plane:
+      description: "LG ThinQ smartphone app remote and local network casting"
+      allowed_domains:
+        - "thinq.com"
+        - "lgthinq.com"
+    data_plane:
+      description: "LG ACR profiling, ad recommendations, and audio/video fingerprinting"
+      blocked_domains:
+        - "emp-ad.lgsmartad.com"
+        - "ibs.lgappstv.com"
+        - "rdx2.lgtvsdp.com"

@@ -10,6 +10,7 @@ from src.device_shield import (
     evaluate_automotive_telemetry,
     evaluate_smart_toy_telemetry,
     evaluate_badbox_malware,
+    is_essential_companion_domain,
     evaluate_device_shield,
     DeviceShieldMatch
 )
@@ -277,3 +278,51 @@ def test_evaluate_device_shield_unified_dispatcher():
     r_badbox = evaluate_device_shield("b2c.aospbox.net")
     assert r_badbox is not None
     assert r_badbox.shield_type == "BADBOX_MALWARE"
+
+
+def test_essential_companion_allowlist_preemption():
+    # Ecovacs companion app APIs
+    assert is_essential_companion_domain("api-app.ww.ecouser.net") is True
+    assert is_essential_companion_domain("api-app.dc-eu.ww.ecouser.net") is True
+    assert evaluate_device_shield("api-app.ww.ecouser.net") is None
+
+    # Roborock companion app APIs
+    assert is_essential_companion_domain("api-eu.roborock.com") is True
+    assert is_essential_companion_domain("mqtt-eu.roborock.com") is True
+    assert evaluate_device_shield("api-eu.roborock.com") is None
+
+    # Dreame companion app APIs
+    assert is_essential_companion_domain("api.dreame.tech") is True
+    assert evaluate_device_shield("api.dreame.tech") is None
+
+    # Bambu Lab login & account pairing
+    assert is_essential_companion_domain("api.bambulab.com") is True
+    assert evaluate_device_shield("api.bambulab.com") is None
+
+    # Tesla & BMW mobile app controls
+    assert is_essential_companion_domain("owner-api.teslamotors.com") is True
+    assert evaluate_device_shield("owner-api.teslamotors.com") is None
+    assert is_essential_companion_domain("b2vapi.bmwgroup.com") is True
+    assert evaluate_device_shield("b2vapi.bmwgroup.com") is None
+
+
+def test_device_profiles_yaml_catalog_loading():
+    from src.device_shield import load_device_profiles, add_runtime_allowlist_domain
+    devices = load_device_profiles()
+    assert len(devices) > 0
+    device_ids = [d["id"] for d in devices]
+    assert "ecovacs_deebot" in device_ids
+    assert "bambulab_printer" in device_ids
+    assert "connected_automotive" in device_ids
+    assert "cosori_vesync_airfryer" in device_ids
+
+    # Check that iRobot and smart tv domains were loaded
+    assert is_essential_companion_domain("api.irobot.com") is True
+    assert is_essential_companion_domain("api.smartthings.com") is True
+    assert is_essential_companion_domain("thinq.com") is True
+
+    # Check runtime addition
+    custom_dom = "runtime-companion-api.brand.io"
+    assert is_essential_companion_domain(custom_dom) is False
+    add_runtime_allowlist_domain(custom_dom)
+    assert is_essential_companion_domain(custom_dom) is True

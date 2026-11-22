@@ -1,6 +1,12 @@
 import json
+import os
 import urllib.request
 import base64
+
+try:
+    import yaml
+except ImportError:
+    yaml = None
 
 ADGUARD_URL = "http://127.0.0.1:8080"
 USERNAME = "umbette"
@@ -37,6 +43,11 @@ NEW_SHIELD_RULES = [
     "@@||iot-api-nlp.dc-eu.ww.ecouser.net^",
     "@@||codepush-base.dc-na.ww.ecouser.net^",
     "@@||gl-es-api.ecovacs.com^",
+    "@@||api-eu.roborock.com^",
+    "@@||api.roborock.com^",
+    "@@||mqtt-eu.roborock.com^",
+    "@@||api.dreame.tech^",
+    "@@||iot.dreame.tech^",
     "||log.dreame.tech^",
     "||tracking.roborock.com^",
     "||api-telemetry.roborock.com^",
@@ -44,6 +55,8 @@ NEW_SHIELD_RULES = [
     "||log.bambulab.com^",
     "||analytics.bambulab.com^",
     "||crash.bambulab.com^",
+    "@@||api.bambulab.com^",
+    "@@||user-cloud.bambulab.com^",
     "! --- 🍳 Smart Kitchen Appliance & Air Fryer Profiling Shield ---",
     "||ad.intl.xiaomi.com^",
     "||data.mistat.intl.xiaomi.com^",
@@ -52,6 +65,15 @@ NEW_SHIELD_RULES = [
     "||hm.baidu.com^",
     "||tracking.vesync.com^",
     "||telemetry.cosori.com^",
+    "@@||smart-api.vesync.com^",
+    "! --- 🚗 Automotive Driving Telemetry & Essential APIs ---",
+    "||telemetry.lexisnexis.com^",
+    "||risk.lexisnexis.com^",
+    "||telematics.verisk.com^",
+    "||api.otonomo.io^",
+    "||telemetry.otonomo.io^",
+    "@@||owner-api.teslamotors.com^",
+    "@@||b2vapi.bmwgroup.com^",
     "! --- 📷 Budget IP Camera Vulnerable P2P Isolation ---",
     "||iotcplatform.com^",
     "||p2pcam.net^",
@@ -81,6 +103,22 @@ NEW_SHIELD_RULES = [
     "||b2c.aospbox.net^",
     "||mykingbox.com^",
 ]
+
+# Load additional rules from sources/device_profiles.yaml if present
+profiles_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "sources", "device_profiles.yaml")
+if yaml and os.path.exists(profiles_path):
+    with open(profiles_path, "r", encoding="utf-8") as pf:
+        profiles_data = yaml.safe_load(pf) or {}
+        for dev in profiles_data.get("devices", []):
+            dev_name = dev.get("name", "Device")
+            for dom in dev.get("control_plane", {}).get("allowed_domains", []):
+                rule = f"@@||{dom}^"
+                if rule not in NEW_SHIELD_RULES:
+                    NEW_SHIELD_RULES.append(rule)
+            for dom in dev.get("data_plane", {}).get("blocked_domains", []):
+                rule = f"||{dom}^"
+                if rule not in NEW_SHIELD_RULES:
+                    NEW_SHIELD_RULES.append(rule)
 
 # Append rules that are not already present
 added_count = 0

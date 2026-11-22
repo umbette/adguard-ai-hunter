@@ -9,8 +9,17 @@ Specialized, zero-latency deterministic privacy and protection shields for:
 """
 
 import re
+import os
+import logging
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Set, Tuple
+from typing import Dict, List, Optional, Set, Tuple, Any
+
+try:
+    import yaml
+except ImportError:
+    yaml = None
+
+logger = logging.getLogger("ai_hunter.device_shield")
 
 @dataclass
 class DeviceShieldMatch:
@@ -20,6 +29,94 @@ class DeviceShieldMatch:
     rule_pattern: str
     risk_score: float
     description: str
+
+# ---------------------------------------------------------------------------
+# 0. 🛡️ Essential Companion App Control Allowlist (Pre-emption)
+# (Prevents blocking of mobile companion app control, login, pairing & state sync)
+# ---------------------------------------------------------------------------
+ESSENTIAL_COMPANION_ALLOWLIST: Set[str] = {
+    # Ecovacs Vacuums
+    "api-app.ww.ecouser.net",
+    "api-app.dc-eu.ww.ecouser.net",
+    "iot-api-nlp.dc-eu.ww.ecouser.net",
+    "codepush-base.dc-na.ww.ecouser.net",
+    "gl-es-api.ecovacs.com",
+    # Roborock Vacuums
+    "api-eu.roborock.com",
+    "api.roborock.com",
+    "mqtt-eu.roborock.com",
+    "rrc-eu.roborock.com",
+    # Dreame Vacuums
+    "api.dreame.tech",
+    "iot.dreame.tech",
+    "dreamehome-api.dreame.tech",
+    # iRobot
+    "api.irobot.com",
+    # Bambu Lab 3D Printers
+    "api.bambulab.com",
+    "user-cloud.bambulab.com",
+    # Prusa 3D Printers
+    "connect.prusa3d.com",
+    # Smart Kitchen / Cosori / Vesync
+    "smart-api.vesync.com",
+    "api.vesync.com",
+    # Smart Home Relays & Hubs
+    "shelly-cloud.com",
+    "shelly.cloud",
+    "api.coolkit.cc",
+    "openapi.tuyaeu.com",
+    "m2.tuyaeu.com",
+    # Connected Vehicles Essential APIs
+    "owner-api.teslamotors.com",
+    "b2vapi.bmwgroup.com",
+}
+
+
+DEVICE_PROFILES_PATH = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "sources", "device_profiles.yaml"
+)
+
+
+def load_device_profiles(filepath: Optional[str] = None) -> List[Dict[str, Any]]:
+    """Loads device profiles from sources/device_profiles.yaml and populates ESSENTIAL_COMPANION_ALLOWLIST."""
+    if yaml is None:
+        return []
+    target_path = filepath or DEVICE_PROFILES_PATH
+    if not os.path.exists(target_path):
+        return []
+    try:
+        with open(target_path, "r", encoding="utf-8") as f:
+            data = yaml.safe_load(f) or {}
+            devices = data.get("devices", [])
+            for dev in devices:
+                control = dev.get("control_plane", {})
+                for domain in control.get("allowed_domains", []):
+                    if domain:
+                        ESSENTIAL_COMPANION_ALLOWLIST.add(domain.lower().strip())
+            return devices
+    except Exception as e:
+        logger.warning(f"Failed to load device profiles from {target_path}: {e}")
+        return []
+
+
+def add_runtime_allowlist_domain(domain: str) -> None:
+    """Dynamically adds a domain to the in-memory essential companion allowlist at runtime."""
+    if domain:
+        cleaned = domain.lower().strip().lstrip(".").rstrip(".")
+        if cleaned:
+            ESSENTIAL_COMPANION_ALLOWLIST.add(cleaned)
+
+
+# Populate allowlist with crowdsourced profiles on initial import
+load_device_profiles()
+
+
+def is_essential_companion_domain(hostname: str) -> bool:
+    """Checks whether a domain is a critical companion app control channel that must not be blocked."""
+    if not hostname:
+        return False
+    return hostname.lower().strip() in ESSENTIAL_COMPANION_ALLOWLIST
+
 
 # ---------------------------------------------------------------------------
 # 1. 🎮 Nintendo Switch 90DNS Anti-Ban Catalog
@@ -393,6 +490,10 @@ def evaluate_device_shield(hostname: str, device_type: Optional[str] = None) -> 
     or falls back to domain-based signatures.
     """
     if not hostname:
+        return None
+
+    # Pre-emption: Essential companion app control APIs must never be blocked
+    if is_essential_companion_domain(hostname):
         return None
 
     # 1. Check Nintendo 90DNS
