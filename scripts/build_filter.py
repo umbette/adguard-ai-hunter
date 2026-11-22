@@ -133,13 +133,13 @@ def validate_and_compile(
 
     with open(temp_output, "w", encoding="utf-8", newline="\n") as out:
         out.write("! ------------------------------------------------------------------------------\n")
-        out.write("! Title: AI Hunter - Community Threat & DGA Blacklist\n")
-        out.write("! Description: Validated threat intelligence and DGA domains compiled from AI Hunter\n")
+        out.write("! Title: Sentinel Core - Community Threat & DGA Blacklist\n")
+        out.write("! Description: Validated threat intelligence and DGA domains compiled from Sentinel Core\n")
         out.write(f"! Last Modified: {now_utc}\n")
         out.write(f"! Number of rules: {len(sorted_domains)}\n")
         out.write("! Syntax: AdGuard / uBlock Origin compatible\n")
         out.write("! License: MIT License\n")
-        out.write("! Homepage: https://github.com/umbette/adguard-ai-hunter\n")
+        out.write("! Homepage: https://github.com/umbette/sentinel\n")
         out.write("! ------------------------------------------------------------------------------\n\n")
 
         for d in sorted_domains:

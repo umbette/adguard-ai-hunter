@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-AI Hunter - Chrome Declarative Net Request (DNR) Ruleset Exporter
+Sentinel Shield - Chrome Declarative Net Request (DNR) Ruleset Exporter
 Converts active IoCs from ThreatStateDB into Manifest V3 declarativeNetRequest JSON rules.
 """
 

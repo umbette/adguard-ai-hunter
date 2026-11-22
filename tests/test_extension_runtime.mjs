@@ -239,23 +239,23 @@ test("Service Worker: onErrorOccurred disambiguates DNR blocks against uBlock Or
   const errorListener = env.listeners.onErrorOccurred[0];
   assert.ok(errorListener, "Missing onErrorOccurred listener");
 
-  // Case A: Blocked by uBlock Origin (not in Hunter Shield's BLOCKED_DOMAINS)
+  // Case A: Blocked by uBlock Origin (not in Sentinel Shield's BLOCKED_DOMAINS)
   await errorListener({
     frameId: 0,
     error: "net::ERR_BLOCKED_BY_CLIENT",
     url: "https://ad.doubleclick.net/ad.js",
     tabId: 101
   });
-  assert.equal(env.updatedTabs.length, 0, "Hunter Shield must NOT hijack blocks produced by uBlock Origin");
+  assert.equal(env.updatedTabs.length, 0, "Sentinel Shield must NOT hijack blocks produced by uBlock Origin");
 
-  // Case B: Blocked by Hunter Shield (present in BLOCKED_DOMAINS)
+  // Case B: Blocked by Sentinel Shield (present in BLOCKED_DOMAINS)
   await errorListener({
     frameId: 0,
     error: "net::ERR_BLOCKED_BY_CLIENT",
     url: "http://0-24bpautomentes.hu/path",
     tabId: 102
   });
-  assert.equal(env.updatedTabs.length, 1, "Hunter Shield must redirect its own blocked domains to blocked.html");
+  assert.equal(env.updatedTabs.length, 1, "Sentinel Shield must redirect its own blocked domains to blocked.html");
   assert.equal(env.updatedTabs[0].tabId, 102);
   assert.ok(env.updatedTabs[0].updateProps.url.includes("pages/blocked.html?domain=0-24bpautomentes.hu"));
 });

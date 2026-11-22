@@ -1,16 +1,16 @@
-# AI Hunter
+# Sentinel
 
-[![CI Test Suite](https://github.com/umbette/adguard-ai-hunter/actions/workflows/ci.yml/badge.svg)](https://github.com/umbette/adguard-ai-hunter/actions/workflows/ci.yml)
+[![CI Test Suite](https://github.com/umbette/sentinel/actions/workflows/ci.yml/badge.svg)](https://github.com/umbette/sentinel/actions/workflows/ci.yml)
 [![Tests: 39 Passing](https://img.shields.io/badge/Tests-39%20Passing-brightgreen.svg)](tests/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Home Assistant Add-on](https://img.shields.io/badge/Home%20Assistant-Add--on%20Ready-blue?logo=home-assistant)](ha-addon/)
-[![AdGuard Home](https://img.shields.io/badge/AdGuard%20Home-Supported-green?logo=adguard)](https://adguard.com/adguard-home.html)
-[![Manifest V3](https://img.shields.io/badge/Chrome%20Extension-Manifest%20V3-yellow?logo=google-chrome)](extension/)
+[![DNS Resolvers](https://img.shields.io/badge/DNS%20Resolvers-AdGuard%20%7C%20Pi--hole%20%7C%20Native-green)](https://adguard.com/adguard-home.html)
+[![Manifest V3](https://img.shields.io/badge/Chrome%20Extension-Sentinel%20Shield-yellow?logo=google-chrome)](extension/)
 [![Docker](https://img.shields.io/badge/Docker-Multi--Arch-2496ED?logo=docker)](Dockerfile)
 
-**Autonomous Smart Home Security, Anti-Dynamic Pricing, Crypto Vault & Threat Shield for AdGuard Home and Home Assistant.**
+**Autonomous Smart Home Security, Anti-Dynamic Pricing, Crypto Vault & Threat Shield for Home Assistant & Local DNS Resolvers.**
 
-AI Hunter is a 100% local-first, zero-cloud-telemetry network watchdog and behavioral anomaly detector. It bridges your local DNS resolver (**AdGuard Home**) with your smart home automation (**Home Assistant**) to detect real-world threats that static blocklists miss: predatory airline/hotel price discrimination, Web3 wallet drainers, deceptive family phishing SMS links, and invasive Smart TV surveillance.
+Sentinel is a 100% local-first, zero-cloud-telemetry network watchdog and behavioral anomaly detector. It bridges your local DNS resolver (**AdGuard Home**, **Pi-hole**, or standalone) with your smart home automation (**Home Assistant**) to detect and neutralize real-world threats that static blocklists miss: predatory airline/hotel price discrimination, Web3 wallet drainers, deceptive family phishing SMS links, and invasive Smart TV surveillance.
 
 ---
 
@@ -34,7 +34,7 @@ Protects family members and elderly parents who are vulnerable to deceptive SMS,
 
 ### 4. 📺 Device Resolution & Smart TV Stealth
 Standard DNS resolvers only show raw IP addresses (`192.168.1.45`), making device identification tedious.
-* **Contextual Device Categorization:** Correlates AdGuard Home client registries and non-blocking reverse PTR lookups to tag queries with human-friendly device names and icons:
+* **Contextual Device Categorization:** Correlates local client registries and non-blocking reverse PTR lookups to tag queries with human-friendly device names and icons:
   * 📺 **Smart TV / Streaming Box**
   * 📱 **Smartphone / Tablet**
   * 💻 **Computer / Workstation**
@@ -58,14 +58,14 @@ Standard DNS resolvers only show raw IP addresses (`192.168.1.45`), making devic
 |        │             │            │         │                                   |
 |        ▼             ▼            ▼         ▼                                   |
 |  ┌────────────────────────────────────────────────────────┐                     |
-|  │                  ADGUARD HOME RESOLVER                 │                     |
-|  │  - Static Filter Blocklists (HaGeZi, OISD, AI Hunter)  │                     |
+|  │              LOCAL DNS RESOLVER (ADGUARD / PI-HOLE)    │                     |
+|  │  - Static Filter Blocklists (HaGeZi, OISD, Sentinel)   │                     |
 |  │  - Low-latency local cache (< 1ms)                     │                     |
 |  └───────────────────────────┬────────────────────────────┘                     |
 |                              │ Query Log Stream                                 |
 |                              ▼                                                  |
 |  ┌────────────────────────────────────────────────────────┐                     |
-|  │                   AI HUNTER DAEMON                     │                     |
+|  │                  SENTINEL CORE ENGINE                  │                     |
 |  │  • Device Resolver (Smart TV 📺 / Mobile 📱)           │                     |
 |  │  • Anti-Dynamic Pricing Engine                         │                     |
 |  │  • Crypto & Financial Vault                            │                     |
@@ -82,7 +82,7 @@ Standard DNS resolvers only show raw IP addresses (`192.168.1.45`), making devic
 ```
 
 * **100% Local-First & Zero Inbound Ports:** Communicates with Home Assistant over an authenticated outbound WebSocket (`ws://.../api/websocket`). No open inbound firewall ports required.
-* **Transactional Read-Modify-Write Rule Injection:** Interacts with AdGuard Home via atomic `GET` -> patch -> `POST` cycles, ensuring custom user rules and standard blocklists are never overwritten.
+* **Transactional Read-Modify-Write Rule Injection:** Interacts with local DNS via atomic `GET` -> patch -> `POST` cycles, ensuring custom user rules and standard blocklists are never overwritten.
 * **Air-Gap Friendly:** Stores decisions locally in SQLite WAL mode (`hunter_decisions.db`).
 
 ---
@@ -91,20 +91,20 @@ Standard DNS resolvers only show raw IP addresses (`192.168.1.45`), making devic
 
 ### Option A: Home Assistant Add-on (Recommended)
 
-AI Hunter is packaged as an official multi-arch Home Assistant Add-on (`aarch64`, `amd64`, `armv7`).
+Sentinel Core is packaged as an official multi-arch Home Assistant Add-on (`aarch64`, `amd64`, `armv7`).
 
 1. In Home Assistant, navigate to **Settings** ➔ **Add-ons** ➔ **Add-on Store**.
 2. Click the three dots (top right) ➔ **Repositories** ➔ Add:
    ```text
-   https://github.com/umbette/adguard-ai-hunter
+   https://github.com/umbette/sentinel
    ```
-3. Select **AI Hunter**, configure your AdGuard credentials, and click **Start**.
+3. Select **Sentinel Core**, configure your DNS credentials, and click **Start**.
 
 ### Option B: Docker Compose (Standalone Server / Proxmox / Unraid)
 
 ```bash
-git clone https://github.com/umbette/adguard-ai-hunter.git
-cd adguard-ai-hunter
+git clone https://github.com/umbette/sentinel.git
+cd sentinel
 cp .env.example .env
 cp config.example.yaml config.yaml
 ```
@@ -126,9 +126,9 @@ docker compose up -d
 
 ---
 
-## 🧩 Companion Chrome Extension: Hunter Shield (MV3)
+## 🧩 Companion Chrome Extension: Sentinel Shield (MV3)
 
-For endpoint protection when traveling or using public Wi-Fi outside your home network, this repository includes **Hunter Shield**, an ultra-lightweight Manifest V3 Chrome/Edge extension located in [`extension/`](extension/).
+For endpoint protection when traveling or using public Wi-Fi outside your home network, this repository includes **Sentinel Shield**, an ultra-lightweight Manifest V3 Chrome/Edge extension located in [`extension/`](extension/).
 
 * **Declarative Net Request (DNR):** 0 host permissions required (`action: "block"`).
 * **Zero Cloud Telemetry:** Operates 100% offline using a compiled snapshot of the Public Suffix List (8,700+ suffixes) and verified brand heuristics (23 financial, postal, and e-commerce brands).
@@ -142,12 +142,12 @@ To install in developer mode:
 
 ## 📡 Community Filter Blacklist
 
-AI Hunter compiles high-confidence IoCs and confirmed algorithmic threat domains into a standard AdGuard / uBlock Origin compatible blocklist:
+Sentinel compiles high-confidence IoCs and confirmed algorithmic threat domains into a standard DNS blocklist:
 
 * **Filter URL:**  
-  `https://raw.githubusercontent.com/umbette/adguard-ai-hunter/main/filters/threat_blacklist.txt`
+  `https://raw.githubusercontent.com/umbette/sentinel/main/filters/threat_blacklist.txt`
 
-Add this URL directly into **AdGuard Home** (Filters ➔ DNS Blocklists) for static upstream blocking.
+Add this URL directly into your DNS resolver (Filters ➔ DNS Blocklists) for static upstream blocking.
 
 ---
 

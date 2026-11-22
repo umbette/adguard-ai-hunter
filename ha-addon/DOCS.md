@@ -1,19 +1,20 @@
-# AI Hunter — Home Assistant Add-on
+# Sentinel Core — Home Assistant Add-on
 
-Protezione locale da telemetria invasiva di Smart TV/dispositivi IoT e minacce DNS (DGA, botnet, C2), con triage interattivo 1-click sullo smartphone tramite Home Assistant Companion App.
+Protezione locale per l'intera rete domestica: scudo anti-dynamic pricing per i viaggi, crypto vault per wallet e dApp Web3, caregiver watchdog contro SMS/phishing ai familiari, e silenziamento della telemetria Smart TV/IoT con triage interattivo 1-click via Home Assistant Companion App.
 
 ---
 
 ## Caratteristiche Principali
 
-- **Integrazione Nativa AdGuard Home:** Ispezione in streaming del querylog di AdGuard Home (`core-adguard`).
-- **Device Fingerprinting & Friendly Names:** Riconoscimento automatico del nome del dispositivo (es. `📺 Samsung Smart TV (192.168.1.104)`, `💡 Reolink Cam Garage`) leggendo le etichette AdGuard e reverse PTR lookup.
-- **Triage Interattivo su Smartphone:** Notifica push con pulsanti operativi:
-  - `[Blocca per 📺 Samsung Smart TV]` — applica regola mirata `$client=192.168.1.104` in AdGuard.
+- **Integrazione Nativa DNS:** Ispezione in streaming del querylog locale di AdGuard Home o resolver DNS.
+- **Scudo Prezzi Dinamici:** Neutralizzazione automatica delle reti di profilazione e discriminazione tariffaria (Criteo, AppsFlyer, Adjust, Kochava, SessionCam).
+- **Crypto Vault:** Protezione nodi RPC, contrasto a wallet drainer e phishing omografo IDN Punycode.
+- **Caregiver & Family Watchdog:** Riconoscimento immediato di portali clone (Poste, banche, SPID, INPS, corrieri) con notifica istantanea per-device.
+- **Device Fingerprinting & Friendly Names:** Riconoscimento automatico del tipo di dispositivo (es. `📺 Samsung Smart TV`, `📱 Smartphone Mamma`, `💻 Workstation`) leggendo le etichette client e reverse PTR.
+- **Triage Interattivo su Smartphone:** Notifica push con pulsanti operativi immediati:
+  - `[Blocca per 📺 Samsung Smart TV]` — applica regola mirata `$client=IP`.
   - `[Blocca per Tutta la Rete]` — blocca il dominio globalmente.
-  - `[Ignora (30 giorni)]` — snooze automatico del dominio apex registrato (`*.samsung.com`).
-- **Doppia Euristica Locale:** Shannon Entropy normalizzata per DGA + Velocity Burst Tracker per telemetria OEM.
-- **AI Triage (Opzionale):** Analisi semantica tramite Gemini 2.5 Flash con fallback automatico a zero-dipendenza.
+  - `[Ignora (30 giorni)]` — whitelist temporanea con scadenza automatica.
 
 ---
 

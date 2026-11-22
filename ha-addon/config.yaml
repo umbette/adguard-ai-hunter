@@ -1,8 +1,8 @@
-name: "AI Hunter"
-slug: "ai_hunter"
-version: "0.2.0"
-description: "AI & Heuristic DNS triage, OEM Smart TV telemetry blocker, and interactive 1-click mobile triage for Home Assistant & AdGuard Home."
-url: "https://github.com/umbette/adguard-ai-hunter"
+name: "Sentinel Core"
+slug: "sentinel_core"
+version: "0.3.0"
+description: "Autonomous Smart Home Security, Anti-Dynamic Pricing, Crypto Vault & Behavioral DNS Shield for Home Assistant."
+url: "https://github.com/umbette/sentinel"
 arch:
   - aarch64
   - amd64

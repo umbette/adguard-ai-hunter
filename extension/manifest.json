@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
-  "name": "Hunter Shield",
-  "version": "0.1.0",
+  "name": "Sentinel Shield",
+  "version": "0.3.0",
   "description": "Protezione locale da phishing, truffe e domini ingannevoli. Elaborazione 100% in-browser, zero telemetria.",
   "permissions": [
     "activeTab",
@@ -13,7 +13,7 @@
   "declarative_net_request": {
     "rule_resources": [
       {
-        "id": "ai_hunter_ruleset",
+        "id": "sentinel_ruleset",
         "enabled": true,
         "path": "rules/ruleset.json"
       }
@@ -30,7 +30,7 @@
   ],
   "action": {
     "default_popup": "popup/popup.html",
-    "default_title": "Hunter Shield",
+    "default_title": "Sentinel Shield",
     "default_icon": {
       "16": "icons/icon16.png",
       "48": "icons/icon48.png",

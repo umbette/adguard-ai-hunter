@@ -1,5 +1,5 @@
 /**
- * Hunter Shield - Manifest V3 Background Service Worker
+ * Sentinel Shield - Manifest V3 Background Service Worker
  * 100% Local Heuristic Inspection & Brand Impersonation Guard
  */
 
@@ -37,10 +37,10 @@ function ensureDataLoaded() {
         }
 
         console.log(
-          `[Hunter Shield] Loaded verified brand database (${Object.keys(BRANDS).length} brands), PSL (${PUBLIC_SUFFIXES.size} multi-part suffixes), and ${BLOCKED_DOMAINS.size} DNR blocked domains.`
+          `[Sentinel Shield] Loaded verified brand database (${Object.keys(BRANDS).length} brands), PSL (${PUBLIC_SUFFIXES.size} multi-part suffixes), and ${BLOCKED_DOMAINS.size} DNR blocked domains.`
         );
       } catch (err) {
-        console.error("[Hunter Shield] Failed to load data files:", err);
+        console.error("[Sentinel Shield] Failed to load data files:", err);
       }
     })();
   }
@@ -156,7 +156,7 @@ chrome.runtime.onStartup.addListener(() => {
 });
 
 // Catch DNR network blocks on main_frame and seamlessly display local blocked.html without requiring host permissions.
-// Disambiguates against uBlock Origin and other blockers by verifying the domain is in Hunter Shield's ruleset.
+// Disambiguates against uBlock Origin and other blockers by verifying the domain is in Sentinel Shield's ruleset.
 chrome.webNavigation.onErrorOccurred.addListener(async (details) => {
   if (details.frameId !== 0) return; // Only top-level window
   if (details.error === "net::ERR_BLOCKED_BY_CLIENT" && details.url && details.url.startsWith("http")) {
@@ -165,7 +165,7 @@ chrome.webNavigation.onErrorOccurred.addListener(async (details) => {
       const hostname = new URL(details.url).hostname.toLowerCase();
       const etld1 = getETLDPlusOne(hostname);
 
-      // Disambiguation: ONLY redirect if domain or eTLD+1 matches Hunter Shield's blocked rules.
+      // Disambiguation: ONLY redirect if domain or eTLD+1 matches Sentinel Shield's blocked rules.
       // Other blockers (e.g. uBlock Origin) will NOT trigger our blocked page.
       if (BLOCKED_DOMAINS.has(hostname) || BLOCKED_DOMAINS.has(etld1)) {
         const blockedPageUrl = chrome.runtime.getURL(`pages/blocked.html?domain=${encodeURIComponent(hostname)}`);
@@ -205,7 +205,7 @@ chrome.webNavigation.onBeforeNavigate.addListener(async (details) => {
       await chrome.storage.session.set({ [warningKey]: result });
       chrome.action.setBadgeText({ text: "!", tabId: details.tabId });
       chrome.action.setBadgeBackgroundColor({ color: "#f57c00", tabId: details.tabId });
-      console.warn(`[Hunter Shield] Brand impersonation alert for tab ${details.tabId}:`, result);
+      console.warn(`[Sentinel Shield] Brand impersonation alert for tab ${details.tabId}:`, result);
     } else {
       await chrome.storage.session.remove(warningKey);
       chrome.action.setBadgeText({ text: "", tabId: details.tabId });
@@ -289,10 +289,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         addRules: [allowRule]
       }, () => {
         if (chrome.runtime.lastError) {
-          console.error("[Hunter Shield] Failed to add session bypass rule:", chrome.runtime.lastError);
+          console.error("[Sentinel Shield] Failed to add session bypass rule:", chrome.runtime.lastError);
           sendResponse({ success: false, error: chrome.runtime.lastError.message });
         } else {
-          console.log(`[Hunter Shield] Added session bypass allow rule (id ${nextId}) for ${domain}`);
+          console.log(`[Sentinel Shield] Added session bypass allow rule (id ${nextId}) for ${domain}`);
           sendResponse({ success: true, ruleId: nextId });
         }
       });
