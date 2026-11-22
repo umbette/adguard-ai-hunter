@@ -10,6 +10,7 @@ from src.gemini_client import GeminiClassifier
 from src.dispatcher import Dispatcher
 from src.dynamic_pricing import evaluate_dynamic_pricing_tracker
 from src.crypto_shield import evaluate_crypto_financial_threat
+from src.device_shield import evaluate_device_shield
 
 logger = logging.getLogger("ai_hunter.ingestion")
 
@@ -150,7 +151,23 @@ class IngestionWorker:
                     )
                 continue
 
-            # 4. Track rate burst
+            # 4. Check Specialized Device Privacy & Anti-Ban Shields
+            device_match = evaluate_device_shield(domain)
+            if device_match:
+                now_ts = datetime.datetime.now().timestamp()
+                if (now_ts - self._notified_cache.get(domain, 0)) >= 600:
+                    self._notified_cache[domain] = now_ts
+                    logger.info(f"🛡️ Device Shield alert: {domain} from {client_ip} ({device_match.shield_type})")
+                    await self.dispatcher.send_mobile_alert(
+                        domain=domain,
+                        client_ip=client_ip,
+                        classification=device_match.shield_type,
+                        summary=f"🛡️ {device_match.description}",
+                        suggested_rule=f"||{domain}^$client={client_ip}"
+                    )
+                continue
+
+            # 5. Track rate burst
             is_burst, burst_count = self.heuristics.record_query_and_check_burst(client_ip, domain)
 
             # 5. Evaluate multi-label entropy
