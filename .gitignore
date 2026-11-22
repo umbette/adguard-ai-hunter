@@ -12,4 +12,7 @@ __pycache__/
 *.tmp
 *.pem
 *.crx
+*dossier*
+private/
+.private/
 
