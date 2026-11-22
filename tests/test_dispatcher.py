@@ -75,3 +75,46 @@ async def test_handle_mobile_action_ignora_prevents_cctld_wildcard(temp_storage)
 
         # Crucial security check: *.co.uk must NEVER match or be whitelisted!
         assert temp_storage.match_decision("evil-site.co.uk", "192.168.1.100") is None
+
+
+@pytest.mark.asyncio
+async def test_send_mobile_alert_enriched_device(temp_storage):
+    settings = Settings()
+    mock_resolver = MagicMock()
+    from src.device_resolver import DeviceInfo
+    mock_resolver.resolve = AsyncMock(return_value=DeviceInfo(
+        ip="192.168.1.104",
+        name="Samsung Smart TV",
+        icon="📺",
+        device_type="SMART_TV",
+        display_name="📺 Samsung Smart TV (192.168.1.104)"
+    ))
+
+    dispatcher = Dispatcher(settings, temp_storage, device_resolver=mock_resolver)
+
+    with patch.object(dispatcher, "get_session") as mock_get_session:
+        mock_session = MagicMock()
+        mock_get_session.return_value = mock_session
+
+        mock_resp = AsyncMock()
+        mock_resp.status = 200
+        mock_session.post.return_value = MockAsyncContext(mock_resp)
+
+        notified = await dispatcher.send_mobile_alert(
+            domain="samsung-telemetry.com",
+            client_ip="192.168.1.104",
+            classification="TELEMETRY",
+            summary="Raffica telemetrica anomala",
+            suggested_rule="||samsung-telemetry.com^$client=192.168.1.104"
+        )
+
+        assert notified
+        # Verify first call was to notify service with enriched payload
+        calls = mock_session.post.call_args_list
+        assert len(calls) == 2 # mobile notify + persistent notification
+        mobile_payload = calls[0][1]["json"]
+        assert "📺 Samsung Smart TV (192.168.1.104)" in mobile_payload["message"]
+        # Verify action title shows friendly name and icon
+        actions = mobile_payload["data"]["actions"]
+        assert actions[0]["title"] == "Blocca per 📺 Samsung Smart TV"
+        assert actions[0]["action"] == "BLOCCA_DEVICE::samsung-telemetry.com::192.168.1.104"

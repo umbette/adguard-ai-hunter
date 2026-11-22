@@ -10,6 +10,7 @@ import aiohttp
 import tldextract
 from src.config import Settings
 from src.storage import StorageEngine
+from src.device_resolver import DeviceResolver, DeviceInfo
 
 logger = logging.getLogger("ai_hunter.dispatcher")
 
@@ -34,9 +35,10 @@ def get_apex_domain(domain: str) -> str:
     return domain.lower()
 
 class Dispatcher:
-    def __init__(self, settings: Settings, storage: StorageEngine):
+    def __init__(self, settings: Settings, storage: StorageEngine, device_resolver: Optional[DeviceResolver] = None):
         self.settings = settings
         self.storage = storage
+        self.device_resolver = device_resolver or DeviceResolver(settings)
         self._running = False
         self._session: Optional[aiohttp.ClientSession] = None
 
@@ -111,14 +113,16 @@ class Dispatcher:
         and creates a persistent notification visible under the Home Assistant UI bell icon (Notifiche).
         """
         session = await self.get_session()
+        device = await self.device_resolver.resolve(client_ip, session)
+
         base_ha_url = self.settings.home_assistant.base_url
         headers = {
             "Authorization": f"Bearer {self.settings.home_assistant.token}",
             "Content-Type": "application/json"
         }
 
-        title = f"🛡️ AI Hunter: {classification.upper()} Rilevato"
-        message = f"{summary}\n\n• Dominio: {domain}\n• Dispositivo: {client_ip}"
+        title = f"🛡️ Hunter: {classification.upper()} Rilevato"
+        message = f"{summary}\n\n• Dispositivo: {device.display_name}\n• Dominio: {domain}"
 
         # 1. Actionable Mobile Push Notification (Companion App)
         mobile_url = f"{base_ha_url}/api/services/notify/{self.settings.home_assistant.notify_service}"
@@ -130,7 +134,7 @@ class Dispatcher:
                 "actions": [
                     {
                         "action": f"BLOCCA_DEVICE::{domain}::{client_ip}",
-                        "title": f"Blocca Device ({client_ip})"
+                        "title": f"Blocca per {device.icon} {device.name}"
                     },
                     {
                         "action": f"BLOCCA_GLOBALE::{domain}",
@@ -148,7 +152,7 @@ class Dispatcher:
         try:
             async with session.post(mobile_url, headers=headers, json=payload, timeout=5.0) as resp:
                 if resp.status in (200, 201):
-                    logger.info(f"Dispatched mobile notification for {domain} to {self.settings.home_assistant.notify_service}")
+                    logger.info(f"Dispatched mobile notification for {domain} on {device.display_name} to {self.settings.home_assistant.notify_service}")
                     notified = True
                 else:
                     text = await resp.text()
@@ -165,8 +169,8 @@ class Dispatcher:
             "message": (
                 f"### Anomalia DNS Rilevata da AI Hunter\n\n"
                 f"**Diagnosi:** {summary}\n\n"
+                f"* **Dispositivo:** {device.icon} **{device.name}** (`{client_ip}`)\n"
                 f"* **Dominio:** `{domain}`\n"
-                f"* **Dispositivo:** `{client_ip}`\n"
                 f"* **Classificazione:** `{classification}`\n"
                 f"* **Regola Suggerita:** `{suggested_rule}`\n\n"
                 f"> *Puoi bloccare o ignorare questo dominio direttamente dalla notifica ricevuta sullo smartphone.*"

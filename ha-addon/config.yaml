@@ -1,0 +1,31 @@
+name: "AI Hunter"
+slug: "ai_hunter"
+version: "0.2.0"
+description: "AI & Heuristic DNS triage, OEM Smart TV telemetry blocker, and interactive 1-click mobile triage for Home Assistant & AdGuard Home."
+url: "https://github.com/umbette/adguard-ai-hunter"
+arch:
+  - aarch64
+  - amd64
+  - armv7
+startup: services
+boot: auto
+homeassistant_api: true
+init: false
+options:
+  adguard_url: "http://core-adguard:80"
+  adguard_username: "admin"
+  adguard_password: ""
+  gemini_api_key: ""
+  entropy_threshold: 3.85
+  rate_burst_threshold: 30
+  rate_window_sec: 60
+  notify_service: "notify.notify"
+schema:
+  adguard_url: str
+  adguard_username: str
+  adguard_password: password
+  gemini_api_key: password?
+  entropy_threshold: float
+  rate_burst_threshold: int
+  rate_window_sec: int
+  notify_service: str

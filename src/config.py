@@ -56,6 +56,46 @@ class Settings(BaseSettings):
         adguard_data["password"] = os.getenv("ADGUARD_PASSWORD", adguard_data.get("password", ""))
         data["adguard"] = adguard_data
 
+        # Check Home Assistant Supervisor Add-on options (/data/options.json)
+        options_path = os.getenv("OPTIONS_PATH", "/data/options.json")
+        if os.path.exists(options_path):
+            try:
+                import json
+                from urllib.parse import urlparse
+                with open(options_path, "r", encoding="utf-8") as f:
+                    ha_options = json.load(f)
+
+                if "adguard_url" in ha_options:
+                    parsed = urlparse(ha_options["adguard_url"])
+                    data.setdefault("adguard", {})["host"] = parsed.hostname or "127.0.0.1"
+                    data.setdefault("adguard", {})["port"] = parsed.port or (443 if parsed.scheme == "https" else 80)
+                if "adguard_username" in ha_options:
+                    data.setdefault("adguard", {})["username"] = ha_options["adguard_username"]
+                if "adguard_password" in ha_options:
+                    data.setdefault("adguard", {})["password"] = ha_options["adguard_password"]
+                if "gemini_api_key" in ha_options:
+                    data.setdefault("gemini", {})["api_key"] = ha_options["gemini_api_key"]
+                if "entropy_threshold" in ha_options:
+                    data.setdefault("heuristics", {})["entropy_threshold"] = float(ha_options["entropy_threshold"])
+                if "rate_burst_threshold" in ha_options:
+                    data.setdefault("heuristics", {})["rate_burst_threshold"] = int(ha_options["rate_burst_threshold"])
+                if "rate_window_sec" in ha_options:
+                    data.setdefault("heuristics", {})["rate_window_sec"] = int(ha_options["rate_window_sec"])
+                if "notify_service" in ha_options:
+                    svc = ha_options["notify_service"]
+                    if svc.startswith("notify."):
+                        svc = svc.replace("notify.", "")
+                    data.setdefault("home_assistant", {})["notify_service"] = svc
+            except Exception:
+                pass
+
+        # Check Home Assistant Supervisor Token (auto-authentication in HA OS Add-on)
+        supervisor_token = os.getenv("SUPERVISOR_TOKEN")
+        if supervisor_token:
+            data.setdefault("home_assistant", {})["token"] = supervisor_token
+            data.setdefault("home_assistant", {})["base_url"] = "http://supervisor/core"
+            data.setdefault("home_assistant", {})["ws_url"] = "ws://supervisor/core/websocket"
+
         ha_data = data.get("home_assistant", {})
         ha_data["token"] = os.getenv("HASS_TOKEN", ha_data.get("token", ""))
         ha_data["notify_service"] = os.getenv("HASS_NOTIFY_SERVICE", ha_data.get("notify_service", "notify"))
