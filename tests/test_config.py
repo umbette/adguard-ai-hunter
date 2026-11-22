@@ -39,3 +39,22 @@ def test_config_ha_options_and_supervisor_token(tmp_path, monkeypatch):
     assert settings.home_assistant.base_url == "http://supervisor/core"
     assert settings.home_assistant.ws_url == "ws://supervisor/core/websocket"
     assert settings.home_assistant.notify_service == "mobile_app_pixel_8"
+
+
+def test_empty_env_vars_do_not_clobber_supervisor_token(tmp_path, monkeypatch):
+    monkeypatch.setenv("SUPERVISOR_TOKEN", "valid_supervisor_token_xyz")
+    # Simulate empty env var defined in a container or .env template
+    monkeypatch.setenv("HASS_TOKEN", "")
+    monkeypatch.setenv("ADGUARD_USERNAME", "")
+    monkeypatch.setenv("GEMINI_API_KEY", "")
+
+    # Config has adguard user
+    cfg_file = tmp_path / "config.yaml"
+    cfg_file.write_text("adguard:\n  username: existing_user\n", encoding="utf-8")
+
+    settings = Settings.load(config_path=str(cfg_file))
+
+    # Empty HASS_TOKEN must not clobber SUPERVISOR_TOKEN
+    assert settings.home_assistant.token == "valid_supervisor_token_xyz"
+    # Empty ADGUARD_USERNAME must not clobber existing_user
+    assert settings.adguard.username == "existing_user"

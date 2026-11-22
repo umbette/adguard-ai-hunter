@@ -95,10 +95,13 @@ class DeviceResolver:
             logger.warning(f"Failed to query AdGuard Home clients: {e}")
 
     async def _reverse_ptr_lookup(self, ip: str) -> Optional[str]:
-        """Performs non-blocking reverse DNS PTR lookup on local network."""
+        """Performs non-blocking reverse DNS PTR lookup on local network with 1.5s timeout."""
         loop = asyncio.get_running_loop()
         try:
-            name, _ = await loop.run_in_executor(None, socket.getnameinfo, (ip, 0), 0)
+            name, _ = await asyncio.wait_for(
+                loop.run_in_executor(None, socket.getnameinfo, (ip, 0), 0),
+                timeout=1.5
+            )
             if name and name != ip:
                 return name
         except Exception:

@@ -50,10 +50,10 @@ class Settings(BaseSettings):
             with open(config_path, "r", encoding="utf-8") as f:
                 data = yaml.safe_load(f) or {}
 
-        # Merge environment variables
+        # Merge environment variables (preserve non-empty values over empty env vars)
         adguard_data = data.get("adguard", {})
-        adguard_data["username"] = os.getenv("ADGUARD_USERNAME", adguard_data.get("username", ""))
-        adguard_data["password"] = os.getenv("ADGUARD_PASSWORD", adguard_data.get("password", ""))
+        adguard_data["username"] = os.getenv("ADGUARD_USERNAME") or adguard_data.get("username", "")
+        adguard_data["password"] = os.getenv("ADGUARD_PASSWORD") or adguard_data.get("password", "")
         data["adguard"] = adguard_data
 
         # Check Home Assistant Supervisor Add-on options (/data/options.json)
@@ -97,12 +97,12 @@ class Settings(BaseSettings):
             data.setdefault("home_assistant", {})["ws_url"] = "ws://supervisor/core/websocket"
 
         ha_data = data.get("home_assistant", {})
-        ha_data["token"] = os.getenv("HASS_TOKEN", ha_data.get("token", ""))
-        ha_data["notify_service"] = os.getenv("HASS_NOTIFY_SERVICE", ha_data.get("notify_service", "notify"))
+        ha_data["token"] = os.getenv("HASS_TOKEN") or ha_data.get("token", "")
+        ha_data["notify_service"] = os.getenv("HASS_NOTIFY_SERVICE") or ha_data.get("notify_service", "notify")
         data["home_assistant"] = ha_data
 
         gemini_data = data.get("gemini", {})
-        gemini_data["api_key"] = os.getenv("GEMINI_API_KEY", gemini_data.get("api_key", ""))
+        gemini_data["api_key"] = os.getenv("GEMINI_API_KEY") or gemini_data.get("api_key", "")
         data["gemini"] = gemini_data
 
         storage_data = data.get("storage", {})
