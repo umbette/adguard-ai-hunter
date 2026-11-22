@@ -36,12 +36,18 @@ class HeuristicsConfig(BaseModel):
 class StorageConfig(BaseModel):
     db_path: str = "/app/data/hunter_decisions.db"
 
+class DashboardConfig(BaseModel):
+    host: str = "0.0.0.0"
+    port: int = 8087
+    enabled: bool = True
+
 class Settings(BaseSettings):
     adguard: AdGuardConfig = Field(default_factory=AdGuardConfig)
     home_assistant: HomeAssistantConfig = Field(default_factory=HomeAssistantConfig)
     gemini: GeminiConfig = Field(default_factory=GeminiConfig)
     heuristics: HeuristicsConfig = Field(default_factory=HeuristicsConfig)
     storage: StorageConfig = Field(default_factory=StorageConfig)
+    dashboard: DashboardConfig = Field(default_factory=DashboardConfig)
 
     @classmethod
     def load(cls, config_path: str = "/app/config.yaml") -> "Settings":

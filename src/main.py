@@ -9,6 +9,8 @@ from src.heuristics import HeuristicsEngine
 from src.gemini_client import GeminiClassifier
 from src.dispatcher import Dispatcher
 from src.ingestion import IngestionWorker
+from src.device_resolver import DeviceResolver
+from src.dashboard import SentinelDashboard
 
 logging.basicConfig(
     level=logging.INFO,
@@ -36,6 +38,11 @@ async def main():
     dispatcher = Dispatcher(settings, storage)
     ingestion = IngestionWorker(settings, storage, heuristics, gemini, dispatcher)
 
+    resolver = DeviceResolver(settings)
+    dashboard = SentinelDashboard(settings, storage, resolver) if settings.dashboard.enabled else None
+    if dashboard:
+        await dashboard.start()
+
     loop = asyncio.get_running_loop()
     stop_event = asyncio.Event()
 
@@ -61,6 +68,8 @@ async def main():
         task.cancel()
     
     await asyncio.gather(*tasks, return_exceptions=True)
+    if dashboard:
+        await dashboard.stop()
     await dispatcher.close()
     logger.info("AI Hunter Daemon cleanly halted.")
 

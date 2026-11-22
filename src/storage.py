@@ -175,3 +175,19 @@ class StorageEngine:
         with self._get_connection() as conn:
             cursor = conn.execute("DELETE FROM domain_cooldowns WHERE expires_at <= ?", (now_iso,))
             return cursor.rowcount
+
+    def get_recent_candidates(self, limit: int = 15) -> List[Dict[str, Any]]:
+        with self._get_connection() as conn:
+            rows = conn.execute(
+                "SELECT id, domain, client_ip, entropy_score, query_count, gemini_classification, gemini_summary, status, created_at "
+                "FROM candidates_log ORDER BY id DESC LIMIT ?",
+                (limit,)
+            ).fetchall()
+            return [dict(r) for r in rows]
+
+    def get_decision_counts(self) -> Dict[str, int]:
+        with self._get_connection() as conn:
+            rows = conn.execute(
+                "SELECT action, COUNT(*) as cnt FROM decisions GROUP BY action"
+            ).fetchall()
+            return {r["action"]: r["cnt"] for r in rows}

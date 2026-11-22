@@ -11,6 +11,10 @@ startup: services
 boot: auto
 homeassistant_api: true
 init: false
+ingress: true
+ingress_port: 8087
+panel_icon: "mdi:shield-check"
+panel_title: "Sentinel"
 options:
   adguard_url: "http://core-adguard:80"
   adguard_username: "admin"
