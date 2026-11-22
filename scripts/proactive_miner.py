@@ -84,10 +84,17 @@ MAX_FEED_LINES = 100_000           # 100,000 lines max per feed
 MAX_LINE_LENGTH = 2048
 
 
+class FeedStreamLimitError(Exception):
+    """Raised when an external threat feed exceeds safety boundaries (byte or line volume)."""
+    pass
+
+
 def stream_feed_lines(resp, max_bytes: int = MAX_FEED_BYTES, max_lines: int = MAX_FEED_LINES):
     """
-    Streams lines from an HTTP response in fixed 64KB chunks with strict limits
-    on total byte volume, line count, and individual line length to prevent memory exhaustion and DoS.
+    Streams lines from an HTTP response in fixed 64KB chunks with strict limits:
+    - Drops partial buffer immediately if it exceeds MAX_LINE_LENGTH without newline.
+    - Raises FeedStreamLimitError if bytes read exceed max_bytes.
+    - Raises FeedStreamLimitError if line count exceeds max_lines.
     """
     bytes_read = 0
     lines_yielded = 0
@@ -99,13 +106,19 @@ def stream_feed_lines(resp, max_bytes: int = MAX_FEED_BYTES, max_lines: int = MA
             break
         bytes_read += len(chunk)
         if bytes_read > max_bytes:
-            logger.warning(f"Feed exceeded max bytes limit ({max_bytes} bytes). Terminating stream.")
-            break
+            raise FeedStreamLimitError(f"Feed exceeded byte limit ({max_bytes} bytes); feed is incomplete.")
 
         text = chunk.decode("utf-8", errors="ignore")
         buffer += text
+
+        # Prevent unbounded buffer accumulation if no newline is encountered
+        if "\n" not in buffer and len(buffer) > MAX_LINE_LENGTH:
+            logger.warning(f"Discarding oversized line buffer exceeding {MAX_LINE_LENGTH} characters without newline.")
+            buffer = ""
+            continue
+
         lines = buffer.split("\n")
-        buffer = lines.pop()  # Keep partial last line in buffer
+        buffer = lines.pop()
 
         for line in lines:
             line_str = line.strip()
@@ -115,8 +128,7 @@ def stream_feed_lines(resp, max_bytes: int = MAX_FEED_BYTES, max_lines: int = MA
                 yield line_str
                 lines_yielded += 1
                 if lines_yielded >= max_lines:
-                    logger.warning(f"Feed exceeded max lines limit ({max_lines} lines). Terminating stream.")
-                    return
+                    raise FeedStreamLimitError(f"Feed exceeded line limit ({max_lines} lines); feed is incomplete.")
 
     if buffer:
         final_line = buffer.strip()
@@ -128,9 +140,13 @@ class DomainSanitizer:
     """Zero-Trust input sanitizer ensuring RFC 1123 compliance and neutralizing homograph/injection attacks."""
 
     def __init__(self):
-        # Local tldextract cache with private PSL domains enabled
+        # Local tldextract cache with private PSL domains enabled and offline snapshot fallback
         cache_dir = DATA_DIR / ".tld_cache"
-        self.extractor = tldextract.TLDExtract(cache_dir=str(cache_dir), include_psl_private_domains=True)
+        self.extractor = tldextract.TLDExtract(
+            cache_dir=str(cache_dir),
+            include_psl_private_domains=True,
+            fallback_to_snapshot=True
+        )
 
     def sanitize(self, raw_input: str) -> str | None:
         if not raw_input or not isinstance(raw_input, str) or len(raw_input) > 2048:
@@ -343,8 +359,12 @@ class ProactiveMiner:
                             "family": "phishing",
                             "confidence": 90
                         })
+        except FeedStreamLimitError as e:
+            logger.error(f"OpenPhish stream rejected due to security limit: {e}. Preserving previous threat state.")
+            return []
         except Exception as e:
             logger.error(f"Failed to fetch OpenPhish: {e}")
+            return []
         logger.info(f"OpenPhish produced {len(candidates)} valid candidate domains.")
         return candidates
 
@@ -364,8 +384,12 @@ class ProactiveMiner:
                             "family": "malware",
                             "confidence": 85
                         })
+        except FeedStreamLimitError as e:
+            logger.error(f"URLhaus stream rejected due to security limit: {e}. Preserving previous threat state.")
+            return []
         except Exception as e:
             logger.error(f"Failed to fetch URLhaus mirror: {e}")
+            return []
         logger.info(f"URLhaus produced {len(candidates)} valid candidate domains.")
         return candidates
 
@@ -376,6 +400,10 @@ class ProactiveMiner:
         candidates = []
         candidates.extend(self.fetch_openphish())
         candidates.extend(self.fetch_urlhaus_mirror())
+
+        if not candidates:
+            logger.warning("No threat candidates successfully retrieved from feeds. Skipping database update to protect integrity.")
+            return {"new": 0, "refreshed": 0, "purged": 0}
 
         # 2. De-duplicate candidates in memory
         seen = set()

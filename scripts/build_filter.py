@@ -71,7 +71,8 @@ def validate_and_compile(
     protected = load_never_block(never_block_path)
     extractor = tldextract.TLDExtract(
         cache_dir=str(SOURCES_DIR.parent / "data" / ".tld_cache"),
-        include_psl_private_domains=True
+        include_psl_private_domains=True,
+        fallback_to_snapshot=True
     )
     
     if source_files is None:

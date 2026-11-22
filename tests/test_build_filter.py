@@ -142,22 +142,46 @@ def test_end_to_end_idn_punycode_pipeline(tmp_path):
 
 
 def test_stream_feed_lines_limits():
-    """Verifies that stream_feed_lines respects byte bounds and line length limits."""
+    """Verifies that stream_feed_lines drops bloated line buffers and raises FeedStreamLimitError on bound violations."""
     import io
-    from scripts.proactive_miner import stream_feed_lines
+    import pytest
+    from scripts.proactive_miner import stream_feed_lines, FeedStreamLimitError
 
-    # Simulated feed with one valid line, one oversized line (3000 chars), and another valid line
-    data = (
-        b"valid-one.com\n"
-        + b"a" * 3000 + b".com\n"
-        + b"valid-two.com\n"
+    # 1. Non-newline oversized line buffer (> 2048 chars) is discarded immediately without crashing memory
+    oversized_data = b"x" * 3000 + b"\nvalid-site.com\n"
+    mock_resp = io.BytesIO(oversized_data)
+    lines = list(stream_feed_lines(mock_resp, max_bytes=100000))
+    assert lines == ["valid-site.com"]
+
+    # 2. Exceeding max_bytes raises FeedStreamLimitError (fail-closed)
+    mock_resp_bytes = io.BytesIO(b"line1.com\nline2.com\nline3.com\n")
+    with pytest.raises(FeedStreamLimitError, match="byte limit"):
+        list(stream_feed_lines(mock_resp_bytes, max_bytes=15))
+
+    # 3. Exceeding max_lines raises FeedStreamLimitError (fail-closed)
+    mock_resp_lines = io.BytesIO(b"a.com\nb.com\nc.com\nd.com\n")
+    with pytest.raises(FeedStreamLimitError, match="line limit"):
+        list(stream_feed_lines(mock_resp_lines, max_lines=2))
+
+
+def test_offline_psl_snapshot_reproducibility(tmp_path):
+    """Verifies that PSL validation is reproducible offline with fallback_to_snapshot even with an empty cache."""
+    import tldextract
+
+    # Isolate cache in an empty temporary directory with fallback enabled
+    empty_cache = tmp_path / "empty_psl_cache"
+    empty_cache.mkdir()
+
+    ext = tldextract.TLDExtract(
+        cache_dir=str(empty_cache),
+        include_psl_private_domains=True,
+        fallback_to_snapshot=True
     )
-    mock_resp = io.BytesIO(data)
-    lines = list(stream_feed_lines(mock_resp, max_bytes=10000))
-    assert lines == ["valid-one.com", "valid-two.com"]
 
-    # Test byte limit cutoff
-    mock_resp_large = io.BytesIO(b"line1.com\nline2.com\nline3.com\n")
-    lines_cutoff = list(stream_feed_lines(mock_resp_large, max_bytes=12))
-    assert len(lines_cutoff) <= 2
+    # Must accurately identify private suffixes without network access
+    res_bare = ext("pages.dev")
+    assert not res_bare.domain and res_bare.suffix == "pages.dev"
+
+    res_tenant = ext("my-service.pages.dev")
+    assert res_tenant.domain == "my-service" and res_tenant.suffix == "pages.dev"
 
