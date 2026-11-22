@@ -37,9 +37,20 @@ jobs:
           done
           echo "safe=true" >> $GITHUB_OUTPUT
 
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt -r requirements-dev.txt
+
       - name: Run Zero-Trust Compiler & Tests
         run: |
-          python tests/test_build_filter.py
+          PYTHONPATH=. pytest tests/test_build_filter.py -v
 
       - name: Validate Safe Community PR
         if: steps.check_files.outputs.safe == 'true'

@@ -25,7 +25,17 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: "3.12"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt -r requirements-dev.txt
+
+      - name: Compile Threat Filter
+        run: |
+          python scripts/build_filter.py
 
       - name: Run Filter Compiler and Guardrail Tests
         run: |
-          python tests/test_build_filter.py
+          PYTHONPATH=. pytest tests/test_build_filter.py -v
