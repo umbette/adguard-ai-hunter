@@ -12,10 +12,18 @@ def test_heuristics_dga_detection(heuristics):
     is_dga, ent, _ = heuristics.evaluate_entropy("google.com")
     assert not is_dga
 
-    # Algorithmic DGA domain
+    # Algorithmic DGA domain (long)
     is_dga, ent, _ = heuristics.evaluate_entropy("x7zq9b2k1l8v0p3m.biz")
     assert is_dga
     assert ent >= 3.85
+
+    # Algorithmic DGA domain (short 10 chars with high normalized entropy)
+    is_dga_short, ent_short, _ = heuristics.evaluate_entropy("xk92lms08a.biz")
+    assert is_dga_short
+
+    # Natural 10-char word (should not trigger DGA)
+    is_word, _, _ = heuristics.evaluate_entropy("california.biz")
+    assert not is_word
 
     # Algorithmic subdomain under generic CDN
     is_dga, ent, label = heuristics.evaluate_entropy("d3g7k9m2x4q8p1wz.trafficmanager.net")

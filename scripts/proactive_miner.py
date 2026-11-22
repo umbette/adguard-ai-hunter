@@ -42,9 +42,9 @@ NEVER_BLOCK_FILE = SOURCES_DIR / "never_block.txt"
 PROACTIVE_OUTPUT_FILE = SOURCES_DIR / "proactive_threats.txt"
 DOMAINS_FILE = SOURCES_DIR / "domains.txt"
 
-# Security & RFC 1123 Constraints
+# Security & RFC 1123 Constraints (Supporting standard and IDN Punycode TLDs like xn--...)
 RFC1123_DOMAIN_REGEX = re.compile(
-    r"^(?!\-)(?:[a-zA-Z0-9\-]{1,63}\.)+[a-zA-Z]{2,63}$"
+    r"^(?!\-)(?:[a-zA-Z0-9\-]{1,63}\.)+(?:xn\-\-[a-zA-Z0-9\-]{1,59}|[a-zA-Z]{2,63})$"
 )
 FORBIDDEN_CHARS = set("$^@|/\\*[]()#;,!~%&? \t\r\n\0")
 
@@ -88,7 +88,7 @@ class DomainSanitizer:
         self.extractor = tldextract.TLDExtract(cache_dir=str(cache_dir))
 
     def sanitize(self, raw_input: str) -> str | None:
-        if not raw_input or not isinstance(raw_input, str):
+        if not raw_input or not isinstance(raw_input, str) or len(raw_input) > 2048:
             return None
 
         # 1. Strip whitespace and control chars

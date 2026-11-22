@@ -1,5 +1,7 @@
+import os
 import math
 import time
+from pathlib import Path
 from collections import Counter
 from typing import Tuple, Dict, Set, Optional
 import tldextract
@@ -40,7 +42,9 @@ class HeuristicsEngine:
         self.entropy_threshold = entropy_threshold
         self.rate_burst_threshold = rate_burst_threshold
         self.rate_window_sec = rate_window_sec
-        self.extractor = tldextract.TLDExtract(cache_dir="/app/data/.tld_cache")
+        cache_dir = Path("/app/data/.tld_cache") if Path("/app").is_dir() and os.access("/app", os.W_OK) else Path(__file__).resolve().parent.parent / "data" / ".tld_cache"
+        cache_dir.mkdir(parents=True, exist_ok=True)
+        self.extractor = tldextract.TLDExtract(cache_dir=str(cache_dir))
         # In-memory rate tracker: (client_ip, apex_domain) -> list of timestamps
         self._rate_buckets: Dict[Tuple[str, str], list] = {}
 
@@ -84,9 +88,16 @@ class HeuristicsEngine:
                 max_entropy = ent
                 flagged_label = label
 
-            # DGA heuristic: entropy exceeds threshold and length is significant
-            if ent >= self.entropy_threshold and len(clean) >= 10:
+            # DGA heuristic: 
+            # Note on information theory: For len < 15, max possible Shannon entropy is < 3.85 (log2(14) ~ 3.81).
+            # We use normalized entropy (H / log2(L) >= 0.96) for 10 <= len < 15, and raw H >= 3.85 for len >= 15.
+            clean_len = len(clean)
+            if clean_len >= 15 and ent >= self.entropy_threshold:
                 is_candidate = True
+            elif 10 <= clean_len < 15:
+                max_possible = math.log2(clean_len)
+                if max_possible > 0 and (ent / max_possible) >= 0.96:
+                    is_candidate = True
 
         return is_candidate, round(max_entropy, 2), flagged_label
 
