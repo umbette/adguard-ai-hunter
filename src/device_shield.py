@@ -143,6 +143,93 @@ CAMERA_P2P_SUFFIX_BLOCKS: Tuple[str, ...] = (
     ".eye4.so",
 )
 
+# ---------------------------------------------------------------------------
+# 7. 🧒 Youth Safeguard: Anti-Grooming, Deepfake AI Nudify & Predatory Videochats
+# (Child protection from online predators, anonymous videochats, predatory gambling)
+# ---------------------------------------------------------------------------
+YOUTH_EXACT_BLOCKS: Set[str] = {
+    "nudify.online",
+    "undress.app",
+    "deepnude.to",
+    "nudify.top",
+    "clothoff.io",
+    "undress.cc",
+    "ome.tv",
+    "chatext.com",
+    "monkey.app",
+    "chatrandom.com",
+    "bazoocam.org",
+    "chatspin.com",
+    "csgoempire.com",
+    "hellcase.com",
+    "datdrop.com",
+    "roblox-trade.com",
+}
+
+YOUTH_SUFFIX_BLOCKS: Tuple[str, ...] = (
+    ".nudify.online",
+    ".undress.app",
+    ".deepnude.to",
+    ".ome.tv",
+    ".chatrandom.com",
+    ".csgoempire.com",
+)
+
+# ---------------------------------------------------------------------------
+# 8. 🚗 Connected Car Telemetry & Insurance Broker Shield
+# (LexisNexis, Verisk, Otonomo selling driver braking/speed data to insurers)
+# ---------------------------------------------------------------------------
+AUTOMOTIVE_EXACT_BLOCKS: Set[str] = {
+    "telemetry.lexisnexis.com",
+    "risk.lexisnexis.com",
+    "auto.lexisnexis.com",
+    "telematics.verisk.com",
+    "api.otonomo.io",
+    "telemetry.otonomo.io",
+    "telemetry.connected-car.io",
+    "telemetry.bmw.com",
+    "telemetry.mercedes-benz.com",
+}
+
+AUTOMOTIVE_SUFFIX_BLOCKS: Tuple[str, ...] = (
+    ".lexisnexis.com",
+    ".otonomo.io",
+)
+
+# ---------------------------------------------------------------------------
+# 9. 🧸 Smart Toy Audio & Child Microphone Leak Shield
+# (Unencrypted microphone beacons & third-party voice cloud uploads)
+# ---------------------------------------------------------------------------
+SMART_TOY_EXACT_BLOCKS: Set[str] = {
+    "linglong.com",
+    "turingos.cn",
+    "voicecloud.cn",
+    "api.ai-toy.net",
+}
+
+SMART_TOY_SUFFIX_BLOCKS: Tuple[str, ...] = (
+    ".turingos.cn",
+    ".voicecloud.cn",
+)
+
+# ---------------------------------------------------------------------------
+# 10. 📦 Budget AOSP & Android TV Box Badbox Malware C2 Shield
+# (Peachpit / Badbox botnet preinstalled on budget Allwinner/Amlogic TV boxes)
+# ---------------------------------------------------------------------------
+BADBOX_EXACT_BLOCKS: Set[str] = {
+    "cbty2021.com",
+    "b2c.aospbox.net",
+    "mykingbox.com",
+    "update.tvboxapi.com",
+    "vip.aospota.com",
+}
+
+BADBOX_SUFFIX_BLOCKS: Tuple[str, ...] = (
+    ".aospbox.net",
+    ".mykingbox.com",
+    ".tvboxapi.com",
+)
+
 
 def evaluate_nintendo_telemetry(hostname: str) -> Optional[DeviceShieldMatch]:
     """Evaluates whether a domain targets Nintendo telemetry or certification servers."""
@@ -234,6 +321,66 @@ def evaluate_camera_p2p_telemetry(hostname: str) -> Optional[DeviceShieldMatch]:
     return None
 
 
+def evaluate_youth_safeguard_telemetry(hostname: str) -> Optional[DeviceShieldMatch]:
+    """Evaluates whether a domain targets child grooming, predatory videochats, or deepfake AI generators."""
+    h_lower = hostname.lower().strip()
+    if h_lower in YOUTH_EXACT_BLOCKS or any(h_lower.endswith(s) for s in YOUTH_SUFFIX_BLOCKS):
+        return DeviceShieldMatch(
+            domain=h_lower,
+            shield_type="YOUTH_SAFEGUARD",
+            target_category="YOUTH_DEVICE",
+            rule_pattern=f"||{h_lower}^",
+            risk_score=0.99,
+            description="Youth Safeguard: blocco piattaforme di grooming, videochat anonime non moderate e generatori deepfake AI."
+        )
+    return None
+
+
+def evaluate_automotive_telemetry(hostname: str) -> Optional[DeviceShieldMatch]:
+    """Evaluates whether a domain targets driving telemetry data brokers or insurance profiling."""
+    h_lower = hostname.lower().strip()
+    if h_lower in AUTOMOTIVE_EXACT_BLOCKS or any(h_lower.endswith(s) for s in AUTOMOTIVE_SUFFIX_BLOCKS):
+        return DeviceShieldMatch(
+            domain=h_lower,
+            shield_type="AUTOMOTIVE_TELEMETRY",
+            target_category="CONNECTED_CAR",
+            rule_pattern=f"||{h_lower}^",
+            risk_score=0.85,
+            description="Automotive Sovereignty: blocco profilazione di guida per broker assicurativi (LexisNexis/Verisk); aggiornamenti OTA preservati."
+        )
+    return None
+
+
+def evaluate_smart_toy_telemetry(hostname: str) -> Optional[DeviceShieldMatch]:
+    """Evaluates whether a domain targets unencrypted child voice recordings or smart toy leaks."""
+    h_lower = hostname.lower().strip()
+    if h_lower in SMART_TOY_EXACT_BLOCKS or any(h_lower.endswith(s) for s in SMART_TOY_SUFFIX_BLOCKS):
+        return DeviceShieldMatch(
+            domain=h_lower,
+            shield_type="SMART_TOY_AUDIO",
+            target_category="SMART_TOY",
+            rule_pattern=f"||{h_lower}^",
+            risk_score=0.95,
+            description="Smart Toy Privacy: blocco upload registrazioni audio e microfono cameretta verso cloud esteri non conformi COPPA/GDPR."
+        )
+    return None
+
+
+def evaluate_badbox_malware(hostname: str) -> Optional[DeviceShieldMatch]:
+    """Evaluates whether a domain targets Badbox / Peachpit AOSP malware command & control."""
+    h_lower = hostname.lower().strip()
+    if h_lower in BADBOX_EXACT_BLOCKS or any(h_lower.endswith(s) for s in BADBOX_SUFFIX_BLOCKS):
+        return DeviceShieldMatch(
+            domain=h_lower,
+            shield_type="BADBOX_MALWARE",
+            target_category="BUDGET_AOSP_DEVICE",
+            rule_pattern=f"||{h_lower}^",
+            risk_score=0.98,
+            description="Badbox & Peachpit Neutralizer: blocco C2 malware e click-fraud preinstallati su TV Box e Smart TV cinesi low-cost."
+        )
+    return None
+
+
 def evaluate_device_shield(hostname: str, device_type: Optional[str] = None) -> Optional[DeviceShieldMatch]:
     """
     Unified dispatcher for specialized device shields.
@@ -270,6 +417,26 @@ def evaluate_device_shield(hostname: str, device_type: Optional[str] = None) -> 
 
     # 6. Check Low-Cost IP Camera P2P Relay Isolation
     match = evaluate_camera_p2p_telemetry(hostname)
+    if match:
+        return match
+
+    # 7. Check Youth Safeguard Shield
+    match = evaluate_youth_safeguard_telemetry(hostname)
+    if match:
+        return match
+
+    # 8. Check Automotive Telemetry & Insurance Shield
+    match = evaluate_automotive_telemetry(hostname)
+    if match:
+        return match
+
+    # 9. Check Smart Toy Audio & Microphone Shield
+    match = evaluate_smart_toy_telemetry(hostname)
+    if match:
+        return match
+
+    # 10. Check Badbox / Peachpit AOSP Malware Shield
+    match = evaluate_badbox_malware(hostname)
     if match:
         return match
 

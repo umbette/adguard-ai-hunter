@@ -34,6 +34,13 @@ def test_categorize_device():
     assert resolver.categorize_device("Roborock-S8-Pro") == ("🧹", "VACUUM_ROBOT")
     assert resolver.categorize_device("Ecovacs-Deebot-X2") == ("🧹", "VACUUM_ROBOT")
     assert resolver.categorize_device("HP-LaserJet-Pro") == ("🖨️", "PRINTER")
+    assert resolver.categorize_device("Tesla-Model-Y") == ("🚗", "CONNECTED_CAR")
+    assert resolver.categorize_device("BMW-i4-Garage") == ("🚗", "CONNECTED_CAR")
+    assert resolver.categorize_device("Tablet-Bambino-Pietro") == ("🧒", "YOUTH_DEVICE")
+    assert resolver.categorize_device("iPad-Scuola-Elena") == ("🧒", "YOUTH_DEVICE")
+    assert resolver.categorize_device("Imoo-Smartwatch-Kid") == ("🧸", "SMART_TOY")
+    assert resolver.categorize_device("Candy-Lavatrice-WiFi") == ("🧺", "WASHING_APPLIANCE")
+    assert resolver.categorize_device("T95-Android-TVBox") == ("📦", "BUDGET_AOSP_DEVICE")
     assert resolver.categorize_device("Unknown-Generic") == ("🔌", "DEVICE")
 
 @pytest.mark.asyncio

@@ -11,8 +11,16 @@ from src.config import Settings
 logger = logging.getLogger("ai_hunter.device_resolver")
 
 DEVICE_KEYWORDS = [
+    # Budget Android TV Box / AOSP Clones (Peachpit / Badbox botnet targets)
+    (["tvbox", "tv-box", "t95", "x96", "allwinner", "amlogic", "rockchip", "transsion", "tecno", "infinix", "cubot", "oukitel", "doogee"], "📦", "BUDGET_AOSP_DEVICE"),
     # TVs & Streaming
     (["tv", "samsung", "tizen", "lg", "webos", "sony", "bravia", "appletv", "apple-tv", "chromecast", "firetv", "roku", "shield"], "📺", "SMART_TV"),
+    # Connected Vehicles (Tesla, BMW, Mercedes, VAG, Stellantis, Toyota)
+    (["tesla", "bmw", "audi", "mercedes", "volkswagen", "vw", "stellantis", "uconnect", "fiat", "toyota", "hyundai", "kia", "weconnect", "car-wifi", "connected-car"], "🚗", "CONNECTED_CAR"),
+    # Smart Toys & Connected Wearables for Children
+    (["toy", "kidswatch", "smartwatch-kid", "imoo", "xplora", "vtech"], "🧸", "SMART_TOY"),
+    # Kids & Youth Devices (Tablets, Study, School laptops)
+    (["kid", "kids", "teen", "bambino", "scuola", "school", "classroom", "fire-kids", "kurio"], "🧒", "YOUTH_DEVICE"),
     # Mobile & Tablets
     (["iphone", "ipad", "android", "galaxy", "pixel", "xiaomi", "redmi", "oppo", "huawei", "oneplus", "phone"], "📱", "MOBILE"),
     # Gaming Consoles (Nintendo Switch, PS5, Xbox, Steam Deck)
@@ -21,6 +29,8 @@ DEVICE_KEYWORDS = [
     (["roborock", "dreame", "ecovacs", "deebot", "roomba", "irobot", "mova", "valetudo", "vacuum"], "🧹", "VACUUM_ROBOT"),
     # Smart Kitchen Appliances & Connected White Goods (Air Fryers, Smart Fridges, Multicookers, Ovens)
     (["airfryer", "air-fryer", "friggitrice", "multicooker", "bimby", "thermomix", "mambo", "cecotec", "cosori", "aigostar", "fridge", "refrigerator", "smartfridge", "oven", "coffee", "nespresso", "delonghi", "midea", "whirlpool"], "🍳", "SMART_APPLIANCE"),
+    # Large Laundry & Cleaning Appliances (Washing Machines, Dryers, Dishwashers)
+    (["lavatrice", "asciugatrice", "washer", "dryer", "dishwasher", "lavastoviglie", "hon", "candy", "hoover"], "🧺", "WASHING_APPLIANCE"),
     # IP Cameras & Video Doorbells (Reolink, Ring, Tapo, V380, Xiongmai, Yi, Imou)
     (["camera", "cam", "webcam", "reolink", "ring", "nest", "tapo", "v380", "xiongmai", "imou", "ezviz", "yi-camera", "cctv", "dahua", "hikvision"], "📷", "IP_CAMERA"),
     # Smart Plugs & Relays (Shelly, Sonoff, Gosund, Meross)

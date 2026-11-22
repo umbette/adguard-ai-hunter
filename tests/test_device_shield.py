@@ -6,6 +6,10 @@ from src.device_shield import (
     evaluate_gaming_jitter_telemetry,
     evaluate_appliance_telemetry,
     evaluate_camera_p2p_telemetry,
+    evaluate_youth_safeguard_telemetry,
+    evaluate_automotive_telemetry,
+    evaluate_smart_toy_telemetry,
+    evaluate_badbox_malware,
     evaluate_device_shield,
     DeviceShieldMatch
 )
@@ -137,8 +141,76 @@ def test_camera_p2p_isolation_shield():
     assert m5 is not None
 
 
+def test_youth_safeguard_shield():
+    # 1. AI Deepfake / Nudify tools
+    m1 = evaluate_youth_safeguard_telemetry("nudify.online")
+    assert m1 is not None
+    assert m1.shield_type == "YOUTH_SAFEGUARD"
+    assert m1.target_category == "YOUTH_DEVICE"
+    assert m1.risk_score >= 0.95
+
+    m2 = evaluate_youth_safeguard_telemetry("app.undress.app")
+    assert m2 is not None
+
+    # 2. Predatory anonymous videochat platforms (Grooming / Sextortion)
+    m3 = evaluate_youth_safeguard_telemetry("ome.tv")
+    assert m3 is not None
+    assert m3.shield_type == "YOUTH_SAFEGUARD"
+
+    m4 = evaluate_youth_safeguard_telemetry("chatext.com")
+    assert m4 is not None
+
+    # 3. Predatory skins gambling targeting youth
+    m5 = evaluate_youth_safeguard_telemetry("csgoempire.com")
+    assert m5 is not None
+
+
+def test_automotive_telemetry_shield():
+    # LexisNexis driving score telemetry
+    m1 = evaluate_automotive_telemetry("telemetry.lexisnexis.com")
+    assert m1 is not None
+    assert m1.shield_type == "AUTOMOTIVE_TELEMETRY"
+    assert m1.target_category == "CONNECTED_CAR"
+
+    m2 = evaluate_automotive_telemetry("driver-scoring.lexisnexis.com")
+    assert m2 is not None
+
+    # Verisk telematics
+    m3 = evaluate_automotive_telemetry("telematics.verisk.com")
+    assert m3 is not None
+
+    # Otonomo vehicle data broker
+    m4 = evaluate_automotive_telemetry("telemetry.otonomo.io")
+    assert m4 is not None
+
+
+def test_smart_toy_audio_shield():
+    # Chinese voice cloud processing for smart toys
+    m1 = evaluate_smart_toy_telemetry("turingos.cn")
+    assert m1 is not None
+    assert m1.shield_type == "SMART_TOY_AUDIO"
+    assert m1.target_category == "SMART_TOY"
+
+    m2 = evaluate_smart_toy_telemetry("child-voice.voicecloud.cn")
+    assert m2 is not None
+
+
+def test_badbox_malware_shield():
+    # Badbox / Peachpit AOSP C2 & Click-fraud domains
+    m1 = evaluate_badbox_malware("cbty2021.com")
+    assert m1 is not None
+    assert m1.shield_type == "BADBOX_MALWARE"
+    assert m1.target_category == "BUDGET_AOSP_DEVICE"
+
+    m2 = evaluate_badbox_malware("b2c.aospbox.net")
+    assert m2 is not None
+
+    m3 = evaluate_badbox_malware("mykingbox.com")
+    assert m3 is not None
+
+
 def test_benign_domains_not_intercepted():
-    # Core gaming services (store, matchmaking, official apex) must NOT be blocked
+    # Core gaming services, legitimate automotive apex, and search must NOT be blocked
     assert evaluate_device_shield("steampowered.com") is None
     assert evaluate_device_shield("store.steampowered.com") is None
     assert evaluate_device_shield("epicgames.com") is None
@@ -149,11 +221,14 @@ def test_benign_domains_not_intercepted():
     assert evaluate_device_shield("xiaomi.com") is None
     assert evaluate_device_shield("tuya.com") is None
     assert evaluate_device_shield("vesync.com") is None
+    assert evaluate_device_shield("tesla.com") is None
+    assert evaluate_device_shield("bmw.com") is None
+    assert evaluate_device_shield("volkswagen.com") is None
     assert evaluate_device_shield("google.com") is None
 
 
 def test_evaluate_device_shield_unified_dispatcher():
-    # Verifies all 6 categories resolve properly via evaluate_device_shield()
+    # Verifies all 10 categories resolve properly via evaluate_device_shield()
     r_nintendo = evaluate_device_shield("receive-lp1.er.srv.nintendo.net")
     assert r_nintendo is not None
     assert r_nintendo.shield_type == "NINTENDO_90DNS"
@@ -177,3 +252,19 @@ def test_evaluate_device_shield_unified_dispatcher():
     r_cam = evaluate_device_shield("relay.iotcplatform.com")
     assert r_cam is not None
     assert r_cam.shield_type == "CAMERA_P2P_ISOLATION"
+
+    r_youth = evaluate_device_shield("nudify.online")
+    assert r_youth is not None
+    assert r_youth.shield_type == "YOUTH_SAFEGUARD"
+
+    r_car = evaluate_device_shield("telemetry.lexisnexis.com")
+    assert r_car is not None
+    assert r_car.shield_type == "AUTOMOTIVE_TELEMETRY"
+
+    r_toy = evaluate_device_shield("turingos.cn")
+    assert r_toy is not None
+    assert r_toy.shield_type == "SMART_TOY_AUDIO"
+
+    r_badbox = evaluate_device_shield("b2c.aospbox.net")
+    assert r_badbox is not None
+    assert r_badbox.shield_type == "BADBOX_MALWARE"
