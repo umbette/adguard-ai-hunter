@@ -147,11 +147,12 @@ def test_stream_feed_lines_limits():
     import pytest
     from scripts.proactive_miner import stream_feed_lines, FeedStreamLimitError
 
-    # 1. Non-newline oversized line buffer (> 2048 chars) is discarded immediately without crashing memory
-    oversized_data = b"x" * 3000 + b"\nvalid-site.com\n"
-    mock_resp = io.BytesIO(oversized_data)
-    lines = list(stream_feed_lines(mock_resp, max_bytes=100000))
-    assert lines == ["valid-site.com"]
+    # 1. Multi-chunk non-newline oversized line (> 65,536 chars across chunk boundaries)
+    # The tail of the oversized line (evil-tail.example.com) must be discarded along with the prefix!
+    multi_chunk_oversized = b"x" * 70000 + b"evil-tail.example.com\nlegitimate-domain.com\n"
+    mock_resp_multichunk = io.BytesIO(multi_chunk_oversized)
+    lines_multichunk = list(stream_feed_lines(mock_resp_multichunk, max_bytes=1000000))
+    assert lines_multichunk == ["legitimate-domain.com"]
 
     # 2. Exceeding max_bytes raises FeedStreamLimitError (fail-closed)
     mock_resp_bytes = io.BytesIO(b"line1.com\nline2.com\nline3.com\n")
@@ -164,9 +165,18 @@ def test_stream_feed_lines_limits():
         list(stream_feed_lines(mock_resp_lines, max_lines=2))
 
 
-def test_offline_psl_snapshot_reproducibility(tmp_path):
-    """Verifies that PSL validation is reproducible offline with fallback_to_snapshot even with an empty cache."""
+def test_offline_psl_snapshot_reproducibility(tmp_path, monkeypatch):
+    """Verifies that full validate_and_compile succeeds completely offline without network access using snapshot fallback."""
+    import socket
+    import urllib.request
     import tldextract
+
+    # Block all network sockets to strictly simulate air-gapped / offline environment
+    def guard_network(*args, **kwargs):
+        raise OSError("Network is unreachable (simulated offline build)")
+
+    monkeypatch.setattr(socket, "socket", guard_network)
+    monkeypatch.setattr(urllib.request, "urlopen", guard_network)
 
     # Isolate cache in an empty temporary directory with fallback enabled
     empty_cache = tmp_path / "empty_psl_cache"
@@ -184,4 +194,22 @@ def test_offline_psl_snapshot_reproducibility(tmp_path):
 
     res_tenant = ext("my-service.pages.dev")
     assert res_tenant.domain == "my-service" and res_tenant.suffix == "pages.dev"
+
+    # End-to-end compiler test under offline conditions
+    test_src = tmp_path / "offline_domains.txt"
+    test_out = tmp_path / "offline_output.txt"
+    test_src.write_text("evil.pages.dev\npages.dev\nco.uk\nthreat-actor.org\n", encoding="utf-8")
+
+    res = validate_and_compile(
+        source_files=[test_src],
+        output_path=test_out
+    )
+
+    assert res["valid"] == 2  # evil.pages.dev and threat-actor.org
+    assert res["skipped"] == 2  # pages.dev and co.uk bare suffixes
+    content = test_out.read_text(encoding="utf-8")
+    assert "||evil.pages.dev^\n" in content
+    assert "||threat-actor.org^\n" in content
+    assert "||pages.dev^" not in content
+    assert "||co.uk^" not in content
 

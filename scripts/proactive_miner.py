@@ -14,6 +14,8 @@ import shutil
 import logging
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
+from typing import Optional
+from dataclasses import dataclass
 from urllib.parse import urlparse
 import urllib.request
 
@@ -89,16 +91,27 @@ class FeedStreamLimitError(Exception):
     pass
 
 
+@dataclass
+class FeedFetchResult:
+    feed_name: str
+    candidates: list[dict]
+    success: bool
+    error: Optional[str] = None
+
+
 def stream_feed_lines(resp, max_bytes: int = MAX_FEED_BYTES, max_lines: int = MAX_FEED_LINES):
     """
     Streams lines from an HTTP response in fixed 64KB chunks with strict limits:
-    - Drops partial buffer immediately if it exceeds MAX_LINE_LENGTH without newline.
+    - If a line exceeds MAX_LINE_LENGTH without newline, discarding_line is set to True,
+      and all incoming text is discarded until the NEXT newline is encountered, preventing
+      the tail of an oversized/malicious line from being parsed as a valid domain.
     - Raises FeedStreamLimitError if bytes read exceed max_bytes.
     - Raises FeedStreamLimitError if line count exceeds max_lines.
     """
     bytes_read = 0
     lines_yielded = 0
     buffer = ""
+    discarding_line = False
 
     while True:
         chunk = resp.read(65536)
@@ -109,16 +122,33 @@ def stream_feed_lines(resp, max_bytes: int = MAX_FEED_BYTES, max_lines: int = MA
             raise FeedStreamLimitError(f"Feed exceeded byte limit ({max_bytes} bytes); feed is incomplete.")
 
         text = chunk.decode("utf-8", errors="ignore")
+
+        if discarding_line:
+            if "\n" not in text:
+                # Still within the discarded oversized line across chunks
+                continue
+            # Found newline terminating the oversized line: discard up to the newline
+            _, text = text.split("\n", 1)
+            discarding_line = False
+            buffer = ""
+
         buffer += text
 
         # Prevent unbounded buffer accumulation if no newline is encountered
         if "\n" not in buffer and len(buffer) > MAX_LINE_LENGTH:
             logger.warning(f"Discarding oversized line buffer exceeding {MAX_LINE_LENGTH} characters without newline.")
+            discarding_line = True
             buffer = ""
             continue
 
         lines = buffer.split("\n")
         buffer = lines.pop()
+
+        # If the trailing uncompleted line exceeds MAX_LINE_LENGTH, enter discarding_line mode
+        if len(buffer) > MAX_LINE_LENGTH:
+            logger.warning(f"Trailing line buffer exceeded {MAX_LINE_LENGTH} characters without newline; discarding until next newline.")
+            discarding_line = True
+            buffer = ""
 
         for line in lines:
             line_str = line.strip()
@@ -130,7 +160,7 @@ def stream_feed_lines(resp, max_bytes: int = MAX_FEED_BYTES, max_lines: int = MA
                 if lines_yielded >= max_lines:
                     raise FeedStreamLimitError(f"Feed exceeded line limit ({max_lines} lines); feed is incomplete.")
 
-    if buffer:
+    if buffer and not discarding_line:
         final_line = buffer.strip()
         if final_line and not final_line.startswith("#") and len(final_line) <= MAX_LINE_LENGTH:
             yield final_line
@@ -343,7 +373,7 @@ class ProactiveMiner:
         self.shield = ShieldWhitelist()
         self.db = ThreatStateDB()
 
-    def fetch_openphish(self) -> list[dict]:
+    def fetch_openphish(self) -> FeedFetchResult:
         url = "https://openphish.com/feed.txt"
         logger.info(f"Fetching OpenPhish zero-day feed from {url}...")
         candidates = []
@@ -359,16 +389,16 @@ class ProactiveMiner:
                             "family": "phishing",
                             "confidence": 90
                         })
+            logger.info(f"OpenPhish produced {len(candidates)} valid candidate domains.")
+            return FeedFetchResult(feed_name="openphish", candidates=candidates, success=True)
         except FeedStreamLimitError as e:
             logger.error(f"OpenPhish stream rejected due to security limit: {e}. Preserving previous threat state.")
-            return []
+            return FeedFetchResult(feed_name="openphish", candidates=[], success=False, error=str(e))
         except Exception as e:
             logger.error(f"Failed to fetch OpenPhish: {e}")
-            return []
-        logger.info(f"OpenPhish produced {len(candidates)} valid candidate domains.")
-        return candidates
+            return FeedFetchResult(feed_name="openphish", candidates=[], success=False, error=str(e))
 
-    def fetch_urlhaus_mirror(self) -> list[dict]:
+    def fetch_urlhaus_mirror(self) -> FeedFetchResult:
         url = "https://raw.githubusercontent.com/curbengh/urlhaus-filter/master/urlhaus-filter-domains.txt"
         logger.info(f"Fetching URLhaus malware mirror feed from {url}...")
         candidates = []
@@ -384,26 +414,33 @@ class ProactiveMiner:
                             "family": "malware",
                             "confidence": 85
                         })
+            logger.info(f"URLhaus produced {len(candidates)} valid candidate domains.")
+            return FeedFetchResult(feed_name="urlhaus", candidates=candidates, success=True)
         except FeedStreamLimitError as e:
             logger.error(f"URLhaus stream rejected due to security limit: {e}. Preserving previous threat state.")
-            return []
+            return FeedFetchResult(feed_name="urlhaus", candidates=[], success=False, error=str(e))
         except Exception as e:
             logger.error(f"Failed to fetch URLhaus mirror: {e}")
-            return []
-        logger.info(f"URLhaus produced {len(candidates)} valid candidate domains.")
-        return candidates
+            return FeedFetchResult(feed_name="urlhaus", candidates=[], success=False, error=str(e))
 
     def run_mining_cycle(self) -> dict:
         logger.info("=== STARTING PROACTIVE THREAT MINING CYCLE ===")
 
         # 1. Fetch raw candidates
-        candidates = []
-        candidates.extend(self.fetch_openphish())
-        candidates.extend(self.fetch_urlhaus_mirror())
+        feed_results = [
+            self.fetch_openphish(),
+            self.fetch_urlhaus_mirror()
+        ]
 
-        if not candidates:
-            logger.warning("No threat candidates successfully retrieved from feeds. Skipping database update to protect integrity.")
-            return {"new": 0, "refreshed": 0, "purged": 0}
+        # If all feeds failed (e.g. network partition or DoS), preserve existing database and rules
+        if all(not r.success for r in feed_results):
+            logger.error("All threat feeds failed to fetch. Preserving existing database and active filters without modification.")
+            return {"new": 0, "refreshed": 0, "purged": 0, "status": "all_feeds_failed"}
+
+        candidates = []
+        for r in feed_results:
+            if r.success:
+                candidates.extend(r.candidates)
 
         # 2. De-duplicate candidates in memory
         seen = set()
