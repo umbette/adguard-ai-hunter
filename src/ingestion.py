@@ -33,6 +33,13 @@ class IngestionWorker:
         poll_interval = self.settings.adguard.poll_interval_sec
         batch_limit = self.settings.adguard.batch_limit
 
+        # Security check: warn if BasicAuth is transmitted over unencrypted HTTP on non-loopback network
+        if base_url.startswith("http://") and not any(h in base_url for h in ("127.0.0.1", "localhost", "[::1]")):
+            logger.warning(
+                f"[SECURITY WARNING] AdGuard connection ({base_url}) transmits BasicAuth credentials over plain HTTP. "
+                f"If AdGuard is hosted on a separate host, use HTTPS to protect credentials from network sniffing."
+            )
+
         # Initialize high-water mark if not set
         checkpoint = self.storage.get_checkpoint("last_query_time")
         if not checkpoint:

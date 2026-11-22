@@ -3,12 +3,35 @@ import base64
 import json
 import logging
 import datetime
+import os
+from pathlib import Path
 from typing import Optional, List
 import aiohttp
+import tldextract
 from src.config import Settings
 from src.storage import StorageEngine
 
 logger = logging.getLogger("ai_hunter.dispatcher")
+
+tld_cache_env = os.environ.get("TLD_CACHE_DIR")
+if tld_cache_env:
+    _cache_dir = Path(tld_cache_env)
+elif Path("/app").is_dir() and os.access("/app", os.W_OK):
+    _cache_dir = Path("/app/data/.tld_cache")
+else:
+    _cache_dir = Path(__file__).resolve().parent.parent / "data" / ".tld_cache"
+_cache_dir.mkdir(parents=True, exist_ok=True)
+_extractor = tldextract.TLDExtract(cache_dir=str(_cache_dir))
+
+def get_apex_domain(domain: str) -> str:
+    """
+    Extracts the registered apex domain using the Public Suffix List.
+    Prevents whitelisting multi-part ccTLDs (e.g. *.co.uk, *.gov.it).
+    """
+    ext = _extractor(domain)
+    if ext.domain and ext.suffix:
+        return f"{ext.domain}.{ext.suffix}".lower()
+    return domain.lower()
 
 class Dispatcher:
     def __init__(self, settings: Settings, storage: StorageEngine):
@@ -252,8 +275,8 @@ class Dispatcher:
         elif verb == "IGNORA":
             # 30-day snooze
             expires_at = (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=30)).isoformat()
-            # Register apex wildcard allow
-            apex = ".".join(domain.split(".")[-2:]) if len(domain.split(".")) > 2 else domain
+            # Register apex wildcard allow using PSL-aware extraction to avoid whitelisting entire TLDs
+            apex = get_apex_domain(domain)
             self.storage.record_decision(f"*.{apex}", "GLOBAL", "ALLOW", expires_at=expires_at, notes="Whitelisted 30 days via mobile app")
             logger.info(f"Recorded 30-day snooze decision for *.{apex} until {expires_at}")
 

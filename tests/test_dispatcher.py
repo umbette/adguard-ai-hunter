@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 from src.config import Settings
-from src.dispatcher import Dispatcher
+from src.dispatcher import Dispatcher, get_apex_domain
 
 class MockAsyncContext:
     def __init__(self, response):
@@ -40,3 +40,38 @@ async def test_read_modify_write_rule_injection(temp_storage):
         assert "127.0.0.1 custom.lan" in posted_rules
         assert "||new-telemetry.com^$client=192.168.1.210 # ai-hunter" in posted_rules
         assert len(posted_rules) == 3
+
+
+def test_get_apex_domain_psl_awareness():
+    # Multi-part ccTLDs and public suffixes must not be truncated to the suffix
+    assert get_apex_domain("tracking.cdn.example.co.uk") == "example.co.uk"
+    assert get_apex_domain("login.service.gov.it") == "service.gov.it"
+    assert get_apex_domain("app.corp.com.br") == "corp.com.br"
+    assert get_apex_domain("sub.bank.co.in") == "bank.co.in"
+    assert get_apex_domain("simple.com") == "simple.com"
+    assert get_apex_domain("deep.nested.sub.domain.org") == "domain.org"
+
+
+@pytest.mark.asyncio
+async def test_handle_mobile_action_ignora_prevents_cctld_wildcard(temp_storage):
+    settings = Settings()
+    dispatcher = Dispatcher(settings, temp_storage)
+
+    with patch.object(dispatcher, "get_session") as mock_get_session:
+        mock_session = MagicMock()
+        mock_get_session.return_value = mock_session
+        mock_resp = AsyncMock()
+        mock_resp.status = 200
+        mock_session.post = AsyncMock(return_value=mock_resp)
+
+        # Trigger 30-day snooze for a domain with a multi-part ccTLD
+        await dispatcher._handle_notification_action("IGNORA::tracking.telemetry.samsung.co.uk::192.168.1.100")
+
+        # Verify decision is stored for *.samsung.co.uk, NOT *.co.uk
+        decision = temp_storage.match_decision("anything.samsung.co.uk", "192.168.1.100")
+        assert decision is not None
+        assert decision["action"] == "ALLOW"
+        assert decision["domain_pattern"] == "*.samsung.co.uk"
+
+        # Crucial security check: *.co.uk must NEVER match or be whitelisted!
+        assert temp_storage.match_decision("evil-site.co.uk", "192.168.1.100") is None

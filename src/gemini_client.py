@@ -59,18 +59,14 @@ Classify the domain and return JSON with:
 
         from google.genai import types
 
-        # Run synchronous SDK call in thread executor to not block asyncio loop
-        loop = asyncio.get_running_loop()
-        response = await loop.run_in_executor(
-            None,
-            lambda: self._client.models.generate_content(
-                model=self.model,
-                contents=prompt,
-                config=types.GenerateContentConfig(
-                    response_mime_type="application/json",
-                    response_schema=DomainClassification,
-                    temperature=0.2,
-                )
+        # Use native async client to prevent thread pool exhaustion and zombie threads on timeout
+        response = await self._client.aio.models.generate_content(
+            model=self.model,
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                response_mime_type="application/json",
+                response_schema=DomainClassification,
+                temperature=0.2,
             )
         )
         data = json.loads(response.text)

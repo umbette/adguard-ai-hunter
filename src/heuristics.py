@@ -36,13 +36,21 @@ def calculate_shannon_entropy(text: str) -> float:
         entropy -= p * math.log2(p)
     return entropy
 
+MAX_RATE_BUCKETS = 10000
+
 class HeuristicsEngine:
     def __init__(self, entropy_threshold: float = 3.85, 
                  rate_burst_threshold: int = 30, rate_window_sec: int = 60):
         self.entropy_threshold = entropy_threshold
         self.rate_burst_threshold = rate_burst_threshold
         self.rate_window_sec = rate_window_sec
-        cache_dir = Path("/app/data/.tld_cache") if Path("/app").is_dir() and os.access("/app", os.W_OK) else Path(__file__).resolve().parent.parent / "data" / ".tld_cache"
+        tld_cache_env = os.environ.get("TLD_CACHE_DIR")
+        if tld_cache_env:
+            cache_dir = Path(tld_cache_env)
+        elif Path("/app").is_dir() and os.access("/app", os.W_OK):
+            cache_dir = Path("/app/data/.tld_cache")
+        else:
+            cache_dir = Path(__file__).resolve().parent.parent / "data" / ".tld_cache"
         cache_dir.mkdir(parents=True, exist_ok=True)
         self.extractor = tldextract.TLDExtract(cache_dir=str(cache_dir))
         # In-memory rate tracker: (client_ip, apex_domain) -> list of timestamps
@@ -118,6 +126,14 @@ class HeuristicsEngine:
         now = time.time()
         key = (client_ip, apex)
         
+        # Guard against unbounded memory consumption during massive DGA flood attacks
+        if key not in self._rate_buckets and len(self._rate_buckets) >= MAX_RATE_BUCKETS:
+            self.cleanup_stale_buckets()
+            if len(self._rate_buckets) >= MAX_RATE_BUCKETS:
+                # Evict oldest entry if still at ceiling
+                oldest_key = next(iter(self._rate_buckets))
+                del self._rate_buckets[oldest_key]
+
         if key not in self._rate_buckets:
             self._rate_buckets[key] = []
         

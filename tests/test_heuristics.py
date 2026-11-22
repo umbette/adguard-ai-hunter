@@ -42,3 +42,14 @@ def test_rate_burst_tracking(heuristics):
     is_burst, count = heuristics.record_query_and_check_burst(client, domain)
     assert is_burst
     assert count == 5
+
+
+def test_rate_bucket_capacity_bounding(heuristics):
+    from src.heuristics import MAX_RATE_BUCKETS
+
+    # Fill rate buckets beyond threshold with simulated DGA floods
+    for i in range(MAX_RATE_BUCKETS + 50):
+        heuristics.record_query_and_check_burst(f"192.168.1.{i % 250}", f"dga-{i}.xyz")
+
+    # Rate buckets must never exceed MAX_RATE_BUCKETS ceiling
+    assert len(heuristics._rate_buckets) <= MAX_RATE_BUCKETS
