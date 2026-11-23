@@ -405,7 +405,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === "getTabWarning") {
     const warningKey = `tab_${request.tabId}`;
     chrome.storage.session.get([warningKey], (res) => {
-      sendResponse({ warning: res[warningKey] || null });
+      const warning = res[warningKey] || null;
+      const domain = (request.domain || "").toLowerCase().trim();
+      const etld1 = getETLDPlusOne(domain);
+      const isBlocked = BLOCKED_DOMAINS.has(domain) || BLOCKED_DOMAINS.has(etld1);
+      sendResponse({ warning: warning, isBlocked: isBlocked });
     });
     return true;
   }
