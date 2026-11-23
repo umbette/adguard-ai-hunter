@@ -21,7 +21,9 @@ logger = logging.getLogger("export_dnr")
 
 EXTENSION_DIR = ROOT_DIR / "extension"
 RULES_DIR = EXTENSION_DIR / "rules"
+DATA_DIR = EXTENSION_DIR / "data"
 DNR_OUTPUT_FILE = RULES_DIR / "ruleset.json"
+DOMAINS_OUTPUT_FILE = DATA_DIR / "blocked_domains.json"
 MAX_STATIC_RULES = 30000
 
 # Exhaustive list of all valid declarativeNetRequest resource types defined in Chrome Manifest V3 API
@@ -44,7 +46,7 @@ ALL_RESOURCE_TYPES = [
 ]
 
 
-def compile_dnr_ruleset(db_path: Path = DB_PATH, output_file: Path = DNR_OUTPUT_FILE, min_confidence: int = 85) -> dict:
+def compile_dnr_ruleset(db_path: Path = DB_PATH, output_file: Path = DNR_OUTPUT_FILE, domains_output_file: Path = DOMAINS_OUTPUT_FILE, min_confidence: int = 85) -> dict:
     """
     Compiles active IoCs into Chrome Manifest V3 declarativeNetRequest static rules.
     - main_frame requests: redirected to extension's blocked.html with metadata.
@@ -92,6 +94,13 @@ def compile_dnr_ruleset(db_path: Path = DB_PATH, output_file: Path = DNR_OUTPUT_
     output_file.parent.mkdir(parents=True, exist_ok=True)
     with open(output_file, "w", encoding="utf-8") as f:
         json.dump(rules, f, indent=2)
+
+    # Also export compact array of domains for ultra-fast, low-memory Service Worker inspection
+    if domains_output_file:
+        domains_output_file.parent.mkdir(parents=True, exist_ok=True)
+        blocked_domains = [r["condition"]["urlFilter"][2:-1] for r in rules if "urlFilter" in r.get("condition", {})]
+        with open(domains_output_file, "w", encoding="utf-8") as f:
+            json.dump(blocked_domains, f)
 
     logger.info(f"Successfully compiled {len(rules)} DNR rules ({len(rules)} domains) into {output_file}")
     return {

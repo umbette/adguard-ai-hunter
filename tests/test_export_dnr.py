@@ -25,7 +25,7 @@ def test_export_dnr_ruleset_structure(tmp_path):
     ]
     db.insert_or_update_iocs(candidates)
 
-    res = compile_dnr_ruleset(db_path=db_path, output_file=rules_out, min_confidence=85)
+    res = compile_dnr_ruleset(db_path=db_path, output_file=rules_out, domains_output_file=tmp_path / "conf_domains.json", min_confidence=85)
     assert res["total_rules"] == 2  # 2 domains * 1 block rule (google.com was excluded)
     assert res["domains_covered"] == 2
     assert rules_out.exists()
@@ -63,7 +63,7 @@ def test_export_dnr_filters_confidence(tmp_path):
     ]
     db.insert_or_update_iocs(candidates)
 
-    res = compile_dnr_ruleset(db_path=db_path, output_file=rules_out, min_confidence=85)
+    res = compile_dnr_ruleset(db_path=db_path, output_file=rules_out, domains_output_file=tmp_path / "conf_domains.json", min_confidence=85)
     assert res["total_rules"] == 2  # 2 domains (high-threat.org, exact-threat.org)
     assert res["domains_covered"] == 2
 
@@ -89,7 +89,7 @@ def test_export_dnr_respects_quota(tmp_path, monkeypatch):
     # Artificially lower ceiling to 6 rules (3 domains)
     monkeypatch.setattr("scripts.export_dnr.MAX_STATIC_RULES", 6)
 
-    res = compile_dnr_ruleset(db_path=db_path, output_file=rules_out)
+    res = compile_dnr_ruleset(db_path=db_path, output_file=rules_out, domains_output_file=tmp_path / "truncated_domains.json")
     assert res["total_rules"] == 6
     rules = json.loads(rules_out.read_text(encoding="utf-8"))
     assert len(rules) == 6

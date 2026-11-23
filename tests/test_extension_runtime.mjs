@@ -29,7 +29,7 @@ function createChromeMock() {
 
   const chromeMock = {
     runtime: {
-      id: "hunter-shield-mock-id",
+      id: "sentinel-shield-mock-id",
       getURL: (relPath) => `file://${path.join(EXTENSION_DIR, relPath)}`,
       onInstalled: { addListener: (fn) => listeners.onInstalled.push(fn) },
       onStartup: { addListener: (fn) => listeners.onStartup.push(fn) },
@@ -38,7 +38,9 @@ function createChromeMock() {
     },
     declarativeNetRequest: {
       getSessionRules: (cb) => {
-        cb([...sessionRules]);
+        const rulesCopy = [...sessionRules];
+        if (cb) cb(rulesCopy);
+        return Promise.resolve(rulesCopy);
       },
       updateSessionRules: ({ addRules, removeRuleIds }, cb) => {
         if (removeRuleIds) {
@@ -153,7 +155,8 @@ async function loadServiceWorker() {
     Object: Object,
     JSON: JSON,
     encodeURIComponent: encodeURIComponent,
-    Promise: Promise
+    Promise: Promise,
+    String: String
   });
 
   vm.runInContext(swCode, context);
@@ -171,7 +174,7 @@ test("Service Worker: Atomic initialization loads brands, PSL and DNR rules", as
   const pslSize = vm.runInContext("PUBLIC_SUFFIXES.size", context);
   const blockedSize = vm.runInContext("BLOCKED_DOMAINS.size", context);
 
-  assert.ok(brandsCount >= 10, `Expected at least 10 brands, got ${brandsCount}`);
+  assert.ok(brandsCount >= 30, `Expected at least 30 brands, got ${brandsCount}`);
   assert.equal(pslSize, 8707, `Expected exactly 8707 normalized PSL suffixes, got ${pslSize}`);
   assert.ok(blockedSize >= 400, `Expected at least 400 DNR blocked domains, got ${blockedSize}`);
 });
@@ -201,7 +204,7 @@ test("Service Worker: getETLDPlusOne handles multi-part ccTLDs and cloud platfor
 test("Service Worker: Brand impersonation heuristic accurately detects spoofing and avoids false positives", async () => {
   const { context } = await loadServiceWorker();
 
-  // 1. Phishing / spoofing domains MUST be flagged
+  // 1. Phishing / spoofing domains with boundary separation MUST be flagged
   const spoofedDomains = [
     "poste-servizio.com",
     "verifica-postepay.net",
@@ -216,8 +219,14 @@ test("Service Worker: Brand impersonation heuristic accurately detects spoofing 
     assert.ok(res.brandName, `Missing brandName for ${d}`);
   }
 
-  // 2. Benign official or dictionary words must NEVER be flagged (False Positive Prevention)
+  // 2. Benign official or dictionary words must NEVER be flagged (Defect #1 Fix: next.com, beer.com, ips.com)
   const benignDomains = [
+    "next.com",
+    "beer.com",
+    "ips.com",
+    "news.com",
+    "uber.com",
+    "open.com",
     "amazonaws.com",
     "s3.amazonaws.com",
     "impostore.it",
@@ -226,7 +235,10 @@ test("Service Worker: Brand impersonation heuristic accurately detects spoofing 
     "amazon.it",
     "poste.it",
     "bper.it",
-    "spid.gov.it"
+    "spid.gov.it",
+    "microsoft.com",
+    "apple.com",
+    "google.com"
   ];
   for (const d of benignDomains) {
     const res = vm.runInContext(`checkBrandImpersonation("${d}")`, context);
@@ -234,7 +246,77 @@ test("Service Worker: Brand impersonation heuristic accurately detects spoofing 
   }
 });
 
-test("Service Worker: onErrorOccurred disambiguates DNR blocks against uBlock Origin", async () => {
+test("Service Worker: Subdomain Phishing Defense detects rogue subdomains on unofficial domains", async () => {
+  const { context } = await loadServiceWorker();
+
+  // Subdomains on third-party domains MUST be flagged (Defect #2 Fix)
+  const subdomainAttacks = [
+    "poste.attacker-server.com",
+    "postepay.free-hosting.net",
+    "paypal.account-verification-service.org",
+    "fineco.security-update.xyz",
+    "login.microsoft.attacker.com",
+    "appleid.portal-verify.com"
+  ];
+
+  for (const d of subdomainAttacks) {
+    const res = vm.runInContext(`checkBrandImpersonation("${d}")`, context);
+    assert.equal(res.spoofed, true, `Expected subdomain phish ${d} to be flagged`);
+    assert.equal(res.vector, "subdomain");
+  }
+
+  // Subdomains on official domains MUST NOT be flagged
+  const officialSubdomains = [
+    "login.poste.it",
+    "bancoposta.poste.it",
+    "identity.microsoft.com",
+    "accounts.google.com",
+    "secure.bnl.it"
+  ];
+  for (const d of officialSubdomains) {
+    const res = vm.runInContext(`checkBrandImpersonation("${d}")`, context);
+    assert.equal(res.spoofed, false, `Expected official subdomain ${d} NOT to be flagged`);
+  }
+});
+
+test("Service Worker: Compound words without hyphens detected with suspicious action affixes", async () => {
+  const { context } = await loadServiceWorker();
+
+  // Compound domain names without hyphen (Defect #3 Fix)
+  const compoundAttacks = [
+    "postelogin.com",
+    "posteverifica.com",
+    "serviziposte.com",
+    "intesaprivati.com",
+    "unicreditonline.com",
+    "finecobanking.com",
+    "netflixlogin.com"
+  ];
+
+  for (const d of compoundAttacks) {
+    const res = vm.runInContext(`checkBrandImpersonation("${d}")`, context);
+    assert.equal(res.spoofed, true, `Expected compound phish ${d} to be flagged`);
+  }
+});
+
+test("Service Worker: IDN Homograph Punycode decoder catches lookalike domain attacks", async () => {
+  const { context } = await loadServiceWorker();
+
+  // Punycode attacks (Defect #4 Fix)
+  // xn--pste-05a.it decodes to pöste.it -> normalizes to poste.it
+  // xn--pypal-4ve.com decodes to pаypal.com (with Cyrillic а) -> normalizes to paypal.com
+  const punycodeAttacks = [
+    "xn--pste-05a.it",
+    "xn--pypal-4ve.com"
+  ];
+
+  for (const d of punycodeAttacks) {
+    const res = vm.runInContext(`checkBrandImpersonation("${d}")`, context);
+    assert.equal(res.spoofed, true, `Expected punycode attack ${d} to be flagged`);
+  }
+});
+
+test("Service Worker: onErrorOccurred disambiguates DNR blocks and prevents infinite loops", async () => {
   const { env, context } = await loadServiceWorker();
   const errorListener = env.listeners.onErrorOccurred[0];
   assert.ok(errorListener, "Missing onErrorOccurred listener");
@@ -258,6 +340,22 @@ test("Service Worker: onErrorOccurred disambiguates DNR blocks against uBlock Or
   assert.equal(env.updatedTabs.length, 1, "Sentinel Shield must redirect its own blocked domains to blocked.html");
   assert.equal(env.updatedTabs[0].tabId, 102);
   assert.ok(env.updatedTabs[0].updateProps.url.includes("pages/blocked.html?domain=0-24bpautomentes.hu"));
+
+  // Case C: Domain already bypassed in session rules (Defect #5 Fix - Infinite Loop Prevention)
+  env.sessionRules.push({
+    id: 100001,
+    priority: 2,
+    action: { type: "allow" },
+    condition: { urlFilter: "||0-24bpautomentes.hu^" }
+  });
+  env.updatedTabs.length = 0; // reset
+  await errorListener({
+    frameId: 0,
+    error: "net::ERR_BLOCKED_BY_CLIENT",
+    url: "http://0-24bpautomentes.hu/path",
+    tabId: 102
+  });
+  assert.equal(env.updatedTabs.length, 0, "Must NOT redirect if domain was already bypassed in session rules");
 });
 
 test("Service Worker: bypassDomain registers monotonic collision-free session allow rule", async () => {
@@ -268,7 +366,6 @@ test("Service Worker: bypassDomain registers monotonic collision-free session al
   // 1. First bypass request
   let reply1 = null;
   messageListener({ action: "bypassDomain", domain: "0-24bpautomentes.hu" }, {}, (r) => { reply1 = r; });
-  // Wait microtask
   await new Promise(resolve => setTimeout(resolve, 20));
 
   assert.equal(reply1?.success, true);
@@ -298,7 +395,6 @@ test("Service Worker: bypassDomain registers monotonic collision-free session al
 });
 
 test("Popup: extracts activeHostname from standard tab and from blocked.html warning URL", async () => {
-  // Test helper replicating popup.js activeHostname extraction logic
   function extractHostname(tabUrl) {
     if (!tabUrl) return "";
     try {

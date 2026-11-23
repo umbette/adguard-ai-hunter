@@ -19,3 +19,4 @@ custom_vault.yaml
 *.local.yaml
 *.local.json
 
+extension/_metadata/

@@ -1,14 +1,122 @@
 /**
  * Sentinel Shield - Manifest V3 Background Service Worker
  * 100% Local Heuristic Inspection & Brand Impersonation Guard
+ * Adversarial Hardened (EGM / Arena.ai Tested)
  */
 
 let BRANDS = {};
 let PUBLIC_SUFFIXES = new Set();
 let BLOCKED_DOMAINS = new Set();
 let loadDataPromise = null;
+let memorySessionRuleId = 100000;
 
-// Atomically load local brand database, public suffix list, and DNR ruleset on startup
+// Verified benign domains that share dictionary words or international brands/services
+const BENIGN_DOMAINS = new Set([
+  "next.com", "next.co.uk", "iper.it", "beer.com", "skip.com", "spin.com",
+  "la-poste.fr", "laposte.net", "poste.ch", "deutschepost.de", "gls-bank.de",
+  "spedisci-subito.it", "ips.com", "news.com", "tips.com", "open.com",
+  "uber.com", "maps.com", "trip.com", "free.com", "home.com", "care.com",
+  "best.com", "fast.com", "post.com", "mail.com", "bank.com", "shop.com",
+  "live.com", "play.com", "word.com", "work.com", "food.com", "auto.com"
+]);
+
+// Cyrillic / Greek confusable homoglyphs mapped to ASCII equivalents
+const HOMOGLYPH_MAP = {
+  "\u0430": "a", // Cyrillic small letter a
+  "\u0441": "c", // Cyrillic small letter es
+  "\u0435": "e", // Cyrillic small letter ie
+  "\u043E": "o", // Cyrillic small letter o
+  "\u0440": "p", // Cyrillic small letter er
+  "\u0445": "x", // Cyrillic small letter ha
+  "\u0443": "y", // Cyrillic small letter u
+  "\u0456": "i", // Cyrillic small letter byelorussian-ukrainian i
+  "\u0455": "s", // Cyrillic small letter dze
+  "\u0458": "j", // Cyrillic small letter je
+  "\u03BF": "o", // Greek small letter omicron
+  "\u03C1": "p", // Greek small letter rho
+  "ö": "o", "ӧ": "o", "é": "e", "è": "e", "à": "a", "á": "a",
+  "í": "i", "ì": "i", "ó": "o", "ò": "o", "ú": "u", "ù": "u",
+  "1": "l", "0": "o"
+};
+
+// Common phishing intent tokens that accompany brand spoofing in compound domains
+const PHISHING_INTENT_TOKENS = [
+  "login", "accedi", "auth", "verify", "verifica", "secure", "sicurezza",
+  "assistenza", "servizio", "servizi", "conto", "online", "portal", "update",
+  "banking", "privati", "clienti", "support", "help", "pay"
+];
+
+// RFC 3492 Punycode label decoder
+function decodePunycodeLabel(label) {
+  if (!label || !label.toLowerCase().startsWith("xn--")) return label;
+  try {
+    const input = label.slice(4).toLowerCase();
+    const output = [];
+    const basic = input.lastIndexOf("-");
+    let b = 0;
+    if (basic > 0) {
+      for (let i = 0; i < basic; i++) {
+        output.push(input.charCodeAt(i));
+      }
+      b = basic + 1;
+    }
+    let n = 128, i = 0, bias = 72;
+    let pos = b;
+    while (pos < input.length) {
+      const oldi = i;
+      let w = 1, k = 36;
+      while (true) {
+        if (pos >= input.length) break;
+        const c = input.charCodeAt(pos++);
+        const digit = c >= 48 && c <= 57 ? c - 22 : c >= 65 && c <= 90 ? c - 65 : c >= 97 && c <= 122 ? c - 97 : 36;
+        i += digit * w;
+        const t = k <= bias ? 1 : k >= bias + 26 ? 26 : k - bias;
+        if (digit < t) break;
+        w *= 36 - t;
+        k += 36;
+      }
+      const outLen = output.length + 1;
+      bias = adaptPunycode(i - oldi, outLen, oldi === 0);
+      n += Math.floor(i / outLen);
+      i %= outLen;
+      output.splice(i++, 0, n);
+    }
+    return String.fromCodePoint(...output);
+  } catch (e) {
+    return label;
+  }
+}
+
+function adaptPunycode(delta, numPoints, firstTime) {
+  delta = firstTime ? Math.floor(delta / 700) : Math.floor(delta / 2);
+  delta += Math.floor(delta / numPoints);
+  let k = 0;
+  while (delta > ((36 - 1) * 26) / 2) {
+    delta = Math.floor(delta / (36 - 1));
+    k += 36;
+  }
+  return Math.floor(k + (36 * delta) / (delta + 38));
+}
+
+// Fold homoglyphs to ASCII for resilient comparison
+function foldHomoglyphs(str) {
+  if (!str) return "";
+  let out = "";
+  for (const ch of str) {
+    out += HOMOGLYPH_MAP[ch] || ch;
+  }
+  return out;
+}
+
+// Normalize domain label (punycode decode + homoglyph folding)
+function normalizeDomain(hostname) {
+  if (!hostname) return "";
+  const parts = hostname.toLowerCase().split(".");
+  const normalizedParts = parts.map(p => foldHomoglyphs(decodePunycodeLabel(p)));
+  return normalizedParts.join(".");
+}
+
+// Atomically load local brand database, public suffix list, and compact DNR blocked domains
 function ensureDataLoaded() {
   if (!loadDataPromise) {
     loadDataPromise = (async () => {
@@ -22,24 +130,33 @@ function ensureDataLoaded() {
         const suffixesArr = await suffixesResp.json();
         PUBLIC_SUFFIXES = new Set(suffixesArr);
 
-        // Load static DNR rules to enable precise disambiguation against other content blockers
-        const rulesUrl = chrome.runtime.getURL("rules/ruleset.json");
-        const rulesResp = await fetch(rulesUrl);
-        const rules = await rulesResp.json();
-        BLOCKED_DOMAINS = new Set();
-        for (const r of rules) {
-          if (r.condition && r.condition.urlFilter) {
-            let filter = r.condition.urlFilter;
-            if (filter.startsWith("||")) filter = filter.slice(2);
-            if (filter.endsWith("^")) filter = filter.slice(0, -1);
-            BLOCKED_DOMAINS.add(filter.toLowerCase());
+        // Load compact blocked domains array for sub-millisecond, low-memory inspection
+        try {
+          const blockedUrl = chrome.runtime.getURL("data/blocked_domains.json");
+          const blockedResp = await fetch(blockedUrl);
+          const blockedArr = await blockedResp.json();
+          BLOCKED_DOMAINS = new Set(blockedArr.map(d => d.toLowerCase()));
+        } catch (e) {
+          // Fallback to ruleset.json if blocked_domains.json is absent
+          const rulesUrl = chrome.runtime.getURL("rules/ruleset.json");
+          const rulesResp = await fetch(rulesUrl);
+          const rules = await rulesResp.json();
+          BLOCKED_DOMAINS = new Set();
+          for (const r of rules) {
+            if (r.condition && r.condition.urlFilter) {
+              let filter = r.condition.urlFilter;
+              if (filter.startsWith("||")) filter = filter.slice(2);
+              if (filter.endsWith("^")) filter = filter.slice(0, -1);
+              BLOCKED_DOMAINS.add(filter.toLowerCase());
+            }
           }
         }
 
         console.log(
-          `[Sentinel Shield] Loaded verified brand database (${Object.keys(BRANDS).length} brands), PSL (${PUBLIC_SUFFIXES.size} multi-part suffixes), and ${BLOCKED_DOMAINS.size} DNR blocked domains.`
+          `[Sentinel Shield] Loaded verified brand database (${Object.keys(BRANDS).length} brands), PSL (${PUBLIC_SUFFIXES.size} suffixes), and ${BLOCKED_DOMAINS.size} DNR blocked domains.`
         );
       } catch (err) {
+        loadDataPromise = null; // Reset to allow retry on transient failure
         console.error("[Sentinel Shield] Failed to load data files:", err);
       }
     })();
@@ -64,18 +181,14 @@ function getETLDPlusOne(hostname) {
   return parts.slice(-2).join(".");
 }
 
-// Damerau-Levenshtein distance for short strings
+// Damerau-Levenshtein distance for near-miss typo detection
 function damerauLevenshtein(a, b) {
   const m = a.length;
   const n = b.length;
   const d = [];
 
-  for (let i = 0; i <= m; i++) {
-    d[i] = [i];
-  }
-  for (let j = 0; j <= n; j++) {
-    d[0][j] = j;
-  }
+  for (let i = 0; i <= m; i++) d[i] = [i];
+  for (let j = 0; j <= n; j++) d[0][j] = j;
 
   for (let i = 1; i <= m; i++) {
     for (let j = 1; j <= n; j++) {
@@ -93,52 +206,104 @@ function damerauLevenshtein(a, b) {
   return d[m][n];
 }
 
-// Escape regex special characters to prevent invalid regex or unexpected matching
 function escapeRegex(str) {
-  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-// Boundary-aware keyword matching: requires exact match or separation by hyphens, underscores or digits.
-// Prevents false positives on legitimate words containing a brand substring (e.g. "impostore", "risposte", "amazonaws").
+// Boundary or compound-aware keyword matching
 function keywordMatches(domainCore, kw) {
   if (domainCore === kw) return true;
   const escaped = escapeRegex(kw);
-  const regex = new RegExp(`(^|[-_0-9])${escaped}([-_0-9]|$)`, "i");
-  return regex.test(domainCore);
+  const boundaryRegex = new RegExp(`(^|[-_0-9])${escaped}([-_0-9]|$)`, "i");
+  if (boundaryRegex.test(domainCore)) return true;
+
+  // Compound check: e.g. "postelogin", "serviziposte", "paypalverify", "bancopostaservizio"
+  for (const token of PHISHING_INTENT_TOKENS) {
+    if (domainCore === `${kw}${token}` || domainCore === `${token}${kw}`) {
+      return true;
+    }
+  }
+  return false;
 }
 
-// Evaluate domain for brand impersonation
-function checkBrandImpersonation(hostname) {
-  const etld1 = getETLDPlusOne(hostname);
+// Comprehensive brand impersonation inspection with subdomain and homoglyph defense
+function checkBrandImpersonation(rawHostname) {
+  if (!rawHostname) return { spoofed: false };
+
+  const rawLower = rawHostname.toLowerCase();
+  const rawEtld1 = getETLDPlusOne(rawLower);
+
+  // 1. Strict official domain check on RAW hostname (must strictly match before any homoglyph folding)
+  for (const [key, brand] of Object.entries(BRANDS)) {
+    if (brand.officialDomains.some(d => rawEtld1 === d || rawEtld1.endsWith("." + d))) {
+      return { spoofed: false };
+    }
+  }
+
+  // 2. Benign known domains immunity
+  if (BENIGN_DOMAINS.has(rawEtld1) || BENIGN_DOMAINS.has(rawLower)) {
+    return { spoofed: false };
+  }
+
+  // 3. Normalize domain (Punycode decode + Homoglyph folding)
+  const normalizedHostname = normalizeDomain(rawHostname);
+  const etld1 = getETLDPlusOne(normalizedHostname);
   const domainCore = etld1.split(".")[0];
 
+  if (BENIGN_DOMAINS.has(etld1) || BENIGN_DOMAINS.has(normalizedHostname)) {
+    return { spoofed: false };
+  }
+
+  // Split subdomain parts before the eTLD+1
+  const subparts = normalizedHostname.endsWith(etld1)
+    ? normalizedHostname.slice(0, -etld1.length).replace(/\.$/, "").split(".")
+    : [];
+
   for (const [key, brand] of Object.entries(BRANDS)) {
-    // 1. If it's already an official domain for this brand, it is fully safe
-    if (brand.officialDomains.some(d => etld1 === d || etld1.endsWith("." + d))) {
-      continue;
+    // Subdomain Phishing vector: e.g. "poste.attacker-server.com" or "postepay.free-hosting.net"
+    for (const sub of subparts) {
+      if (!sub) continue;
+      for (const kw of brand.keywords) {
+        if (keywordMatches(sub, kw)) {
+          return {
+            spoofed: true,
+            brandName: brand.displayName,
+            officialDomains: brand.officialDomains,
+            matchedKeyword: kw,
+            hostname: rawHostname,
+            vector: "subdomain"
+          };
+        }
+      }
     }
 
-    // 2. Keyword check: does domainCore contain a brand keyword with boundary separation (e.g. "poste-servizi", "bancoposta-online")?
+    // Core Domain Inspection
     for (const kw of brand.keywords) {
+      // Keyword boundary or compound word match (e.g. "postelogin", "serviziposte")
       if (keywordMatches(domainCore, kw)) {
         return {
           spoofed: true,
           brandName: brand.displayName,
           officialDomains: brand.officialDomains,
           matchedKeyword: kw,
-          hostname: hostname
+          hostname: rawHostname,
+          vector: "domain"
         };
       }
 
-      // 3. Typo/Levenshtein similarity check for near-miss spoofing (e.g. "paypa1", "intesasampaolo")
-      if (kw.length >= 4 && damerauLevenshtein(domainCore, kw) <= 1) {
-        return {
-          spoofed: true,
-          brandName: brand.displayName,
-          officialDomains: brand.officialDomains,
-          matchedKeyword: kw,
-          hostname: hostname
-        };
+      // Typo/Levenshtein similarity check: strictly enabled only for keywords of length >= 5
+      // to avoid false positives on 4-letter English words (next.com, beer.com, ips.com)
+      if (kw.length >= 5 && domainCore.length >= 5 && Math.abs(domainCore.length - kw.length) <= 1) {
+        if (damerauLevenshtein(domainCore, kw) <= 1) {
+          return {
+            spoofed: true,
+            brandName: brand.displayName,
+            officialDomains: brand.officialDomains,
+            matchedKeyword: kw,
+            hostname: rawHostname,
+            vector: "typo"
+          };
+        }
       }
     }
   }
@@ -156,7 +321,7 @@ chrome.runtime.onStartup.addListener(() => {
 });
 
 // Catch DNR network blocks on main_frame and seamlessly display local blocked.html without requiring host permissions.
-// Disambiguates against uBlock Origin and other blockers by verifying the domain is in Sentinel Shield's ruleset.
+// Disambiguates against other content blockers and prevents infinite redirect loops when a session allow rule exists.
 chrome.webNavigation.onErrorOccurred.addListener(async (details) => {
   if (details.frameId !== 0) return; // Only top-level window
   if (details.error === "net::ERR_BLOCKED_BY_CLIENT" && details.url && details.url.startsWith("http")) {
@@ -165,9 +330,24 @@ chrome.webNavigation.onErrorOccurred.addListener(async (details) => {
       const hostname = new URL(details.url).hostname.toLowerCase();
       const etld1 = getETLDPlusOne(hostname);
 
-      // Disambiguation: ONLY redirect if domain or eTLD+1 matches Sentinel Shield's blocked rules.
-      // Other blockers (e.g. uBlock Origin) will NOT trigger our blocked page.
       if (BLOCKED_DOMAINS.has(hostname) || BLOCKED_DOMAINS.has(etld1)) {
+        // Prevent infinite loop with other extensions: if domain is already bypassed in Sentinel session rules, do not redirect
+        const existingSessionRules = await new Promise(resolve => {
+          chrome.declarativeNetRequest.getSessionRules(resolve);
+        });
+
+        const isAlreadyAllowed = (existingSessionRules || []).some(
+          r => r.action && r.action.type === "allow" &&
+               r.condition && (
+                 r.condition.urlFilter === `||${hostname}^` ||
+                 r.condition.urlFilter === `||${etld1}^`
+               )
+        );
+
+        if (isAlreadyAllowed) {
+          return;
+        }
+
         const blockedPageUrl = chrome.runtime.getURL(`pages/blocked.html?domain=${encodeURIComponent(hostname)}`);
         chrome.tabs.update(details.tabId, { url: blockedPageUrl });
       }
@@ -201,7 +381,6 @@ chrome.webNavigation.onBeforeNavigate.addListener(async (details) => {
 
     const result = checkBrandImpersonation(hostname);
     if (result.spoofed) {
-      // Store in chrome.storage.session so state survives service worker sleep/wake lifecycle
       await chrome.storage.session.set({ [warningKey]: result });
       chrome.action.setBadgeText({ text: "!", tabId: details.tabId });
       chrome.action.setBadgeBackgroundColor({ color: "#f57c00", tabId: details.tabId });
@@ -260,7 +439,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       return true;
     }
 
-    // Query existing session rules and session storage counter to compute a collision-free ID across worker restarts
     chrome.declarativeNetRequest.getSessionRules(async (existingRules) => {
       const alreadyAllowed = (existingRules || []).some(
         r => r.condition && r.condition.urlFilter === `||${domain}^` && r.action && r.action.type === "allow"
@@ -270,19 +448,24 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         return;
       }
 
-      // Persist counter in session storage to guarantee monotonic IDs even under concurrent calls
       const storage = await chrome.storage.session.get(["lastSessionRuleId"]);
       const existingMax = (existingRules || []).reduce((max, r) => Math.max(max, r.id || 0), 100000);
-      const nextId = Math.max(existingMax, storage.lastSessionRuleId || 100000) + 1;
+      memorySessionRuleId = Math.max(memorySessionRuleId, existingMax, storage.lastSessionRuleId || 100000) + 1;
+      const nextId = memorySessionRuleId;
       await chrome.storage.session.set({ lastSessionRuleId: nextId });
+
+      const condition = {
+        urlFilter: `||${domain}^`
+      };
+      if (request.tabId) {
+        condition.tabIds = [request.tabId];
+      }
 
       const allowRule = {
         id: nextId,
-        priority: 2, // Higher than static priority 1 rules
+        priority: 2,
         action: { type: "allow" },
-        condition: {
-          urlFilter: `||${domain}^`
-        }
+        condition: condition
       };
 
       chrome.declarativeNetRequest.updateSessionRules({

@@ -6,7 +6,7 @@
   },
   "intesa": {
     "displayName": "Intesa Sanpaolo",
-    "keywords": ["intesasanpaolo", "intesasanpaolobank", "isysmart"],
+    "keywords": ["intesa", "intesasanpaolo", "intesasanpaolobank", "isysmart"],
     "officialDomains": ["intesasanpaolo.com", "intesasanpaolobank.com", "isysmart.com"]
   },
   "unicredit": {
@@ -33,6 +33,36 @@
     "displayName": "Nexi Payments",
     "keywords": ["nexi", "cartasi", "nexipay"],
     "officialDomains": ["nexi.it", "nexipay.it"]
+  },
+  "fineco": {
+    "displayName": "FinecoBank",
+    "keywords": ["fineco", "finecobank"],
+    "officialDomains": ["finecobank.com", "fineco.it"]
+  },
+  "mediolanum": {
+    "displayName": "Banca Mediolanum",
+    "keywords": ["mediolanum", "bancamediolanum"],
+    "officialDomains": ["bancamediolanum.it", "mediolanum.it"]
+  },
+  "widiba": {
+    "displayName": "Banca Widiba",
+    "keywords": ["widiba", "bancawidiba"],
+    "officialDomains": ["widiba.it"]
+  },
+  "mps": {
+    "displayName": "Banca Monte dei Paschi di Siena",
+    "keywords": ["bancamps", "mpsbanca"],
+    "officialDomains": ["mps.it", "bancamps.it"]
+  },
+  "bnl": {
+    "displayName": "BNL BNP Paribas",
+    "keywords": ["bnlparibas", "bnpparibas"],
+    "officialDomains": ["bnl.it", "bnpparibas.it", "bnpparibas.com"]
+  },
+  "chebanca": {
+    "displayName": "CheBanca! / Mediobanca Premier",
+    "keywords": ["chebanca", "mediobancapremier"],
+    "officialDomains": ["chebanca.it", "mediobancapremier.com"]
   },
   "inps": {
     "displayName": "INPS",
@@ -64,10 +94,30 @@
     "keywords": ["gls", "glsitaly", "glscourier"],
     "officialDomains": ["gls-italy.com", "gls-group.com"]
   },
+  "fedex": {
+    "displayName": "FedEx",
+    "keywords": ["fedex", "fedexpress"],
+    "officialDomains": ["fedex.com"]
+  },
+  "ups": {
+    "displayName": "UPS",
+    "keywords": ["upscourier"],
+    "officialDomains": ["ups.com"]
+  },
   "telepass": {
     "displayName": "Telepass",
     "keywords": ["telepass", "telepasspay"],
     "officialDomains": ["telepass.com", "telepasspay.com"]
+  },
+  "enel": {
+    "displayName": "Enel / Enel Energia",
+    "keywords": ["enel", "enelenergia"],
+    "officialDomains": ["enel.it", "enelenergia.it", "enel.com"]
+  },
+  "plenitude": {
+    "displayName": "Eni Plenitude",
+    "keywords": ["plenitude", "eniplenitude"],
+    "officialDomains": ["eniplenitude.com", "eni.com"]
   },
   "paypal": {
     "displayName": "PayPal",
@@ -78,6 +128,26 @@
     "displayName": "Amazon",
     "keywords": ["amazon", "primevideo"],
     "officialDomains": ["amazon.it", "amazon.com", "primevideo.com", "amazonaws.com", "media-amazon.com", "ssl-images-amazon.com", "a2z.com"]
+  },
+  "microsoft": {
+    "displayName": "Microsoft",
+    "keywords": ["microsoft", "office365", "onedrive", "sharepoint"],
+    "officialDomains": ["microsoft.com", "office.com", "onedrive.com", "sharepoint.com", "azure.com", "live.com", "outlook.com", "msn.com"]
+  },
+  "google": {
+    "displayName": "Google",
+    "keywords": ["google", "gmail", "googledrive"],
+    "officialDomains": ["google.com", "google.it", "gmail.com", "youtube.com"]
+  },
+  "apple": {
+    "displayName": "Apple",
+    "keywords": ["apple", "icloud", "appleid"],
+    "officialDomains": ["apple.com", "icloud.com"]
+  },
+  "netflix": {
+    "displayName": "Netflix",
+    "keywords": ["netflix"],
+    "officialDomains": ["netflix.com"]
   },
   "subito": {
     "displayName": "Subito.it",

@@ -1,6 +1,20 @@
 document.addEventListener("DOMContentLoaded", () => {
   const urlParams = new URLSearchParams(window.location.search);
-  const domain = urlParams.get("domain") || "Destinazione non specificata";
+  let rawDomain = urlParams.get("domain") || "";
+
+  // Sanitize domain to prevent open redirect or malformed destinations
+  let domain = "";
+  try {
+    if (rawDomain.includes("://")) {
+      domain = new URL(rawDomain).hostname;
+    } else {
+      domain = rawDomain.split("/")[0].split(":")[0].trim();
+    }
+  } catch (e) {
+    domain = rawDomain.replace(/[^a-zA-Z0-9.-]/g, "");
+  }
+
+  if (!domain) domain = "Destinazione non specificata";
 
   const domainDisplay = document.getElementById("domainDisplay");
   if (domainDisplay) {
@@ -21,17 +35,14 @@ document.addEventListener("DOMContentLoaded", () => {
   const btnProceed = document.getElementById("btnProceed");
   if (btnProceed) {
     btnProceed.addEventListener("click", () => {
-      const confirmProceed = confirm(
-        `Attenzione: procedere su ${domain} potrebbe esporre a rischi informatici o truffe.\n\nVuoi davvero sbloccare questo sito per la sessione corrente?`
-      );
-      if (confirmProceed) {
-        // Register session bypass rule with higher priority (priority 2 allow rule)
-        // so that the browser does not block the site in an infinite loop
-        chrome.runtime.sendMessage({ action: "bypassDomain", domain: domain }, (res) => {
-          const targetUrl = domain.startsWith("http") ? domain : `https://${domain}`;
-          window.location.href = targetUrl;
-        });
-      }
+      btnProceed.disabled = true;
+      btnProceed.textContent = "Sblocco in corso...";
+
+      // Register session bypass rule with higher priority (priority 2 allow rule)
+      chrome.runtime.sendMessage({ action: "bypassDomain", domain: domain }, (res) => {
+        const targetUrl = `https://${domain}`;
+        window.location.href = targetUrl;
+      });
     });
   }
 });

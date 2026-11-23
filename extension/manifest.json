@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Sentinel Shield",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Protezione locale da phishing, truffe e domini ingannevoli. Elaborazione 100% in-browser, zero telemetria.",
   "permissions": [
     "activeTab",
@@ -19,15 +19,6 @@
       }
     ]
   },
-  "web_accessible_resources": [
-    {
-      "resources": [
-        "pages/blocked.html",
-        "pages/blocked.js"
-      ],
-      "matches": ["<all_urls>"]
-    }
-  ],
   "action": {
     "default_popup": "popup/popup.html",
     "default_title": "Sentinel Shield",
