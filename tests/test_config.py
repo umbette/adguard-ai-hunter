@@ -58,3 +58,16 @@ def test_empty_env_vars_do_not_clobber_supervisor_token(tmp_path, monkeypatch):
     assert settings.home_assistant.token == "valid_supervisor_token_xyz"
     # Empty ADGUARD_USERNAME must not clobber existing_user
     assert settings.adguard.username == "existing_user"
+
+
+def test_adguard_credentials_loaded_from_env(tmp_path, monkeypatch):
+    monkeypatch.setenv("ADGUARD_USERNAME", "custom_adguard_admin")
+    monkeypatch.setenv("ADGUARD_PASSWORD", "custom_adguard_pw_456")
+
+    cfg_file = tmp_path / "config.yaml"
+    cfg_file.write_text("adguard:\n  host: 127.0.0.1\n  port: 8080\n", encoding="utf-8")
+
+    settings = Settings.load(config_path=str(cfg_file))
+    assert settings.adguard.username == "custom_adguard_admin"
+    assert settings.adguard.password == "custom_adguard_pw_456"
+

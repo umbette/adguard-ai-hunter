@@ -4,7 +4,7 @@ import logging
 import socket
 import time
 from dataclasses import dataclass
-from typing import Dict, Optional, Tuple
+from typing import Dict, Optional, Tuple, Any
 import aiohttp
 from src.config import Settings
 
@@ -31,6 +31,8 @@ DEVICE_KEYWORDS = [
     (["airfryer", "air-fryer", "friggitrice", "multicooker", "bimby", "thermomix", "mambo", "cecotec", "cosori", "aigostar", "fridge", "refrigerator", "smartfridge", "oven", "coffee", "nespresso", "delonghi", "midea", "whirlpool"], "🍳", "SMART_APPLIANCE"),
     # Large Laundry & Cleaning Appliances (Washing Machines, Dryers, Dishwashers)
     (["lavatrice", "asciugatrice", "washer", "dryer", "dishwasher", "lavastoviglie", "hon", "candy", "hoover"], "🧺", "WASHING_APPLIANCE"),
+    # Climate, Heat Pumps & HVAC (MELCloud, Mitsubishi, Daikin, Tado, Netatmo)
+    (["melcloud", "mitsubishi", "clima", "aircon", "heatpump", "daikin", "tado", "netatmo"], "❄️", "SMART_APPLIANCE"),
     # IP Cameras & Video Doorbells (Reolink, Ring, Tapo, V380, Xiongmai, Yi, Imou)
     (["camera", "cam", "webcam", "reolink", "ring", "nest", "tapo", "v380", "xiongmai", "imou", "ezviz", "yi-camera", "cctv", "dahua", "hikvision"], "📷", "IP_CAMERA"),
     # Smart Plugs & Relays (Shelly, Sonoff, Gosund, Meross)
@@ -60,9 +62,10 @@ class DeviceResolver:
     2. Falls back to reverse DNS PTR lookup if unlabelled.
     3. Categorizes devices (Smart TV, Mobile, IoT, Computer) to render rich push notifications.
     """
-    def __init__(self, settings: Settings, ttl_sec: int = 1800):
+    def __init__(self, settings: Settings, ttl_sec: int = 1800, storage: Optional[Any] = None):
         self.settings = settings
         self.ttl_sec = ttl_sec
+        self.storage = storage
         # Cache: ip -> (DeviceInfo, timestamp)
         self._cache: Dict[str, Tuple[DeviceInfo, float]] = {}
         self._last_adguard_fetch = 0.0
@@ -95,14 +98,14 @@ class DeviceResolver:
                     mapping = {}
 
                     # 1. Configured static clients
-                    for client in data.get("clients", []):
+                    for client in (data.get("clients") or []):
                         name = client.get("name", "").strip()
                         for cid in client.get("ids", []):
                             if name and cid:
                                 mapping[cid.strip()] = name
 
                     # 2. Auto-discovered DHCP clients
-                    for auto_client in data.get("auto_clients", []):
+                    for auto_client in (data.get("auto_clients") or []):
                         name = auto_client.get("name", "").strip()
                         ip = auto_client.get("ip", "").strip()
                         if name and ip and ip not in mapping:
@@ -139,6 +142,23 @@ class DeviceResolver:
             device, cached_at = self._cache[client_ip]
             if (now - cached_at) < self.ttl_sec:
                 return device
+
+        # 0. Check persistent database first if storage engine is present
+        if self.storage and hasattr(self.storage, "get_device"):
+            try:
+                stored = self.storage.get_device(client_ip)
+                if stored and stored.get("hostname") and stored["hostname"] != client_ip:
+                    device = DeviceInfo(
+                        ip=client_ip,
+                        name=stored["hostname"],
+                        icon=stored.get("icon", "🔌"),
+                        device_type=stored.get("category", "DEVICE"),
+                        display_name=f"{stored.get('icon', '🔌')} {stored['hostname']} ({client_ip})"
+                    )
+                    self._cache[client_ip] = (device, now)
+                    return device
+            except Exception:
+                pass
 
         # Fetch AdGuard clients mapping if session provided
         if session:

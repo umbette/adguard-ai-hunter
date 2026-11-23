@@ -112,3 +112,43 @@ async def test_resolve_with_reverse_ptr(monkeypatch):
     assert dev.device_type == "COMPUTER"
     assert dev.display_name == "💻 MacBook-Pro-M2.local (192.168.1.88)"
 
+
+@pytest.mark.asyncio
+async def test_resolve_handles_null_adguard_response():
+    """AdGuard Home API may return null for clients/auto_clients."""
+    settings = Settings()
+    resolver = DeviceResolver(settings)
+
+    mock_session = MagicMock()
+    mock_resp = AsyncMock()
+    mock_resp.status = 200
+    mock_resp.json = AsyncMock(return_value={"clients": None, "auto_clients": None})
+    mock_session.get.return_value = MockAsyncContext(mock_resp)
+
+    # Should not raise TypeError and should fallback gracefully
+    dev = await resolver.resolve("192.168.1.250", session=mock_session)
+    assert dev.ip == "192.168.1.250"
+    assert dev.name == "192.168.1.250"
+    assert dev.icon == "🔌"
+
+
+@pytest.mark.asyncio
+async def test_resolve_from_storage():
+    """Resolver should prioritize persistent stored device metadata."""
+    settings = Settings()
+    mock_storage = MagicMock()
+    mock_storage.get_device.return_value = {
+        "ip": "192.168.1.188",
+        "hostname": "Home Theater Soundbar",
+        "category": "SMART_SPEAKER",
+        "icon": "🔊"
+    }
+
+    resolver = DeviceResolver(settings, storage=mock_storage)
+    dev = await resolver.resolve("192.168.1.188")
+    assert dev.name == "Home Theater Soundbar"
+    assert dev.icon == "🔊"
+    assert dev.device_type == "SMART_SPEAKER"
+    assert dev.display_name == "🔊 Home Theater Soundbar (192.168.1.188)"
+
+

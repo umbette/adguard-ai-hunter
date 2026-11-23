@@ -113,6 +113,11 @@ class Settings(BaseSettings):
             data.setdefault("home_assistant", {})["base_url"] = "http://supervisor/core"
             data.setdefault("home_assistant", {})["ws_url"] = "ws://supervisor/core/websocket"
 
+        adguard_data = data.get("adguard", {})
+        adguard_data["username"] = os.getenv("ADGUARD_USERNAME") or adguard_data.get("username", "")
+        adguard_data["password"] = os.getenv("ADGUARD_PASSWORD") or adguard_data.get("password", "")
+        data["adguard"] = adguard_data
+
         ha_data = data.get("home_assistant", {})
         ha_data["token"] = os.getenv("HASS_TOKEN") or ha_data.get("token", "")
         ha_data["notify_service"] = os.getenv("HASS_NOTIFY_SERVICE") or ha_data.get("notify_service", "notify")

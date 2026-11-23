@@ -1,4 +1,5 @@
 import asyncio
+import ipaddress
 import logging
 import datetime
 from typing import Optional, List, Dict, Any
@@ -113,32 +114,41 @@ class IngestionWorker:
             if not domain or not client_ip:
                 continue
 
-            # 0. Track device & Zero-Trust admission control
-            default_status = "PENDING" if getattr(self.settings, "admission", None) and self.settings.admission.enabled else "APPROVED"
-            is_new, device_record = self.storage.upsert_device(
-                ip=client_ip,
-                default_status=default_status
-            )
-            if is_new:
-                logger.info(f"🔔 New network device detected: {client_ip}")
-                session = await self.dispatcher.get_session()
-                dev_info = await self.dispatcher.device_resolver.resolve(client_ip, session)
-                self.storage.upsert_device(
+            # 0. Track device & Zero-Trust admission control (Only for physical LAN clients)
+            is_lan = True
+            try:
+                parsed_ip = ipaddress.ip_address(client_ip)
+                if parsed_ip.is_loopback or parsed_ip in ipaddress.ip_network("172.16.0.0/12"):
+                    is_lan = False
+            except ValueError:
+                is_lan = False
+
+            if is_lan:
+                default_status = "PENDING" if getattr(self.settings, "admission", None) and self.settings.admission.enabled else "APPROVED"
+                is_new, device_record = self.storage.upsert_device(
                     ip=client_ip,
-                    hostname=dev_info.name,
-                    category=dev_info.device_type,
-                    icon=dev_info.icon
+                    default_status=default_status
                 )
-                if getattr(self.settings, "admission", None) and self.settings.admission.notify_on_new_device:
-                    await self.dispatcher.send_new_device_alert(
+                if is_new:
+                    logger.info(f"🔔 New network device detected: {client_ip}")
+                    session = await self.dispatcher.get_session()
+                    dev_info = await self.dispatcher.device_resolver.resolve(client_ip, session)
+                    self.storage.upsert_device(
                         ip=client_ip,
-                        name=dev_info.name,
-                        icon=dev_info.icon,
+                        hostname=dev_info.name,
                         category=dev_info.device_type,
-                        quarantine=self.settings.admission.quarantine_unapproved
+                        icon=dev_info.icon
                     )
-                if getattr(self.settings, "admission", None) and self.settings.admission.enabled and self.settings.admission.quarantine_unapproved:
-                    await self.dispatcher.inject_adguard_rule(f"||*$client={client_ip}")
+                    if getattr(self.settings, "admission", None) and self.settings.admission.notify_on_new_device:
+                        await self.dispatcher.send_new_device_alert(
+                            ip=client_ip,
+                            name=dev_info.name,
+                            icon=dev_info.icon,
+                            category=dev_info.device_type,
+                            quarantine=self.settings.admission.quarantine_unapproved
+                        )
+                    if getattr(self.settings, "admission", None) and self.settings.admission.enabled and self.settings.admission.quarantine_unapproved:
+                        await self.dispatcher.inject_adguard_rule(f"||*$client={client_ip}")
 
             # 1. Check existing decisions (whitelists / blocks)
             decision = self.storage.match_decision(domain, client_ip)

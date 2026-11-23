@@ -17,7 +17,8 @@ KNOWN_BENIGN_DOMAINS = {
     "github.com", "githubusercontent.com", "docker.com", "docker.io",
     "spotify.com", "scdn.co", "melcloud.com", "bambulab.com",
     "tuya.com", "tuyaeu.com", "home-assistant.io", "casas.org",
-    "iotcplatform.com", "cdn5th.com", "fastly-edge.com", "run.app"
+    "iotcplatform.com", "cdn5th.com", "fastly-edge.com", "run.app",
+    "cloudfront.net", "a2z.com", "fbcdn.net", "facebook.com", "instagram.com"
 }
 
 INFRASTRUCTURE_SUFFIXES = (
