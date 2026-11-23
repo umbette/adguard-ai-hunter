@@ -1,7 +1,7 @@
 # Sentinel
 
 [![CI Test Suite](https://github.com/umbette/sentinel/actions/workflows/ci.yml/badge.svg)](https://github.com/umbette/sentinel/actions/workflows/ci.yml)
-[![Tests: 76 Passing](https://img.shields.io/badge/Tests-76%20Passing-brightgreen.svg)](tests/)
+[![Tests: 82 Passing](https://img.shields.io/badge/Tests-82%20Passing-brightgreen.svg)](tests/)
 [![Shields: 15 Active](https://img.shields.io/badge/Shields-15%20Active-10b981.svg)](#-15-specialized-cyber-defense--privacy-shields)
 [![Privacy: Zero--Telemetry](https://img.shields.io/badge/Privacy-Zero--Telemetry-blueviolet.svg)](#-zero-knowledge-device-catalog--1-click-unbreak)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
@@ -203,14 +203,14 @@ Add this URL directly into your DNS resolver (Filters ➔ DNS Blocklists) for st
 The codebase is thoroughly validated by comprehensive automated test suites:
 
 ```bash
-# Run Python backend unit & integration tests (56 tests)
+# Run Python backend unit & integration tests (76 tests)
 PYTHONPATH=. .venv/bin/pytest -v tests/
 
 # Run Manifest V3 sandboxed browser runtime tests (6 tests)
 node --test tests/test_extension_runtime.mjs
 ```
 
-**Total:** 62 passed in ~1.3s (100% pass rate).
+**Total:** 82 passed in ~1.8s (100% pass rate).
 
 ---
 
