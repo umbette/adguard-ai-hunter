@@ -16,29 +16,40 @@ from src.device_shield import (
     DeviceShieldMatch
 )
 
-def test_nintendo_90dns_anti_ban():
-    # 1. Official 90DNS telemetry endpoints
+def test_gaming_console_telemetry():
+    # 1. Error & Diagnostic telemetry endpoints are blocked
     m1 = evaluate_nintendo_telemetry("receive-lp1.er.srv.nintendo.net")
     assert m1 is not None
-    assert m1.shield_type == "NINTENDO_90DNS"
+    assert m1.shield_type == "CONSOLE_TELEMETRY"
     assert m1.target_category == "GAMING_CONSOLE"
-    assert "2124-4007" in m1.description
+    assert "Console Telemetry" in m1.description
 
-    # 2. Authentication & Ticket validation endpoints
-    m2 = evaluate_nintendo_telemetry("dauth-lp1.ndas.srv.nintendo.net")
-    assert m2 is not None
-    assert m2.shield_type == "NINTENDO_90DNS"
+    # 2. PlayStation / Xbox telemetry is blocked
+    m_psn = evaluate_nintendo_telemetry("telemetry.playstation.com")
+    assert m_psn is not None
 
-    m3 = evaluate_nintendo_telemetry("aauth-lp1.ndas.srv.nintendo.net")
-    assert m3 is not None
+    # 3. Critical store & online play authentication must NOT be blocked (SysNAND Safe)
+    assert evaluate_nintendo_telemetry("dauth-lp1.ndas.srv.nintendo.net") is None
+    assert evaluate_nintendo_telemetry("aauth-lp1.ndas.srv.nintendo.net") is None
+    assert evaluate_nintendo_telemetry("ctest.cdn.nintendo.net") is None
 
-    # 3. System update daemons
-    m4 = evaluate_nintendo_telemetry("sun.hac.lp1.d4c.srv.nintendo.net")
-    assert m4 is not None
 
-    # 4. Suffix wildcard matching (*.srv.nintendo.net)
-    m5 = evaluate_nintendo_telemetry("custom-subdomain.srv.nintendo.net")
-    assert m5 is not None
+def test_shield_toggle_and_snooze():
+    from src.device_shield import set_shield_status, is_shield_active, get_shield_status
+
+    # 1. Set to PAUSED_1H
+    res = set_shield_status("console_telemetry", "PAUSED_1H")
+    assert res["status"] == "PAUSED_1H"
+    assert is_shield_active("console_telemetry") is False
+
+    # 2. Evaluation should bypass when paused
+    assert evaluate_device_shield("receive-lp1.er.srv.nintendo.net") is None
+
+    # 3. Reactivate
+    set_shield_status("console_telemetry", "ACTIVE")
+    assert is_shield_active("console_telemetry") is True
+    assert evaluate_device_shield("receive-lp1.er.srv.nintendo.net") is not None
+
 
 
 def test_vacuum_privacy_shield():
@@ -242,7 +253,7 @@ def test_evaluate_device_shield_unified_dispatcher():
     # Verifies all 10 categories resolve properly via evaluate_device_shield()
     r_nintendo = evaluate_device_shield("receive-lp1.er.srv.nintendo.net")
     assert r_nintendo is not None
-    assert r_nintendo.shield_type == "NINTENDO_90DNS"
+    assert r_nintendo.shield_type == "CONSOLE_TELEMETRY"
 
     r_bambu = evaluate_device_shield("log.bambulab.com")
     assert r_bambu is not None

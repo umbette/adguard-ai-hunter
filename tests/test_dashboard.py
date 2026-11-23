@@ -98,3 +98,39 @@ class TestSentinelDashboard(AioHTTPTestCase):
     async def test_dashboard_api_report_unbreak_invalid(self):
         resp = await self.client.post("/api/report_unbreak", json={"domain": ""})
         assert resp.status == 400
+
+    async def test_dashboard_api_shields(self):
+        resp = await self.client.get("/api/shields")
+        assert resp.status == 200
+        data = await resp.json()
+        assert data["status"] == "success"
+        assert len(data["shields"]) == 14
+        # Verify console_telemetry exists and has safe description
+        console_shield = next((s for s in data["shields"] if s["id"] == "console_telemetry"), None)
+        assert console_shield is not None
+        assert "SysNAND safe" in console_shield["desc"]
+
+    async def test_dashboard_api_shields_toggle(self):
+        # 1. Toggle to PAUSED_1H
+        resp = await self.client.post("/api/shields/toggle", json={
+            "id": "console_telemetry",
+            "status": "PAUSED_1H"
+        })
+        assert resp.status == 200
+        data = await resp.json()
+        assert data["status"] == "success"
+        assert data["shield"]["status"] == "PAUSED_1H"
+
+        # 2. Toggle back to ACTIVE
+        resp2 = await self.client.post("/api/shields/toggle", json={
+            "id": "console_telemetry",
+            "status": "ACTIVE"
+        })
+        assert resp2.status == 200
+        data2 = await resp2.json()
+        assert data2["status"] == "success"
+        assert data2["shield"]["status"] == "ACTIVE"
+
+    async def test_dashboard_api_shields_toggle_invalid(self):
+        resp = await self.client.post("/api/shields/toggle", json={})
+        assert resp.status == 400

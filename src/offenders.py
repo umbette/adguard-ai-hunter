@@ -77,7 +77,7 @@ CATEGORY_METADATA = {
     "DYNAMIC_PRICING": {"name": "Anti-Dynamic Pricing & Travel", "icon": "🛡️"},
     "CONNECTED_CAR": {"name": "Automotive LexisNexis Guard", "icon": "🚗"},
     "IP_CAMERA": {"name": "IP Camera P2P Cloud Isolation", "icon": "📷"},
-    "GAMING_CONSOLE": {"name": "Gaming Latency & Anti-Ban", "icon": "🎮"},
+    "GAMING_CONSOLE": {"name": "Gaming Diagnostics & Latency", "icon": "🎮"},
     "CRYPTO_VAULT": {"name": "Crypto & Web3 Financial Vault", "icon": "🔐"},
     "IOT": {"name": "Smart Home Hubs & Relays", "icon": "💡"},
     "SMART_PLUG": {"name": "Smart Plugs & Sockets", "icon": "🔌"},

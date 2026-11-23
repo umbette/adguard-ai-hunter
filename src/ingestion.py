@@ -188,7 +188,7 @@ class IngestionWorker:
                     )
                 continue
 
-            # 4. Check Specialized Device Privacy & Anti-Ban Shields
+            # 4. Check Specialized Device Privacy & Diagnostic Shields
             device_match = evaluate_device_shield(domain)
             if device_match:
                 now_ts = datetime.datetime.now().timestamp()

@@ -8,9 +8,9 @@ try:
 except ImportError:
     yaml = None
 
-ADGUARD_URL = "http://127.0.0.1:8080"
-USERNAME = "umbette"
-PASSWORD = "Agraria86-"
+ADGUARD_URL = os.getenv("ADGUARD_URL", "http://127.0.0.1:8080")
+USERNAME = os.getenv("ADGUARD_USERNAME", "umbette")
+PASSWORD = os.getenv("ADGUARD_PASSWORD", "Agraria86-")
 
 auth_str = f"{USERNAME}:{PASSWORD}".encode("utf-8")
 headers = {
@@ -26,13 +26,12 @@ with urllib.request.urlopen(req) as resp:
 current_rules = data.get("user_rules", [])
 
 NEW_SHIELD_RULES = [
-    "! --- 🎮 Nintendo Switch 90DNS Local Anti-Ban Shield ---",
+    "! --- 🎮 Gaming Console Diagnostic & Crash Telemetry Shield (SysNAND Safe) ---",
     "||receive-lp1.er.srv.nintendo.net^",
     "||receive-lp1.dg.srv.nintendo.net^",
-    "||dauth-lp1.ndas.srv.nintendo.net^",
-    "||aauth-lp1.ndas.srv.nintendo.net^",
-    "||sun.hac.lp1.d4c.srv.nintendo.net^",
-    "||ctest.cdn.nintendo.net^",
+    "||crash-report.nintendo.net^",
+    "||telemetry.playstation.com^",
+    "||telemetry.xboxlive.com^",
     "! --- 🧹 Vacuum Floorplan & Camera Privacy Shield ---",
     "||open.ecovacs.com^",
     "||sa-eu-datasink.ecovacs.com^",
