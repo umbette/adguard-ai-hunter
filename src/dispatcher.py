@@ -131,6 +131,8 @@ class Dispatcher:
             "message": message,
             "data": {
                 "tag": f"hunter-{domain}",
+                "url": "/notifications",
+                "clickAction": "/notifications",
                 "actions": [
                     {
                         "action": f"BLOCCA_DEVICE::{domain}::{client_ip}",
@@ -215,6 +217,8 @@ class Dispatcher:
             "message": message,
             "data": {
                 "tag": f"sentinel-device-{ip}",
+                "url": "/notifications",
+                "clickAction": "/notifications",
                 "actions": [
                     {
                         "action": f"APPROVA_DEVICE::{ip}",
