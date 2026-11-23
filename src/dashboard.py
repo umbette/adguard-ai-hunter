@@ -16,6 +16,12 @@ from src.device_shield import (
     is_essential_companion_domain,
     add_runtime_allowlist_domain
 )
+from src.crypto_shield import (
+    activate_sterile_chamber,
+    deactivate_sterile_chamber,
+    get_sterile_chamber_status,
+    is_client_in_sterile_chamber
+)
 
 logger = logging.getLogger("ai_hunter.dashboard")
 
@@ -1051,6 +1057,9 @@ class SentinelDashboard:
         self.app.router.add_post("/api/devices/approve", self.handle_api_approve_device)
         self.app.router.add_post("/api/devices/block", self.handle_api_block_device)
         self.app.router.add_get("/api/offenders", self.handle_api_offenders)
+        self.app.router.add_post("/api/sterile-room/activate", self.handle_api_activate_sterile_room)
+        self.app.router.add_post("/api/sterile-room/deactivate", self.handle_api_deactivate_sterile_room)
+        self.app.router.add_get("/api/sterile-room/status", self.handle_api_sterile_room_status)
 
     async def handle_index(self, request: web.Request) -> web.Response:
         return web.Response(text=HTML_TEMPLATE, content_type="text/html")
@@ -1343,6 +1352,41 @@ class SentinelDashboard:
             logger.error(f"Error computing offenders overview: {e}")
             overview = self.offenders_engine.compute_offenders_overview([])
             return web.json_response(overview)
+
+    async def handle_api_activate_sterile_room(self, request: web.Request) -> web.Response:
+        """Activates Stanza Sterile (Sterile Chamber) on a client IP."""
+        try:
+            body = await request.json()
+            ip = (body.get("ip") or "").strip()
+            duration = int(body.get("duration", 30))
+            reason = body.get("reason", "Hardware Wallet Setup")
+            if not ip:
+                return web.json_response({"status": "error", "message": "IP mancante."}, status=400)
+            res = activate_sterile_chamber(ip, duration_minutes=duration, reason=reason)
+            return web.json_response({"status": "success", "session": res})
+        except Exception as e:
+            return web.json_response({"status": "error", "message": str(e)}, status=500)
+
+    async def handle_api_deactivate_sterile_room(self, request: web.Request) -> web.Response:
+        """Deactivates Stanza Sterile (Sterile Chamber) on a client IP."""
+        try:
+            body = await request.json()
+            ip = (body.get("ip") or "").strip()
+            if not ip:
+                return web.json_response({"status": "error", "message": "IP mancante."}, status=400)
+            success = deactivate_sterile_chamber(ip)
+            return web.json_response({"status": "success" if success else "not_found", "client_ip": ip, "is_active": False})
+        except Exception as e:
+            return web.json_response({"status": "error", "message": str(e)}, status=500)
+
+    async def handle_api_sterile_room_status(self, request: web.Request) -> web.Response:
+        """Returns active Stanza Sterile chamber sessions."""
+        try:
+            ip = request.query.get("ip")
+            status = get_sterile_chamber_status(ip)
+            return web.json_response({"status": "success", **status})
+        except Exception as e:
+            return web.json_response({"status": "error", "message": str(e)}, status=500)
 
     async def start(self):
         host = self.settings.dashboard.host

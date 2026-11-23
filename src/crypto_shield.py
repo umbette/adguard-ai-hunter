@@ -13,6 +13,7 @@ from:
 
 import os
 import re
+import time
 import unicodedata
 from dataclasses import dataclass
 from pathlib import Path
@@ -127,6 +128,27 @@ DEFAULT_OFFICIAL_RPC_ENDPOINTS: Set[str] = {
 }
 
 # ------------------------------------------------------------------------------
+# 2b. Essential Transaction Infrastructure (2FA Push, WebAuthn caBLE, WalletConnect)
+# Must NEVER be blocked by any filter to prevent authentication lockout or hangs
+# ------------------------------------------------------------------------------
+DEFAULT_ESSENTIAL_TRANSACTION_INFRASTRUCTURE: Set[str] = {
+    # Apple APNs Push (2FA bank approvals)
+    "courier.push.apple.com",
+    "push.apple.com",
+    "identity.apple.com",
+    # Google FCM Push (Android 2FA bank approvals)
+    "fcm.googleapis.com",
+    "mtalk.google.com",
+    # WebAuthn / FIDO2 caBLE cross-device rendezvous
+    "cable.auth.com",
+    # WalletConnect v2 relay bridges
+    "relay.walletconnect.com",
+    "relay.walletconnect.org",
+    # Flashbots MEV & Private Mempool
+    "rpc.flashbots.net"
+}
+
+# ------------------------------------------------------------------------------
 # 3. Known signature patterns of automated wallet drainers & phishing kits
 # ------------------------------------------------------------------------------
 DEFAULT_DRAINER_REGEX_PATTERNS: List[Tuple[re.Pattern, str, str]] = [
@@ -142,6 +164,7 @@ DEFAULT_DRAINER_REGEX_PATTERNS: List[Tuple[re.Pattern, str, str]] = [
 # ------------------------------------------------------------------------------
 PROTECTED_CRYPTO_BRANDS: Dict[str, Dict] = dict(DEFAULT_PROTECTED_CRYPTO_BRANDS)
 OFFICIAL_RPC_ENDPOINTS: Set[str] = set(DEFAULT_OFFICIAL_RPC_ENDPOINTS)
+ESSENTIAL_TRANSACTION_INFRASTRUCTURE: Set[str] = set(DEFAULT_ESSENTIAL_TRANSACTION_INFRASTRUCTURE)
 DRAINER_REGEX_PATTERNS: List[Tuple[re.Pattern, str, str]] = list(DEFAULT_DRAINER_REGEX_PATTERNS)
 CUSTOM_WHITELIST: Set[str] = set()
 
@@ -255,10 +278,11 @@ def load_custom_vault(file_path: Optional[str] = None, force_reload: bool = Fals
 
 def reset_to_defaults() -> None:
     """Resets the crypto shield state to public defaults."""
-    global PROTECTED_CRYPTO_BRANDS, OFFICIAL_RPC_ENDPOINTS, DRAINER_REGEX_PATTERNS, CUSTOM_WHITELIST
-    global _VAULT_LOADED, _LOADED_VAULT_PATH
+    global PROTECTED_CRYPTO_BRANDS, OFFICIAL_RPC_ENDPOINTS, ESSENTIAL_TRANSACTION_INFRASTRUCTURE
+    global DRAINER_REGEX_PATTERNS, CUSTOM_WHITELIST, _VAULT_LOADED, _LOADED_VAULT_PATH
     PROTECTED_CRYPTO_BRANDS = dict(DEFAULT_PROTECTED_CRYPTO_BRANDS)
     OFFICIAL_RPC_ENDPOINTS = set(DEFAULT_OFFICIAL_RPC_ENDPOINTS)
+    ESSENTIAL_TRANSACTION_INFRASTRUCTURE = set(DEFAULT_ESSENTIAL_TRANSACTION_INFRASTRUCTURE)
     DRAINER_REGEX_PATTERNS = list(DEFAULT_DRAINER_REGEX_PATTERNS)
     CUSTOM_WHITELIST = set()
     _VAULT_LOADED = False
@@ -268,21 +292,25 @@ def reset_to_defaults() -> None:
 load_custom_vault()
 
 # ------------------------------------------------------------------------------
-# 5. Core Evaluation Logic
+# 5. Core Evaluation Logic (Stateless Invariant Enforcement)
 # ------------------------------------------------------------------------------
 def evaluate_crypto_financial_threat(hostname: str) -> Optional[CryptoThreatMatch]:
     """
     Evaluates a domain against crypto wallet drainer patterns,
     brand impersonation of DeFi/exchanges/RWA/hardware wallets, and IDN homograph punycode traps.
     Seamlessly incorporates private custom vault protections if loaded.
+    Never blocks essential transaction infrastructure (2FA APNs/FCM, WebAuthn caBLE, WalletConnect).
     """
     if not hostname:
         return None
 
     h_lower = hostname.lower().strip()
 
-    # 1. Whitelist official RPC endpoints, custom RPC endpoints, and custom whitelist
-    if h_lower in OFFICIAL_RPC_ENDPOINTS or h_lower in CUSTOM_WHITELIST:
+    # 1. Whitelist official RPC endpoints, essential 2FA/push infrastructure, and custom whitelist
+    if (h_lower in OFFICIAL_RPC_ENDPOINTS or 
+        h_lower in ESSENTIAL_TRANSACTION_INFRASTRUCTURE or 
+        h_lower in CUSTOM_WHITELIST or
+        any(h_lower.endswith(f".{safe}") for safe in ESSENTIAL_TRANSACTION_INFRASTRUCTURE)):
         return None
 
     # Check official domains of all active brands (defaults + custom vault)
@@ -334,3 +362,132 @@ def evaluate_crypto_financial_threat(hostname: str) -> Optional[CryptoThreatMatc
                 )
 
     return None
+
+# ------------------------------------------------------------------------------
+# 6. Physical / On-Demand "Stanza Sterile" (Sterile Chamber Manager)
+# ------------------------------------------------------------------------------
+class SterileChamberManager:
+    """
+    Manages physical or on-demand 'Stanza Sterile' (Sterile Chamber) sessions.
+    Designed for deliberate, exceptional high-risk operations:
+    - Initializing Tangem cards or new hardware wallets
+    - Transcribing / verifying 24-word seed phrases
+    - Executing critical treasury movements
+
+    When active on a client IP:
+    1. All non-essential external traffic, ad trackers, and telemetry are blackholed.
+    2. Only verified official brand domains, official RPCs, and essential 2FA push
+       infrastructure (Apple APNs, Google FCM, WebAuthn caBLE, WalletConnect) are allowed.
+    3. Operates out-of-band via Sentinel Totem tap or manual dashboard toggle.
+    """
+    def __init__(self):
+        self._active_sessions: Dict[str, Dict[str, Any]] = {}
+
+    def activate(self, client_ip: str, duration_minutes: int = 30, reason: str = "Hardware Wallet Setup") -> Dict[str, Any]:
+        ip = (client_ip or "").strip()
+        now = time.time()
+        duration_sec = max(60, duration_minutes * 60)
+        session_info = {
+            "client_ip": ip,
+            "activated_at": now,
+            "duration_seconds": duration_sec,
+            "expires_at": now + duration_sec,
+            "reason": reason,
+            "status": "ACTIVE"
+        }
+        self._active_sessions[ip] = session_info
+        return session_info
+
+    def deactivate(self, client_ip: str) -> bool:
+        ip = (client_ip or "").strip()
+        if ip in self._active_sessions:
+            del self._active_sessions[ip]
+            return True
+        return False
+
+    def is_active(self, client_ip: str) -> bool:
+        ip = (client_ip or "").strip()
+        session = self._active_sessions.get(ip)
+        if not session:
+            return False
+        if time.time() > session["expires_at"]:
+            del self._active_sessions[ip]
+            return False
+        return True
+
+    def get_status(self, client_ip: Optional[str] = None) -> Dict[str, Any]:
+        now = time.time()
+        # Clean expired sessions
+        expired = [ip for ip, s in self._active_sessions.items() if now > s["expires_at"]]
+        for ip in expired:
+            del self._active_sessions[ip]
+
+        if client_ip:
+            ip = client_ip.strip()
+            active = ip in self._active_sessions
+            return {
+                "client_ip": ip,
+                "is_active": active,
+                "session": self._active_sessions.get(ip)
+            }
+        return {
+            "active_count": len(self._active_sessions),
+            "sessions": list(self._active_sessions.values())
+        }
+
+    def evaluate_domain_in_chamber(self, client_ip: str, hostname: str) -> Tuple[bool, str]:
+        """
+        Validates whether a domain is authorized while client is in a Sterile Chamber.
+        Returns (is_allowed, reason).
+        """
+        if not self.is_active(client_ip):
+            return True, "CHAMBER_INACTIVE"
+
+        if not hostname:
+            return False, "EMPTY_HOSTNAME"
+
+        h_lower = hostname.lower().strip()
+
+        # 1. Local LAN addresses
+        if h_lower.endswith(".local") or h_lower in ("localhost", "127.0.0.1", "::1"):
+            return True, "LOCAL_LAN_ALLOWED"
+
+        # 2. Essential transaction infrastructure (2FA, APNs, FCM, WalletConnect)
+        if (h_lower in ESSENTIAL_TRANSACTION_INFRASTRUCTURE or 
+            any(h_lower.endswith(f".{safe}") for safe in ESSENTIAL_TRANSACTION_INFRASTRUCTURE)):
+            return True, "ESSENTIAL_INFRASTRUCTURE_ALLOWED"
+
+        # 3. Official RPC endpoints
+        if h_lower in OFFICIAL_RPC_ENDPOINTS:
+            return True, "OFFICIAL_RPC_ALLOWED"
+
+        # 4. Custom whitelist
+        if h_lower in CUSTOM_WHITELIST:
+            return True, "CUSTOM_WHITELIST_ALLOWED"
+
+        # 5. Official domains of all active protected brands (Defaults + Custom Vault)
+        for brand_key, brand in PROTECTED_CRYPTO_BRANDS.items():
+            if any(h_lower == d or h_lower.endswith(f".{d}") for d in brand.get("officialDomains", [])):
+                return True, f"OFFICIAL_BRAND_ALLOWED:{brand.get('displayName', brand_key)}"
+
+        # Everything else is rejected during Sterile Chamber
+        return False, "BLOCKED_BY_STERILE_CHAMBER: Dispositivo in Stanza Sterile. Solo endpoint ufficiali e verificati autorizzati."
+
+# Global singleton
+sterile_chamber_manager = SterileChamberManager()
+
+def activate_sterile_chamber(client_ip: str, duration_minutes: int = 30, reason: str = "Hardware Wallet Setup") -> Dict[str, Any]:
+    return sterile_chamber_manager.activate(client_ip, duration_minutes, reason)
+
+def deactivate_sterile_chamber(client_ip: str) -> bool:
+    return sterile_chamber_manager.deactivate(client_ip)
+
+def get_sterile_chamber_status(client_ip: Optional[str] = None) -> Dict[str, Any]:
+    return sterile_chamber_manager.get_status(client_ip)
+
+def is_client_in_sterile_chamber(client_ip: str) -> bool:
+    return sterile_chamber_manager.is_active(client_ip)
+
+def evaluate_sterile_chamber_domain(client_ip: str, hostname: str) -> Tuple[bool, str]:
+    return sterile_chamber_manager.evaluate_domain_in_chamber(client_ip, hostname)
+
