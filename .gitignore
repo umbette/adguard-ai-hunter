@@ -15,4 +15,7 @@ __pycache__/
 *dossier*
 private/
 .private/
+custom_vault.yaml
+*.local.yaml
+*.local.json
 

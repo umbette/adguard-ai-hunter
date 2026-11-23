@@ -1,0 +1,65 @@
+# ==============================================================================
+# Sentinel Custom Vault Configuration (Example Template)
+# ==============================================================================
+# Use this template to configure your private, high-value assets, niche RWA
+# platforms, personal hardware wallets, or private fintech apps without exposing
+# them to GitHub.
+#
+# Instructions:
+# 1. Copy this file to data/custom_vault.yaml
+#    (Note: data/ and *.local.yaml are already ignored in .gitignore)
+# 2. Add your personal services, tokenized asset portals, and hardware card devices.
+# 3. Sentinel automatically loads this file at startup and applies real-time
+#    protection, brand clone detection, and homograph defense on all your devices.
+# ==============================================================================
+
+custom_brands:
+  # Example 1: Niche or Private Real Estate / RWA Tokenized Asset Platform
+  my_tokenized_property_platform:
+    displayName: "Example RWA Tokenized Platform"
+    officialDomains:
+      - "example-rwa-platform.io"
+      - "app.example-rwa-platform.io"
+    keywords:
+      - "example-rwa"
+      - "example-property-token"
+      - "example-yield"
+
+  # Example 2: Private Hardware Card Wallet or Seedless Device
+  my_private_hardware_wallet:
+    displayName: "Example Private Hardware Wallet"
+    officialDomains:
+      - "example-hardware-wallet.com"
+      - "app.example-hardware-wallet.com"
+    keywords:
+      - "example-hardware-wallet"
+      - "example-card-wallet"
+      - "example-backup-key"
+
+  # Example 3: Personal Neobank or Crypto/Fiat Gateway
+  my_personal_fintech_bank:
+    displayName: "Example Personal NeoBank"
+    officialDomains:
+      - "example-fintech-bank.com"
+      - "app.example-fintech-bank.com"
+    keywords:
+      - "example-fintech"
+      - "example-bank-login"
+
+# Custom Drainer Regex Patterns (Optional)
+# Add specialized signature traps matching threats specific to your platforms
+custom_drainer_patterns:
+  - pattern: "(^|[-_0-9])(example[-_]?rwa[-_]?claim|example[-_]?yield[-_]?bonus)([-_0-9]|$)"
+    threat_type: "WALLET_DRAINER"
+    description: "Phishing kit mirato per finto claim di dividendi o rendite tokenizzate."
+
+# Verified Custom RPC Endpoints (Optional)
+# Private node providers, Alchemy private keys, or self-hosted RPCs that must NEVER be blocked
+custom_rpc_endpoints:
+  - "eth-mainnet.g.alchemy.com"
+  - "my-private-node.local"
+
+# Private Whitelist (Optional)
+# Internal domains or test portals to exclude from security heuristics
+custom_whitelist:
+  - "staging.internal-fintech.local"
