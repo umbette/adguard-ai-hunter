@@ -444,7 +444,7 @@ class ProactiveMiner:
         logger.info(f"Fetching OpenPhish zero-day feed from {url}...")
         candidates = []
         try:
-            req = urllib.request.Request(url, headers={"User-Agent": "AI-Hunter-Proactive-Miner/1.0"})
+            req = urllib.request.Request(url, headers={"User-Agent": "Sentinel-Proactive-Miner/1.0"})
             with urllib.request.urlopen(req, timeout=12) as resp:
                 for line in stream_feed_lines(resp):
                     sanitized = self.sanitizer.sanitize(line)
@@ -469,7 +469,7 @@ class ProactiveMiner:
         logger.info(f"Fetching URLhaus malware mirror feed from {url}...")
         candidates = []
         try:
-            req = urllib.request.Request(url, headers={"User-Agent": "AI-Hunter-Proactive-Miner/1.0"})
+            req = urllib.request.Request(url, headers={"User-Agent": "Sentinel-Proactive-Miner/1.0"})
             with urllib.request.urlopen(req, timeout=15) as resp:
                 for line in stream_feed_lines(resp):
                     sanitized = self.sanitizer.sanitize(line)

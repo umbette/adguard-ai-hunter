@@ -1,7 +1,7 @@
 services:
-  ai-hunter:
+  sentinel:
     build: .
-    container_name: ai-hunter
+    container_name: sentinel
     restart: unless-stopped
     network_mode: host
     env_file:

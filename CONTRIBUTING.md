@@ -1,4 +1,4 @@
-# Contributing to AI Hunter
+# Contributing to Sentinel Core
 
 We welcome contributions, bug fixes, and whitelist recommendations from the community!
 
@@ -11,8 +11,8 @@ We welcome contributions, bug fixes, and whitelist recommendations from the comm
 ## Development & Testing
 
 ```bash
-git clone https://github.com/umbette/ai-hunter.git
-cd ai-hunter
+git clone https://github.com/umbette/sentinel.git
+cd sentinel
 pip install -r requirements.txt -r requirements-dev.txt
 pytest tests -v
 ```

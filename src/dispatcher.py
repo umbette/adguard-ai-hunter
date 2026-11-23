@@ -61,8 +61,8 @@ class Dispatcher:
         Never overwrites or deletes pre-existing user rules!
         """
         rule_clean = rule_str.strip()
-        if not rule_clean.endswith("# ai-hunter"):
-            rule_clean = f"{rule_clean} # ai-hunter"
+        if not (rule_clean.endswith("# sentinel") or rule_clean.endswith("# ai-hunter")):
+            rule_clean = f"{rule_clean} # sentinel"
 
         session = await self.get_session()
         creds = f"{self.settings.adguard.username}:{self.settings.adguard.password}".encode("utf-8")

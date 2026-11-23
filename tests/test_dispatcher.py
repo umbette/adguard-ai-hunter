@@ -38,7 +38,7 @@ async def test_read_modify_write_rule_injection(temp_storage):
         posted_rules = call_args[1]["json"]["rules"]
         assert "||existing-tracker.com^" in posted_rules
         assert "127.0.0.1 custom.lan" in posted_rules
-        assert "||new-telemetry.com^$client=192.168.1.210 # ai-hunter" in posted_rules
+        assert "||new-telemetry.com^$client=192.168.1.210 # sentinel" in posted_rules
         assert len(posted_rules) == 3
 
 
