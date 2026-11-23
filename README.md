@@ -27,7 +27,7 @@ Sentinel operates an array of 15 deterministic, specialized hardware and softwar
 | **👵 Caregiver Anti-Phishing** | Family Protection | Intercepts deceptive delivery (Poste, BRT, DHL) and tax/banking phishing SMS links targeted at elderly relatives, with real-time push alerts. |
 | **📺 Smart TV Stealth** | Living Room Privacy | Blocks Automatic Content Recognition (ACR) and audio sampling on Samsung Tizen and LG webOS TVs while keeping Netflix, YouTube, and Prime Video intact. |
 | **🧹 Vacuum Camera & LiDAR Guard** | Smart Home IoT | Prevents interior floorplan uploads and camera video exfiltration to offshore clouds on Ecovacs, Roborock, and Dreame vacuums. |
-| **🖨️ Bambu Lab & Maker IP Shield** | 3D Printing IP | Blocks cloud diagnostics and CAD print exfiltration while preserving full local network LAN control and camera streaming. |
+| **🖨️ 3D Printer & Maker IP Guard** | 3D Printing & Makers | Silences cloud diagnostics and telemetry across major 3D printer brands (Bambu Lab, Creality, Anycubic) while preserving full local LAN control (MQTT, OctoPrint/Klipper, local slicing). |
 | **🎮 Gaming Console Telemetry Guard** | Gaming Consoles | Local filtering of crash telemetry and diagnostic logs for Nintendo Switch (SysNAND safe), PS5, and Xbox without impacting multiplayer or eShop. |
 | **🚗 Automotive Driving Telemetry** | Connected Vehicles | Neutralizes sneaky driving telematics and broker exfiltration (LexisNexis, Verisk, Otonomo) that inflate auto insurance premiums. |
 | **🍳 Smart Kitchen & Appliance** | Kitchen Appliances | Silences telemetry, usage habit profiling, and ad SDKs embedded inside smart air fryers (Cosori, VeSync) and kitchen appliances. |

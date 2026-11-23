@@ -25,7 +25,7 @@ logger = logging.getLogger("ai_hunter.device_shield")
 @dataclass
 class DeviceShieldMatch:
     domain: str
-    shield_type: str  # "CONSOLE_TELEMETRY", "VACUUM_PRIVACY", "BAMBU_IP_SHIELD", "GAMING_JITTER"
+    shield_type: str  # "CONSOLE_TELEMETRY", "VACUUM_PRIVACY", "MAKER_3DPRINTER", "GAMING_JITTER"
     target_category: str  # "GAMING_CONSOLE", "VACUUM_ROBOT", "3D_PRINTER", "COMPUTER"
     rule_pattern: str
     risk_score: float
@@ -181,15 +181,30 @@ VACUUM_SUFFIX_BLOCKS: Tuple[str, ...] = (
 )
 
 # ---------------------------------------------------------------------------
-# 3. 🖨️ Bambu Lab 3D Printer IP & Telemetry Shield
+# 3. 🖨️ 3D Printer & Maker Hardware Privacy Catalog (Bambu, Creality, Anycubic)
 # ---------------------------------------------------------------------------
-BAMBU_EXACT_BLOCKS: Set[str] = {
+MAKER_3DPRINTER_EXACT_BLOCKS: Set[str] = {
     "log.bambulab.com",
     "analytics.bambulab.com",
     "tracking.bambulab.com",
     "crash.bambulab.com",
     "e.bambulab.com",
+    "telemetry.creality.com",
+    "log.crealitycloud.com",
+    "analytics.creality.com",
+    "cloud-log.anycubic.com",
+    "telemetry.elegoo.com",
 }
+
+MAKER_3DPRINTER_SUFFIX_BLOCKS: Tuple[str, ...] = (
+    ".log.bambulab.com",
+    ".analytics.bambulab.com",
+    ".log.crealitycloud.com",
+)
+
+# Backward compatibility alias
+BAMBU_EXACT_BLOCKS: Set[str] = MAKER_3DPRINTER_EXACT_BLOCKS
+BAMBU_SUFFIX_BLOCKS: Tuple[str, ...] = MAKER_3DPRINTER_SUFFIX_BLOCKS
 
 # ---------------------------------------------------------------------------
 # 4. ⚡ Steam & PC Gaming Latency / Jitter Optimizer Catalog
@@ -379,24 +394,27 @@ def evaluate_vacuum_telemetry(hostname: str) -> Optional[DeviceShieldMatch]:
             target_category="VACUUM_ROBOT",
             rule_pattern=f"||{h_lower}^",
             risk_score=0.85,
-            description="Vacuum Privacy: blocco upload streaming video, foto e mappe LiDAR su cloud cinese; controllo locale preservato."
+            description="Vacuum Privacy: blocco upload streaming video, foto e mappe LiDAR verso server remoti; navigazione e controllo locale preservati."
         )
     return None
 
 
-def evaluate_bambu_telemetry(hostname: str) -> Optional[DeviceShieldMatch]:
-    """Evaluates whether a domain targets Bambu Lab cloud diagnostic & telemetry uploads."""
+def evaluate_maker_3dprinter_telemetry(hostname: str) -> Optional[DeviceShieldMatch]:
+    """Evaluates whether a domain targets 3D printer diagnostic and cloud telemetry uploads across major brands."""
     h_lower = hostname.lower().strip()
-    if h_lower in BAMBU_EXACT_BLOCKS:
+    if h_lower in MAKER_3DPRINTER_EXACT_BLOCKS or any(h_lower.endswith(s) for s in MAKER_3DPRINTER_SUFFIX_BLOCKS):
         return DeviceShieldMatch(
             domain=h_lower,
-            shield_type="BAMBU_IP_SHIELD",
+            shield_type="MAKER_3DPRINTER",
             target_category="3D_PRINTER",
             rule_pattern=f"||{h_lower}^",
             risk_score=0.80,
-            description="Bambu Lab Stealth: blocco invio log diagnostici e telemetria CAD cloud; LAN MQTT e Home Assistant preservati."
+            description="3D Printer & Maker IP Guard: silenziamento telemetrie e log diagnostici dei produttori; LAN MQTT e slicing locale 100% protetti."
         )
     return None
+
+# Backward compatibility alias
+evaluate_bambu_telemetry = evaluate_maker_3dprinter_telemetry
 
 
 def evaluate_gaming_jitter_telemetry(hostname: str) -> Optional[DeviceShieldMatch]:
@@ -557,7 +575,7 @@ _SHIELD_STATES: Dict[str, Dict[str, Any]] = {
     "caregiver": {"status": "ACTIVE", "paused_until": 0.0},
     "smart_tv": {"status": "ACTIVE", "paused_until": 0.0},
     "kids_bedtime": {"status": "ACTIVE", "paused_until": 0.0},
-    "bambu_maker": {"status": "ACTIVE", "paused_until": 0.0},
+    "maker_3dprinter": {"status": "ACTIVE", "paused_until": 0.0},
     "console_telemetry": {"status": "ACTIVE", "paused_until": 0.0},
     "vacuum_privacy": {"status": "ACTIVE", "paused_until": 0.0},
     "gaming_jitter": {"status": "ACTIVE", "paused_until": 0.0},
@@ -570,6 +588,8 @@ _SHIELD_STATES: Dict[str, Dict[str, Any]] = {
 
 def is_shield_active(shield_id: str) -> bool:
     """Checks whether a specific shield is currently active, handling 1h temporary snooze."""
+    if shield_id == "bambu_maker":
+        shield_id = "maker_3dprinter"
     state = _SHIELD_STATES.get(shield_id)
     if not state:
         return True
@@ -588,6 +608,8 @@ def is_shield_active(shield_id: str) -> bool:
 
 def set_shield_status(shield_id: str, new_status: str) -> Dict[str, Any]:
     """Updates shield status: 'ACTIVE', 'PAUSED_1H' (3600s), or 'DISABLED'."""
+    if shield_id == "bambu_maker":
+        shield_id = "maker_3dprinter"
     if shield_id not in _SHIELD_STATES:
         _SHIELD_STATES[shield_id] = {"status": "ACTIVE", "paused_until": 0.0}
 
@@ -605,6 +627,8 @@ def set_shield_status(shield_id: str, new_status: str) -> Dict[str, Any]:
 
 def get_shield_status(shield_id: str) -> Dict[str, Any]:
     """Retrieves current live status and remaining pause seconds for a shield."""
+    if shield_id == "bambu_maker":
+        shield_id = "maker_3dprinter"
     state = _SHIELD_STATES.get(shield_id, {"status": "ACTIVE", "paused_until": 0.0})
     is_act = is_shield_active(shield_id)
     remaining_sec = max(0, int(state.get("paused_until", 0.0) - time.time())) if state.get("status") == "PAUSED_1H" else 0
@@ -659,12 +683,12 @@ def get_all_shields() -> List[Dict[str, Any]]:
             "domains_sample": ["tiktokv.com", "discordapp.io", "roblox.com", "twitch.tv"]
         },
         {
-            "id": "bambu_maker",
-            "name": "Bambu Lab IP Shield",
+            "id": "maker_3dprinter",
+            "name": "3D Printer & Maker IP Guard",
             "icon": "🖨️",
-            "desc": "Blocco esfiltrazione CAD/log cloud, LAN intatta",
+            "desc": "Silenziamento telemetrie cloud e log diagnostici; LAN e slicing locale 100% protetti",
             "category": "MAKER_IOT",
-            "domains_sample": ["log.bambulab.com", "analytics.bambulab.com", "crash.bambulab.com"]
+            "domains_sample": ["log.bambulab.com", "crash.bambulab.com", "telemetry.creality.com", "log.crealitycloud.com"]
         },
         {
             "id": "console_telemetry",
@@ -763,9 +787,9 @@ def evaluate_device_shield(hostname: str, device_type: Optional[str] = None) -> 
         if match:
             return match
 
-    # 2. Check Bambu Lab IP Shield
-    if is_shield_active("bambu_maker"):
-        match = evaluate_bambu_telemetry(hostname)
+    # 2. Check 3D Printer & Maker IP Guard
+    if is_shield_active("maker_3dprinter"):
+        match = evaluate_maker_3dprinter_telemetry(hostname)
         if match:
             return match
 

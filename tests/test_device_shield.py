@@ -85,11 +85,15 @@ def test_vacuum_privacy_shield():
 
 
 def test_bambu_ip_shield():
-    # Bambu Lab diagnostics and log uploaders
+    # 3D printer diagnostics across Bambu, Creality, Anycubic
     m1 = evaluate_bambu_telemetry("log.bambulab.com")
     assert m1 is not None
-    assert m1.shield_type == "BAMBU_IP_SHIELD"
+    assert m1.shield_type == "MAKER_3DPRINTER"
     assert m1.target_category == "3D_PRINTER"
+
+    m_creality = evaluate_bambu_telemetry("telemetry.creality.com")
+    assert m_creality is not None
+    assert m_creality.shield_type == "MAKER_3DPRINTER"
 
     m2 = evaluate_bambu_telemetry("analytics.bambulab.com")
     assert m2 is not None
@@ -257,7 +261,7 @@ def test_evaluate_device_shield_unified_dispatcher():
 
     r_bambu = evaluate_device_shield("log.bambulab.com")
     assert r_bambu is not None
-    assert r_bambu.shield_type == "BAMBU_IP_SHIELD"
+    assert r_bambu.shield_type == "MAKER_3DPRINTER"
 
     r_vacuum = evaluate_device_shield("log.dreame.tech")
     assert r_vacuum is not None

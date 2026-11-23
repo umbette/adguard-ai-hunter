@@ -35,7 +35,7 @@ ACTIVE_SHIELDS_LIST = [
     {"id": "caregiver", "name": "Caregiver Anti-Phishing", "icon": "👵", "desc": "Protezione SMS fake Poste, SPID, INPS e banche", "status": "ATTIVO"},
     {"id": "smart_tv", "name": "Smart TV Stealth", "icon": "📺", "desc": "Silenziamento ACR, audio sampling Samsung/LG", "status": "ATTIVO"},
     {"id": "kids_bedtime", "name": "Kids Bedtime Blackout", "icon": "🌙", "desc": "Coprifuoco notturno DNS social e gaming", "status": "ATTIVO"},
-    {"id": "bambu_maker", "name": "Bambu Lab IP Shield", "icon": "🖨️", "desc": "Blocco esfiltrazione CAD/log cloud, LAN intatta", "status": "ATTIVO"},
+    {"id": "maker_3dprinter", "name": "3D Printer & Maker IP Guard", "icon": "🖨️", "desc": "Silenziamento telemetrie cloud e log (Bambu, Creality, Anycubic)", "status": "ATTIVO"},
     {"id": "console_telemetry", "name": "Console Gaming Diagnostics", "icon": "🎮", "desc": "Silenziamento diagnostica e crash report (SysNAND safe)", "status": "ATTIVO"},
     {"id": "vacuum_privacy", "name": "Vacuum Camera & LiDAR", "icon": "🧹", "desc": "Blocco upload video e mappe planimetriche", "status": "ATTIVO"},
     {"id": "gaming_jitter", "name": "Gaming Jitter Optimizer", "icon": "⚡", "desc": "Silenziamento telemetrie launcher Steam/Epic", "status": "ATTIVO"},
@@ -567,6 +567,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         <div class="shields-controls" id="shieldsFilters">
           <button class="filter-btn active" onclick="filterShields('ALL', this)">Tutti (14)</button>
           <button class="filter-btn" onclick="filterShields('PRIVACY', this)">🏠 Smart Home &amp; IoT</button>
+          <button class="filter-btn" onclick="filterShields('MAKER', this)">🛠️ 3D Printing &amp; Maker</button>
           <button class="filter-btn" onclick="filterShields('GAMING', this)">🎮 Gaming &amp; Console</button>
           <button class="filter-btn" onclick="filterShields('FINANCE', this)">🔐 Finanza &amp; Phishing</button>
           <button class="filter-btn" onclick="filterShields('SHOPPING', this)">✈️ Prezzi Dinamici</button>
@@ -895,10 +896,11 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 
       const filtered = shields.filter(s => {
         if (activeFilter === 'ALL') return true;
-        if (activeFilter === 'PRIVACY') return ['HOME_APPLIANCE', 'MAKER_IOT', 'SECURITY_CAM'].includes(s.category);
+        if (activeFilter === 'PRIVACY') return ['HOME_APPLIANCE', 'SECURITY_CAM'].includes(s.category);
+        if (activeFilter === 'MAKER') return ['MAKER_IOT'].includes(s.category);
         if (activeFilter === 'GAMING') return ['GAMING_CONSOLE', 'GAMING_PC'].includes(s.category);
-        if (activeFilter === 'FINANCE') return ['FINANCE_CRYPTO', 'PHISHING_SAFETY', 'CRIME_PREVENTION'].includes(s.category);
-        if (activeFilter === 'SHOPPING') return ['SHOPPING_TRAVEL', 'FAMILY_YOUTH'].includes(s.category);
+        if (activeFilter === 'FINANCE') return ['FINANCE_CRYPTO', 'PHISHING_SAFETY', 'MALWARE_C2'].includes(s.category);
+        if (activeFilter === 'SHOPPING') return ['SHOPPING_TRAVEL', 'FAMILY_YOUTH', 'CONNECTED_CAR'].includes(s.category);
         return true;
       });
 
