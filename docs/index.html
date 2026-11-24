@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RePlug™ — Upcycled Smart Home & Privacy Guardians</title>
+    <meta name="description" content="Transform dormant smartphones into private, zero-cloud sentinels and automated printer guardians. Zero new plastic, 100% local-first.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #090d16;
+            --surface: #111726;
+            --surface-hover: #172033;
+            --border: #1e293b;
+            --border-glow: rgba(0, 229, 153, 0.25);
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --accent: #00e599;
+            --accent-glow: rgba(0, 229, 153, 0.4);
+            --accent-secondary: #00bfa5;
+            --radius-lg: 20px;
+            --radius-md: 12px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--bg);
+            color: var(--text-primary);
+            line-height: 1.6;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .ambient-glow {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 800px;
+            height: 450px;
+            background: radial-gradient(circle, rgba(0, 229, 153, 0.12) 0%, rgba(9, 13, 22, 0) 70%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        nav {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            backdrop-filter: blur(16px);
+            background: rgba(9, 13, 22, 0.8);
+            border-bottom: 1px solid var(--border);
+            padding: 16px 24px;
+        }
+
+        .nav-inner {
+            max-width: 1140px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo-group {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+            color: var(--text-primary);
+        }
+
+        .logo-img {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+        }
+
+        .logo-title {
+            font-size: 1.25rem;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .nav-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 600;
+            transition: color 0.2s ease;
+        }
+
+        .nav-links a:hover {
+            color: var(--accent);
+        }
+
+        .btn-github {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border-radius: 9999px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            text-decoration: none;
+            font-size: 0.85rem;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+
+        .btn-github:hover {
+            border-color: var(--accent);
+            box-shadow: 0 0 16px var(--accent-glow);
+        }
+
+        .hero {
+            position: relative;
+            z-index: 1;
+            max-width: 900px;
+            margin: 80px auto 60px;
+            text-align: center;
+            padding: 0 20px;
+        }
+
+        .badge-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 14px;
+            border-radius: 9999px;
+            background: rgba(0, 229, 153, 0.1);
+            border: 1px solid rgba(0, 229, 153, 0.3);
+            color: var(--accent);
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 24px;
+        }
+
+        .hero h1 {
+            font-size: 3.5rem;
+            font-weight: 800;
+            line-height: 1.15;
+            letter-spacing: -1.5px;
+            margin-bottom: 20px;
+            background: linear-gradient(180deg, #FFFFFF 30%, #94A3B8 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero p {
+            font-size: 1.25rem;
+            color: var(--text-secondary);
+            max-width: 720px;
+            margin: 0 auto 36px;
+        }
+
+        .cta-group {
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .btn-primary {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 14px 28px;
+            border-radius: 9999px;
+            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-secondary) 100%);
+            color: #051410;
+            font-weight: 700;
+            text-decoration: none;
+            box-shadow: 0 4px 20px var(--accent-glow);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 28px rgba(0, 229, 153, 0.6);
+        }
+
+        .btn-secondary {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 14px 24px;
+            border-radius: 9999px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+
+        .btn-secondary:hover {
+            background: var(--surface-hover);
+            border-color: var(--text-secondary);
+        }
+
+        .impact-banner {
+            max-width: 960px;
+            margin: 40px auto 80px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 24px 32px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 24px;
+            text-align: center;
+        }
+
+        .impact-metric {
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--accent);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .impact-label {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            font-weight: 600;
+            margin-top: 4px;
+        }
+
+        .section-title {
+            text-align: center;
+            margin-bottom: 48px;
+        }
+
+        .section-title h2 {
+            font-size: 2.2rem;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            margin-bottom: 12px;
+        }
+
+        .section-title p {
+            color: var(--text-secondary);
+            font-size: 1.05rem;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .container {
+            max-width: 1140px;
+            margin: 0 auto;
+            padding: 0 24px 100px;
+        }
+
+        .modules-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 28px;
+        }
+
+        .module-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 32px;
+            transition: all 0.2s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .module-card:hover {
+            border-color: var(--border-glow);
+            transform: translateY(-4px);
+        }
+
+        .module-tag {
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--accent);
+            margin-bottom: 12px;
+            display: inline-block;
+        }
+
+        .module-card h3 {
+            font-size: 1.4rem;
+            font-weight: 700;
+            margin-bottom: 12px;
+        }
+
+        .module-card p {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        .feature-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .feature-list li {
+            font-size: 0.88rem;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .feature-list li::before {
+            content: "✓";
+            color: var(--accent);
+            font-weight: 800;
+        }
+
+        .manifesto-box {
+            background: linear-gradient(180deg, #131c2e 0%, var(--surface) 100%);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 48px;
+            max-width: 860px;
+            margin: 0 auto;
+            text-align: left;
+        }
+
+        .manifesto-box h3 {
+            font-size: 1.8rem;
+            margin-bottom: 20px;
+            color: var(--text-primary);
+        }
+
+        .manifesto-box p {
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+            font-size: 1.05rem;
+        }
+
+        .waitlist-section {
+            background: radial-gradient(circle at center, rgba(0, 229, 153, 0.08) 0%, rgba(17, 23, 38, 0) 70%);
+            border-top: 1px solid var(--border);
+            padding: 80px 24px;
+            text-align: center;
+        }
+
+        .waitlist-form {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            max-width: 480px;
+            margin: 28px auto 0;
+            flex-wrap: wrap;
+        }
+
+        .waitlist-input {
+            flex: 1;
+            min-width: 240px;
+            padding: 14px 18px;
+            border-radius: 9999px;
+            border: 1px solid var(--border);
+            background: var(--surface);
+            color: var(--text-primary);
+            font-size: 0.95rem;
+            outline: none;
+        }
+
+        .waitlist-input:focus {
+            border-color: var(--accent);
+        }
+
+        footer {
+            border-top: 1px solid var(--border);
+            padding: 40px 24px;
+            text-align: center;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        footer a {
+            color: var(--text-primary);
+            text-decoration: none;
+        }
+
+        footer a:hover {
+            color: var(--accent);
+        }
+
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 2.5rem;
+            }
+            .hero p {
+                font-size: 1.05rem;
+            }
+            .manifesto-box {
+                padding: 28px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="ambient-glow"></div>
+
+    <nav>
+        <div class="nav-inner">
+            <a href="#" class="logo-group">
+                <img src="assets/replug_logo.jpg" alt="RePlug Logo" class="logo-img">
+                <span class="logo-title">RePlug™</span>
+            </a>
+            <div class="nav-links">
+                <a href="#modules">Ecosystem</a>
+                <a href="#manifesto">Manifesto</a>
+                <a href="https://github.com/umbette/sentinel" target="_blank" class="btn-github">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+                    Star on GitHub
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <header class="hero">
+        <div class="badge-pill">Zero New Plastic • 100% Local Privacy</div>
+        <h1>Don't buy new plastic.<br>RePlug your old smartphone.</h1>
+        <p>Over 5 billion functional smartphones sit dormant in drawers. RePlug gives them a new mission as ethical, zero-cloud sentinels for your privacy, home security, and printer health.</p>
+        <div class="cta-group">
+            <a href="https://github.com/umbette/sentinel" target="_blank" class="btn-primary">
+                Explore on GitHub
+            </a>
+            <a href="#waitlist" class="btn-secondary">
+                Join Early Access
+            </a>
+        </div>
+    </header>
+
+    <div class="impact-banner">
+        <div>
+            <div class="impact-metric">185g</div>
+            <div class="impact-label">E-Waste Prevented per Phone</div>
+        </div>
+        <div>
+            <div class="impact-metric">0 Bytes</div>
+            <div class="impact-label">Cloud Telemetry Egressed</div>
+        </div>
+        <div>
+            <div class="impact-metric">15+</div>
+            <div class="impact-label">Hardware & IoT Cyber Shields</div>
+        </div>
+        <div>
+            <div class="impact-metric">&euro;120+</div>
+            <div class="impact-label">Average Annual Savings</div>
+        </div>
+    </div>
+
+    <main class="container" id="modules">
+        <div class="section-title">
+            <h2>The RePlug™ Ecosystem</h2>
+            <p>Specialized standalone modules engineered to bring high-value capabilities without monthly fees or proprietary hardware.</p>
+        </div>
+
+        <div class="modules-grid">
+            <div class="module-card">
+                <span class="module-tag">Module 01 • Available Now</span>
+                <h3>RePlug Sentinel Shield</h3>
+                <p>Turns your network into an impenetrable fortress. Integrates local DNS with smart home automation to silence surveillance and stop predatory price gouging.</p>
+                <ul class="feature-list">
+                    <li>15 deterministic shields for Smart TVs, robot vacuums & cars</li>
+                    <li>Anti-dynamic pricing protection for flights & hotels</li>
+                    <li>Elderly anti-phishing SMS gateway with vocal alerts</li>
+                    <li>Zero-knowledge 1-click unbreak catalog</li>
+                </ul>
+            </div>
+
+            <div class="module-card">
+                <span class="module-tag">Module 02 • Core Flagship</span>
+                <h3>RePlug Nozzle Guardian</h3>
+                <p>Protects your inkjet EcoTank and 3D printer heads from drying out or clogging during inactivity, completely automated via local IPP protocol.</p>
+                <ul class="feature-list">
+                    <li>Automated micro-purge before ink crystallization</li>
+                    <li>Vision AI test-pattern inspection with phone camera</li>
+                    <li>3D printer first-layer adhesion & thermal watchdog</li>
+                    <li>Works 100% offline without vendor cloud subscriptions</li>
+                </ul>
+            </div>
+
+            <div class="module-card">
+                <span class="module-tag">Module 03 • In Development</span>
+                <h3>Blackout & Disaster Beacon</h3>
+                <p>Uses the internal battery and sensors to detect power cuts, turn on emergency lighting, and relay critical alerts when the grid goes down.</p>
+                <ul class="feature-list">
+                    <li>Automatic hallway emergency light trigger</li>
+                    <li>Freezer thaw danger alert via low-cost data SIM</li>
+                    <li>Offline mesh intercom during connectivity outages</li>
+                    <li>Zero dependence on external power supply</li>
+                </ul>
+            </div>
+        </div>
+    </main>
+
+    <section class="container" id="manifesto">
+        <div class="manifesto-box">
+            <h3>The Anti-Obsolescence Manifesto</h3>
+            <p><strong>1. Zero New Plastic:</strong> If a device already in your drawer can perform the task, we will never ask you to buy another piece of disposable plastic.</p>
+            <p><strong>2. Dignity for Silicon:</strong> A 2018 smartphone octa-core processor is ten times more capable than contemporary commercial IoT gadgets. It just needs the right local software.</p>
+            <p><strong>3. Absolute Local Privacy:</strong> No surveillance, no cloud subscription traps, no behavioral ad profiling. Your data never leaves your home network.</p>
+        </div>
+    </section>
+
+    <section class="waitlist-section" id="waitlist">
+        <h2>Be Part of the Upcycling Revolution</h2>
+        <p style="color: var(--text-secondary); margin-top: 8px;">Get notified when mobile builds are released for Android & iOS.</p>
+        <form class="waitlist-form" onsubmit="event.preventDefault(); alert('Thank you for joining RePlug! You are on the early access list.');">
+            <input type="email" required placeholder="Enter your email address" class="waitlist-input">
+            <button type="submit" class="btn-primary">Join Waitlist</button>
+        </form>
+    </section>
+
+    <footer>
+        <p>© 2026 Umberto & RePlug Contributors. All Rights Reserved. RePlug™ is an independent open-ecosystem initiative.</p>
+        <p style="margin-top: 8px;"><a href="https://github.com/umbette/sentinel">GitHub Repository</a> • <a href="https://github.com/umbette/sentinel/blob/main/LICENSE">MIT License</a></p>
+    </footer>
+</body>
+</html>

@@ -1,24 +1,63 @@
-# Sentinel
+# RePlug™ — The Ethical Upcycling Ecosystem
+
+<div align="center">
+  <img src="assets/replug_logo.jpg" alt="RePlug Logo" width="160" style="border-radius: 20px; margin-bottom: 14px;" />
+  <h3>Give Old Tech a New Mission — Upcycled. Connected. Secure.</h3>
+  <p>
+    <strong>Transform dormant smartphones and tablets into local-first cyber sentinels and automated printer guardians.</strong>
+  </p>
+  <p>
+    <a href="https://umbette.github.io/sentinel/"><strong>🌐 Official Website & Landing Page</strong></a> •
+    <a href="#-ecosystem-modules"><strong>📦 Ecosystem Modules</strong></a> •
+    <a href="#-quick-start"><strong>🚀 Quick Start</strong></a> •
+    <a href="#-ownership-intellectual-property--trademark"><strong>⚖️ Authorship & IP</strong></a>
+  </p>
+</div>
 
 [![CI Test Suite](https://github.com/umbette/sentinel/actions/workflows/ci.yml/badge.svg)](https://github.com/umbette/sentinel/actions/workflows/ci.yml)
 [![Tests: 98 Passing](https://img.shields.io/badge/Tests-98%20Passing-brightgreen.svg)](tests/)
 [![Shields: 15 Active](https://img.shields.io/badge/Shields-15%20Active-10b981.svg)](#-15-specialized-cyber-defense--privacy-shields)
-[![Privacy: Zero--Telemetry](https://img.shields.io/badge/Privacy-Zero--Telemetry-blueviolet.svg)](#-zero-knowledge-device-catalog--1-click-unbreak)
+[![Privacy: Zero-Telemetry](https://img.shields.io/badge/Privacy-Zero--Telemetry-blueviolet.svg)](#-zero-knowledge-device-catalog--1-click-unbreak)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Home Assistant Add-on](https://img.shields.io/badge/Home%20Assistant-Add--on%20Ready-blue?logo=home-assistant)](ha-addon/)
-[![DNS Resolvers](https://img.shields.io/badge/DNS%20Resolvers-AdGuard%20%7C%20Pi--hole%20%7C%20Native-green)](https://adguard.com/adguard-home.html)
-[![Manifest V3](https://img.shields.io/badge/Chrome%20Extension-Sentinel%20Shield-yellow?logo=google-chrome)](extension/)
 [![Docker](https://img.shields.io/badge/Docker-Multi--Arch-2496ED?logo=docker)](Dockerfile)
 
-**Autonomous Cyber Defense Console, 15 Hardware & IoT Privacy Shields, Dynamic Pricing Protection, Crypto Vault & Zero-Knowledge Unbreak Catalog for Home Assistant & Local DNS Resolvers.**
+---
 
-Sentinel is a 100% local-first, zero-cloud-telemetry network security watchdog, behavioral anomaly detector, and privacy console. It bridges your local DNS resolver (**AdGuard Home**, **Pi-hole**, or standalone) with your smart home automation (**Home Assistant**) to detect and neutralize real-world threats that static blocklists miss: predatory airline/hotel price discrimination, Web3 wallet drainers, deceptive family phishing SMS links, automotive driver profiling, and invasive smart gadget surveillance.
+## 🌍 The RePlug™ Cultural Thesis
+
+Over **5 billion functional smartphones and tablets** sit abandoned in drawers across the world. Each houses an ARM multi-core processor, gigabytes of RAM, high-resolution cameras, Wi-Fi/Bluetooth radios, and an internal battery.
+
+Meanwhile, big tech continues selling disposable plastic dongles and proprietary hubs with weak silicon, mandatory cloud subscriptions, and planned obsolescence.
+
+**RePlug rejects this cycle.**  
+By giving dormant devices a high-value purpose as local-first appliances, RePlug delivers enterprise-grade domestic security, printer longevity, and ambient automation:
+* **Zero New Plastic:** We never require buying new hardware when existing devices can perform the job.
+* **100% Local-First:** All processing, threat analysis, and camera inspection runs locally without external cloud telemetry.
+* **Anti-Obsolescence:** Silicon manufactured in 2018 is ten times more powerful than contemporary retail IoT gadgets.
+
+---
+
+## 📦 Ecosystem Modules
+
+RePlug is built as a modular architecture where each repurposed device operates as a sovereign sentinel:
+
+### 1. 🛡️ RePlug Sentinel Shield *(Included in this repository)*
+Autonomous cyber-defense console, 15 specialized IoT privacy shields, dynamic pricing protection, and zero-knowledge unbreak catalog for local DNS resolvers (**AdGuard Home**, **Pi-hole**) and **Home Assistant**.
+
+### 2. 🖨️ RePlug Nozzle Guardian *(Core Flagship)*
+Automated maintenance engine for inkjet (CISS EcoTank) and 3D printers. Connects over the local network via **IPP (Internet Printing Protocol)** to detect inactivity, schedule micro-purges before printhead ink dries out, and uses the device camera for visual nozzle test-pattern and first-layer inspection.
+
+### 3. ⚡ Ambient Sentinels *(Roadmap)*
+* **Blackout Beacon:** Detects grid power failure, lights up an emergency path with its flash LED, and sends outage alerts.
+* **Acoustic Sentry:** Edge-AI audio classifier listening for smoke detector alarms, glass break sounds, or water leaks.
+* **Optical Meter OCR:** Mounts over analog water/gas utility meters to provide daily local consumption readings without smart-meter replacement.
 
 ---
 
 ## 🌟 15 Specialized Cyber Defense & Privacy Shields
 
-Sentinel operates an array of 15 deterministic, specialized hardware and software shields engineered to neutralize targeted data exfiltration without breaking device usability:
+Sentinel Shield operates an array of 15 deterministic, specialized shields engineered to neutralize targeted data exfiltration without breaking usability:
 
 | Shield | Category | Scope & Protection Target |
 | :--- | :--- | :--- |
@@ -32,7 +71,7 @@ Sentinel operates an array of 15 deterministic, specialized hardware and softwar
 | **🚗 Automotive Driving Telemetry** | Connected Vehicles | Neutralizes sneaky driving telematics and broker exfiltration (LexisNexis, Verisk, Otonomo) that inflate auto insurance premiums. |
 | **🍳 Smart Kitchen & Appliance** | Kitchen Appliances | Silences telemetry, usage habit profiling, and ad SDKs embedded inside smart air fryers (Cosori, VeSync) and kitchen appliances. |
 | **📷 Budget IP Camera P2P Isolation** | Security Cameras | Shuts down vulnerable P2P cloud relay channels (`iotcplatform.com`, `p2pcam.net`) on generic cameras while keeping local RTSP open. |
-| **🧒 Youth Safeguard** | Child Safety | Blocks predatory videochats (Omegle/OmeTV clones), CSGO skin gambling, and generative AI nudify/deepfake platforms. |
+| **🧒 Youth Safeguard** | Child Safety | Blocks predatory videochats (Omegle/OmeTV clones), CSGO skin gambling, and generative AI platforms. |
 | **📦 Badbox & Budget AOSP TV C2** | Factory Malware | Cuts Command & Control (C2) beaconing on sub-€150 Android TV boxes infected with Badbox/Peachpit residential proxy botnets. |
 | **⚡ Gaming Latency Optimizer** | PC Gaming | Suppresses background launcher telemetries (Steam, Epic Games) that create micro-stutter and network jitter during competitive matches. |
 | **🌙 Kids Bedtime Blackout** | Parental Controls | Scheduled evening DNS blackout for TikTok, Instagram, Roblox, and Discord on children's devices. |
@@ -42,11 +81,11 @@ Sentinel operates an array of 15 deterministic, specialized hardware and softwar
 
 ## 🔓 Zero-Knowledge Device Catalog & 1-Click Unbreak
 
-IoT devices (robot vacuums, connected cars, 3D printers, smart plugs) have two distinct traffic streams:
-1. **Control Plane (Essential):** Mobile companion app authentication, pairing, cleaning start/stop, status synchronization (`api-app.*.ecouser.net`, `api-eu.roborock.com`, `owner-api.teslamotors.com`).
-2. **Data Plane (Predatory):** Video uploads, LiDAR maps, driving broker profiling, and ad attribution (`datasink.*`, `telemetry.lexisnexis.com`).
+IoT devices have two distinct traffic streams:
+1. **Control Plane (Essential):** Mobile companion app authentication, pairing, cleaning start/stop, status synchronization.
+2. **Data Plane (Predatory):** Video uploads, LiDAR maps, driving broker profiling, and ad attribution.
 
-Broad blocklists frequently break companion mobile apps when away from home. Sentinel solves this through an **open crowdsourced catalog and a 3-tier Zero-Knowledge unbreak system**:
+Sentinel solves over-blocking through an open crowdsourced catalog and a 3-tier Zero-Knowledge unbreak system:
 
 ```
 +─────────────────────────────────────────────────────────────────────────────────+
@@ -72,13 +111,13 @@ Broad blocklists frequently break companion mobile apps when away from home. Sen
 ```
 
 * **Open Community Catalog:** Check [`sources/device_profiles.yaml`](sources/device_profiles.yaml) for verified device rules covering Ecovacs, Roborock, Dreame, Bambu Lab, Prusa, Cosori, Shelly, Tuya, Tesla, BMW, and Smart TVs.
-* **100% Zero-Tracking Guarantee:** Sentinel contains **zero telemetry, zero phone-home pings, and zero analytics**. Community feedback is strictly voluntary, client-generated, and verified open source.
+* **100% Zero-Tracking Guarantee:** RePlug contains **zero telemetry, zero phone-home pings, and zero analytics**.
 
 ---
 
 ## 🚗 In-Car Projection & Mobile VPN Compatibility
 
-Using full-tunnel WireGuard or OpenVPN while driving can trigger **Android Auto Communication Error 21** or wireless Apple CarPlay disconnects because local P2P Wi-Fi Direct sockets (`192.168.43.1`) are inadvertently captured by the VPN routing table.
+Using full-tunnel WireGuard or OpenVPN while driving can trigger **Android Auto Communication Error 21** or wireless Apple CarPlay disconnects because local P2P Wi-Fi Direct sockets (`192.168.43.1`) are captured by the VPN routing table.
 
 * Read the complete technical guide and 30-second Split-Tunneling fix in **[docs/MOBILE_AND_AUTO_VPN_GUIDE.md](docs/MOBILE_AND_AUTO_VPN_GUIDE.md)**.
 
@@ -88,12 +127,10 @@ Using full-tunnel WireGuard or OpenVPN while driving can trigger **Android Auto 
 
 Sentinel includes a responsive, dark-mode web console running at `http://localhost:8087` (and embedded natively in Home Assistant sidebar via Ingress):
 
-* **🔍 Scan on Demand & Network Exposure Audit:** 1-Click security audit that probes active Wi-Fi/LAN devices, checks for exposed dangerous ports (Telnet 23, RTSP 554, HTTP 80/8080) and rogue UPnP port mappings, performs retrospective Threat Hunting on recent DNS logs, and calculates an overall **Network Health Score (0–100)** with actionable remediation tips.
-* **🔔 Zero-Trust Device Admission Control:** Instant push notification when an unknown device connects to the Wi-Fi for the first time. Optional quarantine mode holds new devices in strict isolation until approved with 1-click **[ ✅ Approva ]** or quarantined with **[ ⛔ Isola ]**.
-* **🏆 4-Vector Offenders Analytics (Hall of Shame):** Breaks down threats and exfiltration attempts across **Brand** (Samsung, Xiaomi, Ecovacs, Criteo), **Device** (which domestic gadget generated the requests), **Category** (Smart TV ACR, Vacuum LiDAR, Dynamic Pricing, Crypto Drainers), and **Geography** (destination country of exfiltrated data: China 🇨🇳, South Korea 🇰🇷, USA 🇺🇸, France 🇫🇷).
-* **Brave Shields / Pi-hole Style Metrics:** Total DNS queries, Blocked threat ratio (%), Estimated € Dynamic Pricing savings, and active shield health.
-* **Interactive Threat & Unbreak Center:** Live list of top intercepted domains with 1-click **[ 🔓 Sblocca ]** and **[ 📢 Segnala ]** buttons.
-* **Network Device Leaderboard:** Contextual device icons, IP, category, and real-time protection/admission status across all network clients.
+* **🔍 Scan on Demand & Network Exposure Audit:** Probes active LAN devices, checks exposed ports (Telnet 23, RTSP 554, HTTP 80/8080) and UPnP mappings, and calculates an overall **Network Health Score (0–100)**.
+* **🔔 Zero-Trust Device Admission Control:** Instant push notification when an unknown device connects to the Wi-Fi for the first time with 1-click **[ ✅ Approva ]** or **[ ⛔ Isola ]**.
+* **🏆 4-Vector Offenders Analytics:** Breaks down threats across **Brand**, **Device**, **Category**, and **Geography**.
+* **Metrics & Unbreak Center:** Live list of top intercepted domains with 1-click unblock buttons.
 
 ---
 
@@ -134,7 +171,7 @@ Sentinel includes a responsive, dark-mode web console running at `http://localho
 
 ---
 
-## 🚀 Installation & Deployment
+## 🚀 Installation & Quick Start
 
 ### Option A: Home Assistant Add-on (Recommended)
 
@@ -143,7 +180,7 @@ Sentinel includes a responsive, dark-mode web console running at `http://localho
    ```text
    https://github.com/umbette/sentinel
    ```
-3. Select **Sentinel Core**, configure your DNS credentials, and click **Start**. The dashboard will appear directly in your Home Assistant sidebar via Ingress.
+3. Select **Sentinel Core**, configure your DNS credentials, and click **Start**.
 
 ### Option B: Docker Compose (Standalone Server / Proxmox / Unraid)
 
@@ -152,20 +189,6 @@ git clone https://github.com/umbette/sentinel.git
 cd sentinel
 cp .env.example .env
 cp config.example.yaml config.yaml
-```
-
-Configure `.env`:
-```ini
-ADGUARD_USERNAME=admin
-ADGUARD_PASSWORD=your_password
-HASS_TOKEN=your_home_assistant_token
-HASS_NOTIFY_SERVICE=notify
-GEMINI_API_KEY=your_gemini_api_key
-DATA_DIR=/app/data
-```
-
-Launch with Docker Compose:
-```bash
 docker compose up -d
 ```
 
@@ -178,29 +201,13 @@ Access the Cyber Defense Console at `http://your-server-ip:8087`.
 For endpoint protection when traveling or using public Wi-Fi outside your home network, this repository includes **Sentinel Shield**, an ultra-lightweight Manifest V3 Chrome/Edge extension located in [`extension/`](extension/).
 
 * **Declarative Net Request (DNR):** 0 host permissions required (`action: "block"`).
-* **Zero Cloud Telemetry:** Operates 100% offline using a compiled snapshot of the Public Suffix List (8,700+ suffixes) and verified brand heuristics (37 financial, postal, e-commerce, cloud, and energy brands).
-* **1-Click Session Bypass:** Built-in collision-free unblocking for false positives.
-
-To install in developer mode:
-1. Open `chrome://extensions/` and enable **Developer mode**.
-2. Click **Load unpacked** and select the [`extension/`](extension/) directory.
-
----
-
-## 📡 Community Filter Blacklist
-
-Sentinel compiles high-confidence IoCs and confirmed algorithmic threat domains into a standard DNS blocklist:
-
-* **Filter URL:**  
-  `https://raw.githubusercontent.com/umbette/sentinel/main/filters/threat_blacklist.txt`
-
-Add this URL directly into your DNS resolver (Filters ➔ DNS Blocklists) for static upstream blocking.
+* **Zero Cloud Telemetry:** Operates 100% offline using a compiled snapshot of the Public Suffix List (8,700+ suffixes) and verified brand heuristics.
 
 ---
 
 ## 🧪 Test Suite & Verification
 
-The codebase is thoroughly validated by comprehensive automated test suites:
+The codebase is validated by automated test suites:
 
 ```bash
 # Run Python backend unit, integration, and Selenium headless e2e tests (89 tests)
@@ -214,6 +221,9 @@ node tests/test_extension_runtime.mjs
 
 ---
 
-## 📄 License
+## ⚖️ Ownership, Intellectual Property & Trademark
 
-Distributed under the [MIT License](LICENSE). Contributions, bug reports, and device profile pull requests are welcome!
+* **Original Concept & System Architecture:** Conceived, designed, and authored by **Umberto** (`umbette`) & contributors.
+* **Prior Art & Thesis:** Prior art established for the repurposing of consumer mobile devices as autonomous, local-first IoT maintenance agents and privacy sentinels.
+* **Trademark:** **RePlug™** and the RePlug Infinity-Ascension logo are trademarks owned by Umberto.
+* **Code License:** The software codebase is licensed under the [MIT License](LICENSE).
