@@ -3,23 +3,68 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RePlug™ — Upcycled Smart Home & Privacy Guardians</title>
-    <meta name="description" content="Transform dormant smartphones into private, zero-cloud sentinels and automated printer guardians. Zero new plastic, 100% local-first.">
+    <title>RePlug™ — Ethical Smartphone Upcycling for Smart Home Defense &amp; Printer Care</title>
+    <meta name="description" content="Transform dormant smartphones into local-first cyber sentinels (Sentinel Shield) and automated inkjet/3D printer guardians (Nozzle Guardian). Zero new plastic, 100% zero-cloud privacy.">
+    <meta name="author" content="Umberto (umbette)">
+    <meta name="keywords" content="RePlug, Sentinel Shield, Nozzle Guardian, smartphone upcycling, anti e-waste, local privacy, Home Assistant, AdGuard Home, CISS printer maintenance, EcoTank, IPP">
+    <link rel="canonical" href="https://umbette.github.io/sentinel/">
+    <link rel="icon" type="image/png" href="assets/replug_icon.png">
+
+    <!-- Open Graph / Social Media -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://umbette.github.io/sentinel/">
+    <meta property="og:title" content="RePlug™ — Upcycled. Connected. Secure.">
+    <meta property="og:description" content="Don't buy new plastic gadgets. Repurpose dormant smartphones into autonomous cyber sentinels and automated printer guardians — 100% local, zero cloud.">
+    <meta property="og:image" content="https://umbette.github.io/sentinel/assets/replug_og_banner.png">
+    <meta property="og:image:width" content="1280">
+    <meta property="og:image:height" content="640">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="RePlug™ — Upcycled Smart Home &amp; Privacy Guardians">
+    <meta name="twitter:description" content="Zero new plastic. 100% local-first privacy. Meet RePlug Sentinel Shield &amp; Nozzle Guardian.">
+    <meta name="twitter:image" content="https://umbette.github.io/sentinel/assets/replug_og_banner.png">
+
+    <!-- Structured Data (JSON-LD) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "RePlug",
+      "alternateName": ["RePlug Sentinel Shield", "RePlug Nozzle Guardian"],
+      "applicationCategory": "SecurityApplication",
+      "operatingSystem": "Linux, Docker, Home Assistant, ChromeOS, Android",
+      "url": "https://umbette.github.io/sentinel/",
+      "author": {
+        "@type": "Person",
+        "name": "Umberto",
+        "url": "https://github.com/umbette"
+      },
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "EUR"
+      }
+    }
+    </script>
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg: #090d16;
-            --surface: #111726;
-            --surface-hover: #172033;
+            --bg: #090d14;
+            --surface: #101622;
+            --surface-alt: #0d121c;
+            --surface-hover: #162033;
             --border: #1e293b;
-            --border-glow: rgba(0, 229, 153, 0.25);
+            --border-glow: rgba(0, 229, 153, 0.3);
             --text-primary: #f8fafc;
             --text-secondary: #94a3b8;
             --accent: #00e599;
-            --accent-glow: rgba(0, 229, 153, 0.4);
+            --accent-glow: rgba(0, 229, 153, 0.35);
             --accent-secondary: #00bfa5;
+            --danger-muted: #f87171;
             --radius-lg: 20px;
             --radius-md: 12px;
         }
@@ -30,8 +75,12 @@
             padding: 0;
         }
 
+        html {
+            scroll-behavior: smooth;
+        }
+
         body {
-            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
             background-color: var(--bg);
             color: var(--text-primary);
             line-height: 1.6;
@@ -44,9 +93,9 @@
             top: 0;
             left: 50%;
             transform: translateX(-50%);
-            width: 800px;
-            height: 450px;
-            background: radial-gradient(circle, rgba(0, 229, 153, 0.12) 0%, rgba(9, 13, 22, 0) 70%);
+            width: 860px;
+            height: 460px;
+            background: radial-gradient(circle, rgba(0, 229, 153, 0.13) 0%, rgba(9, 13, 20, 0) 70%);
             pointer-events: none;
             z-index: 0;
         }
@@ -56,9 +105,9 @@
             top: 0;
             z-index: 100;
             backdrop-filter: blur(16px);
-            background: rgba(9, 13, 22, 0.8);
+            background: rgba(9, 13, 20, 0.85);
             border-bottom: 1px solid var(--border);
-            padding: 16px 24px;
+            padding: 14px 24px;
         }
 
         .nav-inner {
@@ -80,18 +129,20 @@
         .logo-img {
             width: 36px;
             height: 36px;
-            border-radius: 8px;
+            border-radius: 9px;
+            border: 1px solid rgba(0, 229, 153, 0.25);
         }
 
         .logo-title {
-            font-size: 1.25rem;
+            font-family: 'Outfit', 'Plus Jakarta Sans', sans-serif;
+            font-size: 1.35rem;
             font-weight: 800;
             letter-spacing: -0.5px;
         }
 
         .nav-links {
             display: flex;
-            gap: 20px;
+            gap: 22px;
             align-items: center;
         }
 
@@ -115,7 +166,7 @@
             border-radius: 9999px;
             background: var(--surface);
             border: 1px solid var(--border);
-            color: var(--text-primary);
+            color: var(--text-primary) !important;
             text-decoration: none;
             font-size: 0.85rem;
             font-weight: 600;
@@ -130,10 +181,24 @@
         .hero {
             position: relative;
             z-index: 1;
-            max-width: 900px;
-            margin: 80px auto 60px;
+            max-width: 920px;
+            margin: 72px auto 48px;
             text-align: center;
             padding: 0 20px;
+        }
+
+        .hero-emblem-wrap {
+            display: inline-flex;
+            justify-content: center;
+            margin-bottom: 24px;
+        }
+
+        .hero-emblem {
+            width: 88px;
+            height: 88px;
+            border-radius: 22px;
+            border: 1px solid var(--border-glow);
+            box-shadow: 0 12px 36px rgba(0, 229, 153, 0.16);
         }
 
         .badge-pill {
@@ -145,29 +210,31 @@
             background: rgba(0, 229, 153, 0.1);
             border: 1px solid rgba(0, 229, 153, 0.3);
             color: var(--accent);
-            font-size: 0.8rem;
-            font-weight: 700;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.78rem;
+            font-weight: 600;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 24px;
+            letter-spacing: 0.6px;
+            margin-bottom: 22px;
         }
 
         .hero h1 {
-            font-size: 3.5rem;
+            font-family: 'Outfit', 'Plus Jakarta Sans', sans-serif;
+            font-size: 3.6rem;
             font-weight: 800;
-            line-height: 1.15;
+            line-height: 1.12;
             letter-spacing: -1.5px;
-            margin-bottom: 20px;
-            background: linear-gradient(180deg, #FFFFFF 30%, #94A3B8 100%);
+            margin-bottom: 22px;
+            background: linear-gradient(180deg, #FFFFFF 35%, #94A3B8 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
 
         .hero p {
-            font-size: 1.25rem;
+            font-size: 1.2rem;
             color: var(--text-secondary);
             max-width: 720px;
-            margin: 0 auto 36px;
+            margin: 0 auto 34px;
         }
 
         .cta-group {
@@ -180,25 +247,30 @@
         .btn-primary {
             display: inline-flex;
             align-items: center;
+            justify-content: center;
             gap: 8px;
             padding: 14px 28px;
             border-radius: 9999px;
             background: linear-gradient(135deg, var(--accent) 0%, var(--accent-secondary) 100%);
             color: #051410;
             font-weight: 700;
+            font-size: 0.95rem;
             text-decoration: none;
+            border: none;
+            cursor: pointer;
             box-shadow: 0 4px 20px var(--accent-glow);
             transition: transform 0.2s ease, box-shadow 0.2s ease;
         }
 
         .btn-primary:hover {
             transform: translateY(-2px);
-            box-shadow: 0 6px 28px rgba(0, 229, 153, 0.6);
+            box-shadow: 0 6px 28px rgba(0, 229, 153, 0.55);
         }
 
         .btn-secondary {
             display: inline-flex;
             align-items: center;
+            justify-content: center;
             gap: 8px;
             padding: 14px 24px;
             border-radius: 9999px;
@@ -206,6 +278,7 @@
             border: 1px solid var(--border);
             color: var(--text-primary);
             font-weight: 600;
+            font-size: 0.95rem;
             text-decoration: none;
             transition: all 0.2s ease;
         }
@@ -216,14 +289,14 @@
         }
 
         .impact-banner {
-            max-width: 960px;
-            margin: 40px auto 80px;
+            max-width: 980px;
+            margin: 36px auto 84px;
             background: var(--surface);
             border: 1px solid var(--border);
             border-radius: var(--radius-lg);
-            padding: 24px 32px;
+            padding: 28px 32px;
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 24px;
             text-align: center;
         }
@@ -248,7 +321,8 @@
         }
 
         .section-title h2 {
-            font-size: 2.2rem;
+            font-family: 'Outfit', 'Plus Jakarta Sans', sans-serif;
+            font-size: 2.25rem;
             font-weight: 800;
             letter-spacing: -0.5px;
             margin-bottom: 12px;
@@ -257,14 +331,14 @@
         .section-title p {
             color: var(--text-secondary);
             font-size: 1.05rem;
-            max-width: 600px;
+            max-width: 640px;
             margin: 0 auto;
         }
 
         .container {
             max-width: 1140px;
             margin: 0 auto;
-            padding: 0 24px 100px;
+            padding: 0 24px 96px;
         }
 
         .modules-grid {
@@ -280,7 +354,8 @@
             padding: 32px;
             transition: all 0.2s ease;
             position: relative;
-            overflow: hidden;
+            display: flex;
+            flex-direction: column;
         }
 
         .module-card:hover {
@@ -289,10 +364,11 @@
         }
 
         .module-tag {
-            font-size: 0.75rem;
-            font-weight: 700;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.72rem;
+            font-weight: 600;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.6px;
             color: var(--accent);
             margin-bottom: 12px;
             display: inline-block;
@@ -316,74 +392,211 @@
             display: flex;
             flex-direction: column;
             gap: 10px;
+            margin-top: auto;
         }
 
         .feature-list li {
             font-size: 0.88rem;
             color: var(--text-primary);
             display: flex;
-            align-items: center;
-            gap: 8px;
+            align-items: flex-start;
+            gap: 9px;
         }
 
         .feature-list li::before {
             content: "✓";
             color: var(--accent);
             font-weight: 800;
+            flex-shrink: 0;
         }
 
+        /* Comparison Table */
+        .compare-wrap {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+        }
+
+        .compare-table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        .compare-table th,
+        .compare-table td {
+            padding: 18px 24px;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.95rem;
+        }
+
+        .compare-table th {
+            background: var(--surface-alt);
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .compare-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .col-bad {
+            color: var(--danger-muted);
+        }
+
+        .col-good {
+            color: var(--accent);
+            font-weight: 600;
+        }
+
+        /* Steps */
+        .steps-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 24px;
+        }
+
+        .step-card {
+            background: var(--surface-alt);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 26px;
+        }
+
+        .step-num {
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--accent);
+            font-weight: 700;
+            font-size: 0.85rem;
+            margin-bottom: 10px;
+        }
+
+        .step-card h4 {
+            font-size: 1.15rem;
+            margin-bottom: 8px;
+        }
+
+        .step-card p {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        /* Manifesto */
         .manifesto-box {
             background: linear-gradient(180deg, #131c2e 0%, var(--surface) 100%);
             border: 1px solid var(--border);
             border-radius: var(--radius-lg);
-            padding: 48px;
-            max-width: 860px;
+            padding: 44px;
+            max-width: 900px;
             margin: 0 auto;
-            text-align: left;
         }
 
         .manifesto-box h3 {
+            font-family: 'Outfit', 'Plus Jakarta Sans', sans-serif;
             font-size: 1.8rem;
             margin-bottom: 20px;
-            color: var(--text-primary);
         }
 
         .manifesto-box p {
             color: var(--text-secondary);
             margin-bottom: 16px;
-            font-size: 1.05rem;
+            font-size: 1.03rem;
         }
 
+        /* Early Access & Deployment Section */
         .waitlist-section {
-            background: radial-gradient(circle at center, rgba(0, 229, 153, 0.08) 0%, rgba(17, 23, 38, 0) 70%);
+            background: radial-gradient(circle at center, rgba(0, 229, 153, 0.08) 0%, rgba(16, 22, 34, 0) 70%);
             border-top: 1px solid var(--border);
-            padding: 80px 24px;
-            text-align: center;
+            padding: 84px 24px;
         }
 
-        .waitlist-form {
+        .action-cards {
+            max-width: 980px;
+            margin: 36px auto 0;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 24px;
+            text-align: left;
+        }
+
+        .action-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 28px;
+        }
+
+        .action-card h3 {
+            font-size: 1.25rem;
+            margin-bottom: 10px;
+        }
+
+        .action-card p {
+            color: var(--text-secondary);
+            font-size: 0.92rem;
+            margin-bottom: 18px;
+        }
+
+        .code-snippet {
+            background: #070a10;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 14px 16px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            color: #cbd5e1;
+            overflow-x: auto;
+            margin-bottom: 16px;
+            position: relative;
+        }
+
+        .copy-btn {
+            background: var(--surface-hover);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: border-color 0.2s;
+        }
+
+        .copy-btn:hover {
+            border-color: var(--accent);
+        }
+
+        .track-selector {
             display: flex;
-            justify-content: center;
-            gap: 12px;
-            max-width: 480px;
-            margin: 28px auto 0;
             flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 18px;
         }
 
-        .waitlist-input {
-            flex: 1;
-            min-width: 240px;
-            padding: 14px 18px;
+        .track-chip {
+            padding: 8px 14px;
             border-radius: 9999px;
             border: 1px solid var(--border);
-            background: var(--surface);
-            color: var(--text-primary);
-            font-size: 0.95rem;
-            outline: none;
+            background: var(--surface-alt);
+            color: var(--text-secondary);
+            font-size: 0.82rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
         }
 
-        .waitlist-input:focus {
+        .track-chip.active {
             border-color: var(--accent);
+            background: rgba(0, 229, 153, 0.14);
+            color: var(--accent);
+        }
+
+        .inline-note {
+            margin-top: 12px;
+            font-size: 0.8rem;
+            color: var(--accent);
+            min-height: 20px;
         }
 
         footer {
@@ -404,14 +617,18 @@
         }
 
         @media (max-width: 768px) {
-            .hero h1 {
-                font-size: 2.5rem;
+            .nav-links a:not(.btn-github) {
+                display: none;
             }
-            .hero p {
-                font-size: 1.05rem;
+            .hero h1 {
+                font-size: 2.4rem;
             }
             .manifesto-box {
                 padding: 28px;
+            }
+            .compare-table th, .compare-table td {
+                padding: 14px 14px;
+                font-size: 0.85rem;
             }
         }
     </style>
@@ -422,30 +639,36 @@
     <nav>
         <div class="nav-inner">
             <a href="#" class="logo-group">
-                <img src="assets/replug_logo.jpg" alt="RePlug Logo" class="logo-img">
+                <img src="assets/replug_icon.png" alt="RePlug Emblem" class="logo-img">
                 <span class="logo-title">RePlug™</span>
             </a>
             <div class="nav-links">
                 <a href="#modules">Ecosystem</a>
+                <a href="#architecture">How It Works</a>
                 <a href="#manifesto">Manifesto</a>
-                <a href="https://github.com/umbette/sentinel" target="_blank" class="btn-github">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
-                    Star on GitHub
+                <a href="https://github.com/umbette/sentinel" target="_blank" rel="noopener" class="btn-github">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+                    GitHub Repo
                 </a>
             </div>
         </div>
     </nav>
 
     <header class="hero">
-        <div class="badge-pill">Zero New Plastic • 100% Local Privacy</div>
+        <div class="hero-emblem-wrap">
+            <img src="assets/replug_icon.png" alt="RePlug Infinity Ascension Emblem" class="hero-emblem">
+        </div>
+        <div>
+            <span class="badge-pill">Zero New Plastic &bull; 100% Local-First</span>
+        </div>
         <h1>Don't buy new plastic.<br>RePlug your old smartphone.</h1>
-        <p>Over 5 billion functional smartphones sit dormant in drawers. RePlug gives them a new mission as ethical, zero-cloud sentinels for your privacy, home security, and printer health.</p>
+        <p>Over 5 billion functional smartphones sit dormant in drawers. RePlug gives them a new mission as autonomous, zero-cloud sentinels for your network privacy and printer preservation.</p>
         <div class="cta-group">
-            <a href="https://github.com/umbette/sentinel" target="_blank" class="btn-primary">
-                Explore on GitHub
+            <a href="https://github.com/umbette/sentinel" target="_blank" rel="noopener" class="btn-primary">
+                Explore Code on GitHub
             </a>
-            <a href="#waitlist" class="btn-secondary">
-                Join Early Access
+            <a href="#early-access" class="btn-secondary">
+                Deploy Now or Join Alpha
             </a>
         </div>
     </header>
@@ -460,81 +683,204 @@
             <div class="impact-label">Cloud Telemetry Egressed</div>
         </div>
         <div>
-            <div class="impact-metric">15+</div>
-            <div class="impact-label">Hardware & IoT Cyber Shields</div>
+            <div class="impact-metric">15 Shields</div>
+            <div class="impact-label">Deterministic IoT Defenses</div>
         </div>
         <div>
-            <div class="impact-metric">&euro;120+</div>
-            <div class="impact-label">Average Annual Savings</div>
+            <div class="impact-metric">98/98</div>
+            <div class="impact-label">Automated Tests Passing</div>
         </div>
     </div>
 
     <main class="container" id="modules">
         <div class="section-title">
             <h2>The RePlug™ Ecosystem</h2>
-            <p>Specialized standalone modules engineered to bring high-value capabilities without monthly fees or proprietary hardware.</p>
+            <p>Specialized local modules designed to transform existing silicon into dependable household guardians without subscriptions or disposable hubs.</p>
         </div>
 
         <div class="modules-grid">
             <div class="module-card">
-                <span class="module-tag">Module 01 • Available Now</span>
+                <span class="module-tag">Module 01 &bull; Available Now</span>
                 <h3>RePlug Sentinel Shield</h3>
-                <p>Turns your network into an impenetrable fortress. Integrates local DNS with smart home automation to silence surveillance and stop predatory price gouging.</p>
+                <p>Network defense console bridging local DNS resolvers (AdGuard Home / Pi-hole) with Home Assistant to block tracking, telemetry, and predatory pricing.</p>
                 <ul class="feature-list">
-                    <li>15 deterministic shields for Smart TVs, robot vacuums & cars</li>
-                    <li>Anti-dynamic pricing protection for flights & hotels</li>
-                    <li>Elderly anti-phishing SMS gateway with vocal alerts</li>
-                    <li>Zero-knowledge 1-click unbreak catalog</li>
+                    <li>15 deterministic shields for Smart TVs, vacuums, 3D printers &amp; cars</li>
+                    <li>Anti-dynamic pricing protection against travel &amp; hotel price gouging</li>
+                    <li>Caregiver anti-phishing SMS alerts &amp; Crypto RPC integrity vault</li>
+                    <li>Zero-knowledge 1-click unbreak catalog &amp; Scan-on-Demand audit</li>
                 </ul>
             </div>
 
             <div class="module-card">
-                <span class="module-tag">Module 02 • Core Flagship</span>
+                <span class="module-tag">Module 02 &bull; Core Flagship Design</span>
                 <h3>RePlug Nozzle Guardian</h3>
-                <p>Protects your inkjet EcoTank and 3D printer heads from drying out or clogging during inactivity, completely automated via local IPP protocol.</p>
+                <p>Protects inkjet EcoTank (CISS) and 3D printer heads from drying out or failing unattended, operated entirely over local LAN via IPP and camera vision.</p>
                 <ul class="feature-list">
-                    <li>Automated micro-purge before ink crystallization</li>
-                    <li>Vision AI test-pattern inspection with phone camera</li>
-                    <li>3D printer first-layer adhesion & thermal watchdog</li>
-                    <li>Works 100% offline without vendor cloud subscriptions</li>
+                    <li>Idle-window state tracking via RFC 8011 local IPP protocol</li>
+                    <li>Adaptive low-waste micro-purge before ink crystallization</li>
+                    <li>On-device macro vision check for nozzle test &amp; first-layer integrity</li>
+                    <li>Thermal 50%–80% battery ceiling guard via Home Assistant smart plug</li>
                 </ul>
             </div>
 
             <div class="module-card">
-                <span class="module-tag">Module 03 • In Development</span>
-                <h3>Blackout & Disaster Beacon</h3>
-                <p>Uses the internal battery and sensors to detect power cuts, turn on emergency lighting, and relay critical alerts when the grid goes down.</p>
+                <span class="module-tag">Module 03 &bull; Roadmap Nodes</span>
+                <h3>Ambient &amp; Blackout Sentinels</h3>
+                <p>Leverages built-in lithium battery backup, MEMS accelerometers, and microphones cleanly inside RAM for resilience when the grid drops.</p>
                 <ul class="feature-list">
-                    <li>Automatic hallway emergency light trigger</li>
-                    <li>Freezer thaw danger alert via low-cost data SIM</li>
-                    <li>Offline mesh intercom during connectivity outages</li>
-                    <li>Zero dependence on external power supply</li>
+                    <li>Blackout Beacon: emergency LED trigger &amp; freezer thaw warnings</li>
+                    <li>Acoustic Sentry: local smoke/CO siren tonal recognition</li>
+                    <li>Optical Meter OCR: periodic flash-assisted analog meter logging</li>
+                    <li>Offline LAN emergency intercom during external ISP outages</li>
                 </ul>
             </div>
         </div>
     </main>
 
-    <section class="container" id="manifesto">
-        <div class="manifesto-box">
-            <h3>The Anti-Obsolescence Manifesto</h3>
-            <p><strong>1. Zero New Plastic:</strong> If a device already in your drawer can perform the task, we will never ask you to buy another piece of disposable plastic.</p>
-            <p><strong>2. Dignity for Silicon:</strong> A 2018 smartphone octa-core processor is ten times more capable than contemporary commercial IoT gadgets. It just needs the right local software.</p>
-            <p><strong>3. Absolute Local Privacy:</strong> No surveillance, no cloud subscription traps, no behavioral ad profiling. Your data never leaves your home network.</p>
+    <section class="container" id="architecture">
+        <div class="section-title">
+            <h2>How It Works Safely 24/7</h2>
+            <p>Engineered to protect aging lithium batteries while delivering real-time local defense.</p>
+        </div>
+        <div class="steps-grid" style="margin-bottom: 56px;">
+            <div class="step-card">
+                <div class="step-num">STEP 01</div>
+                <h4>Reclaim Old Silicon</h4>
+                <p>Take any retired phone or tablet out of your drawer—multi-core ARM CPUs and optics vastly outperform €80 retail IoT boxes.</p>
+            </div>
+            <div class="step-card">
+                <div class="step-num">STEP 02</div>
+                <h4>Plug Into Local LAN</h4>
+                <p>Connect directly to AdGuard Home, Home Assistant, or network IPP printers with zero external cloud telemetry or port forwarding.</p>
+            </div>
+            <div class="step-card">
+                <div class="step-num">STEP 03</div>
+                <h4>Thermal Battery Guard</h4>
+                <p>A Home Assistant smart-plug loop keeps charge cycling safely between 50% and 80%, preventing 24/7 battery swelling hazards.</p>
+            </div>
+        </div>
+
+        <div class="compare-wrap">
+            <table class="compare-table">
+                <thead>
+                    <tr>
+                        <th>Design Dimension</th>
+                        <th>Retail Plastic IoT Gadgets</th>
+                        <th>RePlug™ Upcycled Ecosystem</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Hardware Footprint</td>
+                        <td class="col-bad">New disposable plastic &amp; weak MCU</td>
+                        <td class="col-good">Zero new plastic — reuses dormant phones</td>
+                    </tr>
+                    <tr>
+                        <td>Data Privacy</td>
+                        <td class="col-bad">Mandatory vendor cloud &amp; telemetry</td>
+                        <td class="col-good">100% local LAN processing, zero cloud leaks</td>
+                    </tr>
+                    <tr>
+                        <td>Printer Maintenance</td>
+                        <td class="col-bad">Manual prints or dried printheads</td>
+                        <td class="col-good">Automated IPP tracking &amp; optical checks</td>
+                    </tr>
+                    <tr>
+                        <td>Pricing &amp; Lock-in</td>
+                        <td class="col-bad">€10–€15/month mandatory subscriptions</td>
+                        <td class="col-good">Open-source core under MIT License</td>
+                    </tr>
+                </tbody>
+            </table>
         </div>
     </section>
 
-    <section class="waitlist-section" id="waitlist">
-        <h2>Be Part of the Upcycling Revolution</h2>
-        <p style="color: var(--text-secondary); margin-top: 8px;">Get notified when mobile builds are released for Android & iOS.</p>
-        <form class="waitlist-form" onsubmit="event.preventDefault(); alert('Thank you for joining RePlug! You are on the early access list.');">
-            <input type="email" required placeholder="Enter your email address" class="waitlist-input">
-            <button type="submit" class="btn-primary">Join Waitlist</button>
-        </form>
+    <section class="container" id="manifesto">
+        <div class="manifesto-box">
+            <h3>The Anti-Obsolescence Manifesto</h3>
+            <p><strong>1. Zero New Plastic:</strong> If hardware already inside your home can handle the workload, selling you a new disposable dongle is environmental waste.</p>
+            <p><strong>2. Dignity for Silicon:</strong> Hardware from 2018 possesses ten times the compute capability of modern commercial smart-home sensors. It deserves sovereign software, not a landfill.</p>
+            <p><strong>3. Privacy Without Subscriptions:</strong> Domestic cameras, DNS logs, and microphones never belong on third-party ad-tech servers.</p>
+            <p style="margin-top: 22px; margin-bottom: 0;">
+                <a href="https://github.com/umbette/sentinel/blob/main/docs/ECOSYSTEM_ARCHITECTURE.md" target="_blank" rel="noopener" style="color: var(--accent); font-weight: 700; text-decoration: none;">
+                    Read Full Public Architecture &amp; Prior Art Spec &rarr;
+                </a>
+            </p>
+        </div>
+    </section>
+
+    <section class="waitlist-section" id="early-access">
+        <div class="section-title" style="margin-bottom: 24px;">
+            <h2>Deploy Today or Join Alpha</h2>
+            <p>Run Sentinel Shield right now on your homelab, or register your interest for upcoming Nozzle Guardian mobile builds.</p>
+        </div>
+
+        <div class="action-cards">
+            <div class="action-card">
+                <span class="module-tag">Available Now &bull; Self-Hosted</span>
+                <h3>Run RePlug Sentinel Shield</h3>
+                <p>Deploy the Docker console or Home Assistant Add-on locally in under two minutes with full unit &amp; browser test verification.</p>
+                <div class="code-snippet" id="cliSnippet">git clone https://github.com/umbette/sentinel.git
+cd sentinel &amp;&amp; cp .env.example .env &amp;&amp; docker compose up -d</div>
+                <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+                    <button type="button" class="copy-btn" onclick="copyCli()">Copy Setup Command</button>
+                    <a href="https://github.com/umbette/sentinel/releases" target="_blank" rel="noopener" style="color: var(--accent); font-size: 0.85rem; font-weight: 600; text-decoration: none;">Watch Releases &rarr;</a>
+                </div>
+                <div class="inline-note" id="copyStatus"></div>
+            </div>
+
+            <div class="action-card">
+                <span class="module-tag">Alpha Onboarding &bull; Zero-Backend</span>
+                <h3>Request Mobile / Nozzle Guardian Alpha</h3>
+                <p>Select the module and hardware profile you want to test to pre-fill a direct GitHub Alpha onboarding ticket (no third-party mailing list tracking).</p>
+                <div class="track-selector" id="trackSelector">
+                    <button type="button" class="track-chip active" data-track="Nozzle Guardian (Inkjet / EcoTank)">Nozzle Guardian (Inkjet)</button>
+                    <button type="button" class="track-chip" data-track="Nozzle Guardian (3D Printer)">3D Printer Guard</button>
+                    <button type="button" class="track-chip" data-track="Full Android Upcycling Bundle">Android Companion</button>
+                </div>
+                <a id="alphaIssueBtn" href="https://github.com/umbette/sentinel/issues/new?template=alpha_access.yml&title=%5BAlpha%20Access%5D%20Nozzle%20Guardian%20(Inkjet%20%2F%20EcoTank)&track=Nozzle%20Guardian%20(Inkjet%20%2F%20EcoTank)" target="_blank" rel="noopener" class="btn-primary" style="width: 100%;">
+                    Join Alpha via GitHub Issue
+                </a>
+                <div class="inline-note" id="alphaNote" style="color: var(--text-secondary);">Opens pre-filled opt-in form directly on GitHub.</div>
+            </div>
+        </div>
     </section>
 
     <footer>
-        <p>© 2026 Umberto & RePlug Contributors. All Rights Reserved. RePlug™ is an independent open-ecosystem initiative.</p>
-        <p style="margin-top: 8px;"><a href="https://github.com/umbette/sentinel">GitHub Repository</a> • <a href="https://github.com/umbette/sentinel/blob/main/LICENSE">MIT License</a></p>
+        <p>&copy; 2026 Umberto (<code>umbette</code>) &amp; RePlug Contributors. Prior Art &amp; Brand Architecture owned by Umberto.</p>
+        <p style="margin-top: 8px;">
+            <a href="https://github.com/umbette/sentinel">GitHub Repository</a> &bull;
+            <a href="https://github.com/umbette/sentinel/blob/main/docs/ECOSYSTEM_ARCHITECTURE.md">Architecture Spec</a> &bull;
+            <a href="https://github.com/umbette/sentinel/blob/main/TRADEMARKS.md">Trademark Policy</a> &bull;
+            <a href="https://github.com/umbette/sentinel/blob/main/SECURITY.md">Security</a> &bull;
+            <a href="https://github.com/umbette/sentinel/blob/main/LICENSE">MIT License</a>
+        </p>
     </footer>
+
+    <script>
+        function copyCli() {
+            const snippet = document.getElementById('cliSnippet').innerText;
+            const status = document.getElementById('copyStatus');
+            navigator.clipboard.writeText(snippet).then(() => {
+                status.textContent = '✓ Command copied to clipboard.';
+                setTimeout(() => { status.textContent = ''; }, 3000);
+            }).catch(() => {
+                status.textContent = 'Select and copy the snippet above.';
+            });
+        }
+
+        const chips = document.querySelectorAll('.track-chip');
+        const issueBtn = document.getElementById('alphaIssueBtn');
+        chips.forEach(chip => {
+            chip.addEventListener('click', () => {
+                chips.forEach(c => c.classList.remove('active'));
+                chip.classList.add('active');
+                const trackName = chip.dataset.track;
+                const title = encodeURIComponent('[Alpha Access] ' + trackName);
+                const track = encodeURIComponent(trackName);
+                issueBtn.href = `https://github.com/umbette/sentinel/issues/new?template=alpha_access.yml&title=${title}&track=${track}`;
+            });
+        });
+    </script>
 </body>
 </html>

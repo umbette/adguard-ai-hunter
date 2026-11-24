@@ -1,16 +1,17 @@
 # RePlug™ — The Ethical Upcycling Ecosystem
 
 <div align="center">
-  <img src="assets/replug_logo.jpg" alt="RePlug Logo" width="160" style="border-radius: 20px; margin-bottom: 14px;" />
+  <img src="assets/replug_logo.png" alt="RePlug Official Logo" width="180" style="border-radius: 22px; margin-bottom: 14px;" />
   <h3>Give Old Tech a New Mission — Upcycled. Connected. Secure.</h3>
   <p>
     <strong>Transform dormant smartphones and tablets into local-first cyber sentinels and automated printer guardians.</strong>
   </p>
   <p>
-    <a href="https://umbette.github.io/sentinel/"><strong>🌐 Official Website & Landing Page</strong></a> •
+    <a href="https://umbette.github.io/sentinel/"><strong>🌐 Official Website</strong></a> •
+    <a href="docs/ECOSYSTEM_ARCHITECTURE.md"><strong>📐 Architecture &amp; Prior Art Spec</strong></a> •
     <a href="#-ecosystem-modules"><strong>📦 Ecosystem Modules</strong></a> •
-    <a href="#-quick-start"><strong>🚀 Quick Start</strong></a> •
-    <a href="#-ownership-intellectual-property--trademark"><strong>⚖️ Authorship & IP</strong></a>
+    <a href="#-installation--quick-start"><strong>🚀 Quick Start</strong></a> •
+    <a href="#-ownership-intellectual-property--trademark"><strong>⚖️ Ownership &amp; IP</strong></a>
   </p>
 </div>
 
@@ -28,36 +29,36 @@
 
 Over **5 billion functional smartphones and tablets** sit abandoned in drawers across the world. Each houses an ARM multi-core processor, gigabytes of RAM, high-resolution cameras, Wi-Fi/Bluetooth radios, and an internal battery.
 
-Meanwhile, big tech continues selling disposable plastic dongles and proprietary hubs with weak silicon, mandatory cloud subscriptions, and planned obsolescence.
+Meanwhile, consumer hardware vendors continue selling disposable plastic dongles and proprietary hubs powered by weak microcontrollers and mandatory cloud subscriptions.
 
 **RePlug rejects this cycle.**  
-By giving dormant devices a high-value purpose as local-first appliances, RePlug delivers enterprise-grade domestic security, printer longevity, and ambient automation:
-* **Zero New Plastic:** We never require buying new hardware when existing devices can perform the job.
-* **100% Local-First:** All processing, threat analysis, and camera inspection runs locally without external cloud telemetry.
-* **Anti-Obsolescence:** Silicon manufactured in 2018 is ten times more powerful than contemporary retail IoT gadgets.
+By converting dormant consumer hardware into sovereign local-first appliances, RePlug delivers network security, printer longevity, and ambient home awareness:
+* **Zero New Plastic:** Never buy single-use IoT hardware when dormant smartphones can perform the task better.
+* **100% Local-First:** DNS filtering, anomaly heuristics, and optical checks execute inside your LAN with zero cloud telemetry.
+* **Thermal Battery Safeguard:** Closed-loop Home Assistant smart-plug integration keeps 24/7 repurposed cells safely between 50% and 80% SoC.
 
 ---
 
 ## 📦 Ecosystem Modules
 
-RePlug is built as a modular architecture where each repurposed device operates as a sovereign sentinel:
+RePlug connects modular local capabilities documented in full inside **[docs/ECOSYSTEM_ARCHITECTURE.md](docs/ECOSYSTEM_ARCHITECTURE.md)**:
 
-### 1. 🛡️ RePlug Sentinel Shield *(Included in this repository)*
-Autonomous cyber-defense console, 15 specialized IoT privacy shields, dynamic pricing protection, and zero-knowledge unbreak catalog for local DNS resolvers (**AdGuard Home**, **Pi-hole**) and **Home Assistant**.
+### 1. 🛡️ RePlug Sentinel Shield *(Production Core — Included in this repository)*
+Autonomous cyber-defense console, 15 specialized IoT privacy shields, anti-dynamic pricing blocker, and zero-knowledge unbreak catalog for local DNS resolvers (**AdGuard Home**, **Pi-hole**) and **Home Assistant**.
 
-### 2. 🖨️ RePlug Nozzle Guardian *(Core Flagship)*
-Automated maintenance engine for inkjet (CISS EcoTank) and 3D printers. Connects over the local network via **IPP (Internet Printing Protocol)** to detect inactivity, schedule micro-purges before printhead ink dries out, and uses the device camera for visual nozzle test-pattern and first-layer inspection.
+### 2. 🖨️ RePlug Nozzle Guardian *(Architecture & Alpha Track)*
+Automated maintenance engine for inkjet (CISS EcoTank) and 3D printers. Polls local printers via **RFC 8011 IPP** to detect true idle duration, schedules ultra-low-waste micro-purges before printhead ink dries out, and leverages on-device camera optics for nozzle test-pattern and first-layer inspection.
 
-### 3. ⚡ Ambient Sentinels *(Roadmap)*
-* **Blackout Beacon:** Detects grid power failure, lights up an emergency path with its flash LED, and sends outage alerts.
-* **Acoustic Sentry:** Edge-AI audio classifier listening for smoke detector alarms, glass break sounds, or water leaks.
-* **Optical Meter OCR:** Mounts over analog water/gas utility meters to provide daily local consumption readings without smart-meter replacement.
+### 3. ⚡ Ambient & Blackout Sentinels *(Roadmap Nodes)*
+* **Blackout Beacon:** Detects grid outages instantly via battery telemetry, illuminates a hallway LED beacon, and dispatches alerts.
+* **Acoustic Sentry:** Edge-AI audio classification for smoke/CO alarms cleanly inside RAM without external streaming.
+* **Optical Meter OCR:** Macro optical logging for legacy analog water/gas meters.
 
 ---
 
 ## 🌟 15 Specialized Cyber Defense & Privacy Shields
 
-Sentinel Shield operates an array of 15 deterministic, specialized shields engineered to neutralize targeted data exfiltration without breaking usability:
+Sentinel Shield operates 15 deterministic defense profiles engineered to neutralize targeted data exfiltration without breaking usability:
 
 | Shield | Category | Scope & Protection Target |
 | :--- | :--- | :--- |
@@ -146,7 +147,7 @@ Sentinel includes a responsive, dark-mode web console running at `http://localho
 |  ┌───────────────────────────────────────────────────────────────────────────┐  |
 |  │              LOCAL DNS RESOLVER (ADGUARD HOME / PI-HOLE)                  │  |
 |  │  - Static Filter Blocklists (HaGeZi, OISD, Sentinel Community)            │  |
-|  │  - 14 Hardware & IoT Shields (140+ targeted user rules)                   │  |
+|  │  - 15 Specialized Hardware, IoT & Venue Shields (140+ targeted rules)     │  |
 |  │  - Low-latency local cache (< 1.2ms)                                      │  |
 |  └─────────────────────────────────────┬─────────────────────────────────────┘  |
 |                                        │ Query Stream                           |
@@ -217,13 +218,13 @@ PYTHONPATH=. .venv/bin/pytest -v tests/
 node tests/test_extension_runtime.mjs
 ```
 
-**Total:** 98 passed (100% pass rate).
+**Total:** 98 passed (89 Python + 9 Manifest V3 runtime tests — 100% pass rate).
 
 ---
 
 ## ⚖️ Ownership, Intellectual Property & Trademark
 
 * **Original Concept & System Architecture:** Conceived, designed, and authored by **Umberto** (`umbette`) & contributors.
-* **Prior Art & Thesis:** Prior art established for the repurposing of consumer mobile devices as autonomous, local-first IoT maintenance agents and privacy sentinels.
-* **Trademark:** **RePlug™** and the RePlug Infinity-Ascension logo are trademarks owned by Umberto.
+* **Prior Art Record:** Established in **[docs/ECOSYSTEM_ARCHITECTURE.md](docs/ECOSYSTEM_ARCHITECTURE.md)** covering unified repurposed-device IPP printer preservation (`Nozzle Guardian`), local network defense (`Sentinel Shield`), and closed-loop 50%–80% battery swelling prevention.
+* **Trademark Policy:** **RePlug™**, **Sentinel Shield™**, **Nozzle Guardian™**, and the Infinity-Ascension emblem are owned by Umberto. See **[TRADEMARKS.md](TRADEMARKS.md)** and **[SECURITY.md](SECURITY.md)**.
 * **Code License:** The software codebase is licensed under the [MIT License](LICENSE).

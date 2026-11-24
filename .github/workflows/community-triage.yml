@@ -101,9 +101,10 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            const comment = `### 👋 Grazie per aver aperto questa issue in AI Hunter!\n\n` +
-              `* Se segnali un **falso positivo** di AdGuard, specifica il client, il dominio e il punteggio di entropia.\n` +
-              `* Se suggerisci una nuova funzionalità o euristica, il team esaminerà la proposta per il prossimo rilascio.`;
+            const comment = `### 👋 Welcome to the RePlug™ Ecosystem!\n\n` +
+              `Thank you for contributing to **RePlug™** (**Sentinel Shield** & **Nozzle Guardian**).\n` +
+              `* If you are requesting **Alpha Access**, our team has logged your hardware profile and will notify you here upon release.\n` +
+              `* If reporting a **DNS false positive**, include the domain, device type, and entropy score if known.`;
             await github.rest.issues.addLabels({
               owner: context.repo.owner,
               repo: context.repo.repo,

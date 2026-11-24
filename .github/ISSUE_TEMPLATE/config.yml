@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Official RePlug Website
+    url: https://umbette.github.io/sentinel/
+    about: Explore ecosystem modules, documentation, and local-first manifesto
+  - name: Security Vulnerability Disclosure
+    url: https://github.com/umbette/sentinel/blob/main/SECURITY.md
+    about: How to privately report security issues in Sentinel Core
