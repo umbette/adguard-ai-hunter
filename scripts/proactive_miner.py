@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-AI Hunter - Proactive Threat Miner & IoC Collector
-Gathers active malware, C2, and zero-day threat domains from trusted community feeds
-with multi-tier zero-trust validation, Public Suffix List enforcement, and 30-day sliding TTL.
+Sentinel Shield - Proactive Threat Miner & IP Collector
+Gathers active malware, phishing, and dedicated C2 IPs/CIDRs from trusted community feeds
+with multi-tier zero-trust validation, CDN/resolver exclusion, PSL enforcement, and sliding TTL.
 """
 
 import os
@@ -22,6 +22,12 @@ import urllib.request
 import idna
 import tldextract
 
+ROOT_DIR = Path(__file__).resolve().parent.parent
+if str(ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(ROOT_DIR))
+
+from src.ip_intel import sanitize_malicious_ip_or_cidr
+
 # Setup Logging
 logging.basicConfig(
     level=logging.INFO,
@@ -30,7 +36,6 @@ logging.basicConfig(
 logger = logging.getLogger("proactive_miner")
 
 # Directory Layout
-ROOT_DIR = Path(__file__).resolve().parent.parent
 SOURCES_DIR = ROOT_DIR / "sources"
 DATA_DIR = ROOT_DIR / "data"
 FILTERS_DIR = ROOT_DIR / "filters"
@@ -42,6 +47,7 @@ FILTERS_DIR.mkdir(parents=True, exist_ok=True)
 DB_PATH = DATA_DIR / "threat_miner.db"
 NEVER_BLOCK_FILE = SOURCES_DIR / "never_block.txt"
 PROACTIVE_OUTPUT_FILE = SOURCES_DIR / "proactive_threats.txt"
+PROACTIVE_IP_OUTPUT_FILE = SOURCES_DIR / "proactive_ips.txt"
 DOMAINS_FILE = SOURCES_DIR / "domains.txt"
 
 # Security & RFC 1123 Constraints (Supporting standard and IDN Punycode TLDs like xn--...)
@@ -315,6 +321,31 @@ class ThreatStateDB:
             conn.execute("CREATE INDEX IF NOT EXISTS idx_ds_expires ON domain_sources(expires_at);")
             conn.execute("CREATE INDEX IF NOT EXISTS idx_ds_source ON domain_sources(source);")
 
+            # Dedicated high-confidence IP & CIDR C2 intelligence tables (14-day sliding TTL)
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS mined_ips (
+                    ip_or_cidr TEXT PRIMARY KEY,
+                    malware_family TEXT,
+                    confidence INTEGER DEFAULT 90,
+                    first_seen TIMESTAMP NOT NULL,
+                    last_seen TIMESTAMP NOT NULL,
+                    status TEXT DEFAULT 'active'
+                );
+            """)
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS ip_sources (
+                    ip_or_cidr TEXT NOT NULL,
+                    source TEXT NOT NULL,
+                    first_seen TIMESTAMP NOT NULL,
+                    last_seen TIMESTAMP NOT NULL,
+                    expires_at TIMESTAMP NOT NULL,
+                    confidence INTEGER DEFAULT 90,
+                    PRIMARY KEY (ip_or_cidr, source)
+                );
+            """)
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_ip_expires ON ip_sources(expires_at);")
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_ip_source ON ip_sources(source);")
+
             # Backward-compatibility migration: if mined_iocs has legacy 'source' column, migrate to domain_sources
             cur = conn.cursor()
             cur.execute("PRAGMA table_info(mined_iocs);")
@@ -430,6 +461,107 @@ class ThreatStateDB:
             cur.execute("SELECT source FROM domain_sources WHERE domain = ? ORDER BY source ASC", (domain,))
             return [row[0] for row in cur.fetchall()]
 
+    def insert_or_update_ips(
+        self,
+        candidates: list[dict],
+        max_surge: int = 500,
+        ttl_days: int = 14,
+    ) -> tuple[int, int]:
+        """Inserts/refreshes validated malicious IPs or C2 CIDRs with shorter TTL to prevent stale IP overlap."""
+        now = datetime.now(timezone.utc)
+        expires = now + timedelta(days=ttl_days)
+        now_str = now.isoformat()
+        expires_str = expires.isoformat()
+
+        new_count = 0
+        updated_count = 0
+
+        with sqlite3.connect(self.db_path) as conn:
+            cur = conn.cursor()
+            for cand in candidates:
+                raw_target = cand.get("ip_or_cidr") or cand.get("ip", "")
+                target = sanitize_malicious_ip_or_cidr(str(raw_target), allow_cidr=True)
+                if not target:
+                    continue
+                source = cand.get("source", "ip_feed")
+                family = cand.get("family", "c2")
+                conf = int(cand.get("confidence", 90))
+
+                cur.execute("SELECT ip_or_cidr FROM mined_ips WHERE ip_or_cidr = ?", (target,))
+                row = cur.fetchone()
+                if not row:
+                    if new_count >= max_surge:
+                        logger.warning(f"IP surge limit of {max_surge} new IPs reached. Halting new additions.")
+                        break
+                    cur.execute(
+                        """
+                        INSERT INTO mined_ips (ip_or_cidr, malware_family, confidence, first_seen, last_seen, status)
+                        VALUES (?, ?, ?, ?, ?, 'active')
+                        """,
+                        (target, family, conf, now_str, now_str),
+                    )
+                    new_count += 1
+                else:
+                    cur.execute(
+                        "UPDATE mined_ips SET last_seen = ?, confidence = MAX(confidence, ?) WHERE ip_or_cidr = ?",
+                        (now_str, conf, target),
+                    )
+                    updated_count += 1
+
+                cur.execute(
+                    """
+                    INSERT INTO ip_sources (ip_or_cidr, source, first_seen, last_seen, expires_at, confidence)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                    ON CONFLICT(ip_or_cidr, source) DO UPDATE SET
+                        last_seen = excluded.last_seen,
+                        expires_at = excluded.expires_at,
+                        confidence = MAX(ip_sources.confidence, excluded.confidence)
+                    """,
+                    (target, source, now_str, now_str, expires_str, conf),
+                )
+            conn.commit()
+        return new_count, updated_count
+
+    def purge_expired_ips(self, eligible_sources: Optional[list[str]] = None) -> int:
+        """Purges expired IP provenance records and removes orphaned entries from mined_ips."""
+        now_str = datetime.now(timezone.utc).isoformat()
+        with sqlite3.connect(self.db_path) as conn:
+            cur = conn.cursor()
+            if eligible_sources is not None:
+                if not eligible_sources:
+                    return 0
+                placeholders = ",".join("?" for _ in eligible_sources)
+                cur.execute(
+                    f"DELETE FROM ip_sources WHERE expires_at < ? AND source IN ({placeholders})",
+                    (now_str, *eligible_sources),
+                )
+            else:
+                cur.execute("DELETE FROM ip_sources WHERE expires_at < ?", (now_str,))
+
+            cur.execute("DELETE FROM mined_ips WHERE ip_or_cidr NOT IN (SELECT DISTINCT ip_or_cidr FROM ip_sources)")
+            purged = cur.rowcount
+            conn.commit()
+        return purged
+
+    def get_active_ips(self, min_confidence: int = 85, bare_only: bool = False) -> list[str]:
+        """Returns active high-confidence malicious IPs (optionally excluding CIDR ranges for browser DNR)."""
+        with sqlite3.connect(self.db_path) as conn:
+            cur = conn.cursor()
+            cur.execute(
+                """
+                SELECT DISTINCT m.ip_or_cidr
+                FROM mined_ips m
+                INNER JOIN ip_sources s ON m.ip_or_cidr = s.ip_or_cidr
+                WHERE m.status = 'active' AND m.confidence >= ?
+                ORDER BY m.ip_or_cidr ASC
+                """,
+                (min_confidence,),
+            )
+            results = [row[0] for row in cur.fetchall()]
+        if bare_only:
+            return [r for r in results if "/" not in r]
+        return results
+
 
 class ProactiveMiner:
     """Main orchestrator: fetches feeds, sanitizes, validates against shield, updates DB and triggers filter compile."""
@@ -444,7 +576,7 @@ class ProactiveMiner:
         logger.info(f"Fetching OpenPhish zero-day feed from {url}...")
         candidates = []
         try:
-            req = urllib.request.Request(url, headers={"User-Agent": "Sentinel-Proactive-Miner/1.0"})
+            req = urllib.request.Request(url, headers={"User-Agent": "Sentinel-Miner/1.0"})
             with urllib.request.urlopen(req, timeout=12) as resp:
                 for line in stream_feed_lines(resp):
                     sanitized = self.sanitizer.sanitize(line)
@@ -469,7 +601,7 @@ class ProactiveMiner:
         logger.info(f"Fetching URLhaus malware mirror feed from {url}...")
         candidates = []
         try:
-            req = urllib.request.Request(url, headers={"User-Agent": "Sentinel-Proactive-Miner/1.0"})
+            req = urllib.request.Request(url, headers={"User-Agent": "Sentinel-Miner/1.0"})
             with urllib.request.urlopen(req, timeout=15) as resp:
                 for line in stream_feed_lines(resp):
                     sanitized = self.sanitizer.sanitize(line)
@@ -592,13 +724,114 @@ class ProactiveMiner:
                     shutil.copy2(backup_file, active_file)
                     logger.warning("Rolled back threat_blacklist.txt to last known good backup.")
 
+    def _fetch_ip_feed(self, feed_name: str, url: str, family: str, confidence: int, timeout: int = 12) -> FeedFetchResult:
+        """Fetches a curated high-confidence IP/CIDR C2 feed, excluding CDNs, resolvers, and private ranges."""
+        logger.info(f"Fetching high-confidence IP feed '{feed_name}' from {url}...")
+        candidates = []
+        try:
+            req = urllib.request.Request(url, headers={"User-Agent": "Sentinel-Miner/1.0"})
+            with urllib.request.urlopen(req, timeout=timeout) as resp:
+                for line in stream_feed_lines(resp):
+                    ip_or_cidr = sanitize_malicious_ip_or_cidr(line, allow_cidr=True)
+                    if ip_or_cidr:
+                        candidates.append({
+                            "ip_or_cidr": ip_or_cidr,
+                            "source": feed_name,
+                            "family": family,
+                            "confidence": confidence,
+                        })
+            logger.info(f"IP feed '{feed_name}' produced {len(candidates)} CDN-safe candidates.")
+            return FeedFetchResult(feed_name=feed_name, candidates=candidates, success=True)
+        except FeedStreamLimitError as e:
+            logger.error(f"IP feed '{feed_name}' rejected due to stream limit: {e}")
+            return FeedFetchResult(feed_name=feed_name, candidates=[], success=False, error=str(e))
+        except Exception as e:
+            logger.warning(f"Failed to fetch IP feed '{feed_name}': {e}")
+            return FeedFetchResult(feed_name=feed_name, candidates=[], success=False, error=str(e))
+
+    def fetch_feodo_c2(self) -> FeedFetchResult:
+        """Abuse.ch Feodo Tracker recommended dedicated botnet C2 IP blocklist."""
+        return self._fetch_ip_feed(
+            feed_name="feodo_c2",
+            url="https://feodotracker.abuse.ch/downloads/ipblocklist_recommended.txt",
+            family="botnet_c2",
+            confidence=95,
+        )
+
+    def fetch_spamhaus_drop(self) -> FeedFetchResult:
+        """Spamhaus Don't Route Or Peer (DROP) dedicated hijacked netblocks."""
+        return self._fetch_ip_feed(
+            feed_name="spamhaus_drop",
+            url="https://www.spamhaus.org/drop/drop.txt",
+            family="hijacked_netblock",
+            confidence=92,
+        )
+
+    def fetch_openphish_ips(self) -> FeedFetchResult:
+        """Extracts bare-IP phishing endpoints directly from OpenPhish (excluding CDN/private IPs)."""
+        return self._fetch_ip_feed(
+            feed_name="openphish_ip",
+            url="https://openphish.com/feed.txt",
+            family="phishing_ip",
+            confidence=88,
+        )
+
+    def _atomic_export_proactive_ips(self, ips: list[str]):
+        temp_file = PROACTIVE_IP_OUTPUT_FILE.with_suffix(".tmp")
+        with open(temp_file, "w", encoding="utf-8", newline="\n") as f:
+            f.write("# Proactive High-Confidence Malicious IPs & C2 CIDRs (14-day TTL, CDN-excluded)\n")
+            f.write(f"# Last Updated: {datetime.now(timezone.utc).isoformat()}\n")
+            f.write(f"# Active Count: {len(ips)}\n\n")
+            for entry in ips:
+                f.write(f"{entry}\n")
+        os.replace(temp_file, PROACTIVE_IP_OUTPUT_FILE)
+        logger.info(f"Atomic export to {PROACTIVE_IP_OUTPUT_FILE} successful ({len(ips)} entries).")
+
+    def run_ip_mining_cycle(self) -> dict:
+        """Runs dedicated high-confidence IP/CIDR feeds without polluting DNS FQDN blocklists."""
+        logger.info("=== STARTING PROACTIVE HIGH-CONFIDENCE IP INTELLIGENCE CYCLE ===")
+        feed_results = [
+            self.fetch_feodo_c2(),
+            self.fetch_spamhaus_drop(),
+            self.fetch_openphish_ips(),
+        ]
+        if all(not r.success for r in feed_results):
+            logger.error("All high-confidence IP feeds failed. Preserving existing IP intelligence DB.")
+            return {"new_ips": 0, "refreshed_ips": 0, "purged_ips": 0, "status": "all_ip_feeds_failed"}
+
+        seen = set()
+        deduped = []
+        for r in feed_results:
+            if not r.success:
+                continue
+            for c in r.candidates:
+                key = (c["ip_or_cidr"], c["source"])
+                if key not in seen:
+                    seen.add(key)
+                    deduped.append(c)
+
+        new_cnt, upd_cnt = self.db.insert_or_update_ips(deduped, max_surge=500, ttl_days=14)
+        successful_sources = [r.feed_name for r in feed_results if r.success]
+        purged_cnt = self.db.purge_expired_ips(eligible_sources=successful_sources)
+        active_ips = self.db.get_active_ips(min_confidence=85, bare_only=False)
+        self._atomic_export_proactive_ips(active_ips)
+
+        return {
+            "candidates_fetched": len(deduped),
+            "new_ips": new_cnt,
+            "refreshed_ips": upd_cnt,
+            "purged_ips": purged_cnt,
+            "total_active_ips": len(active_ips),
+        }
+
 
 if __name__ == "__main__":
     miner = ProactiveMiner()
     stats = miner.run_mining_cycle()
+    ip_stats = miner.run_ip_mining_cycle()
     print("\n" + "=" * 60)
-    print(" 🛡️ PROACTIVE THREAT MINING SUMMARY")
+    print(" 🛡️ PROACTIVE THREAT MINING SUMMARY (DOMAINS + IPS)")
     print("=" * 60)
-    for k, v in stats.items():
+    for k, v in {**stats, **ip_stats}.items():
         print(f" • {k}: {v}")
     print("=" * 60)

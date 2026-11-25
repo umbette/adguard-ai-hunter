@@ -1,8 +1,9 @@
 import json
 import pytest
 from pathlib import Path
-from scripts.export_dnr import compile_dnr_ruleset, MAX_STATIC_RULES
+from scripts.export_dnr import compile_dnr_ruleset, compile_pricing_tracker_ruleset, MAX_STATIC_RULES
 from scripts.proactive_miner import ThreatStateDB
+from src.dynamic_pricing import DYNAMIC_PRICING_NETWORKS
 
 
 def test_export_dnr_ruleset_structure(tmp_path):
@@ -93,3 +94,27 @@ def test_export_dnr_respects_quota(tmp_path, monkeypatch):
     assert res["total_rules"] == 6
     rules = json.loads(rules_out.read_text(encoding="utf-8"))
     assert len(rules) == 6
+
+
+def test_compile_pricing_tracker_ruleset(tmp_path):
+    """Verifies third-party Anti-Dynamic Pricing & Tracker DNR rules require 0 host permissions and exclude main_frame."""
+    out_file = tmp_path / "pricing_trackers.json"
+    res = compile_pricing_tracker_ruleset(output_file=out_file)
+
+    assert out_file.exists()
+    assert res["total_rules"] >= len(DYNAMIC_PRICING_NETWORKS)
+
+    rules = json.loads(out_file.read_text(encoding="utf-8"))
+    compiled_filters = {r["condition"]["urlFilter"] for r in rules}
+    for domain in DYNAMIC_PRICING_NETWORKS:
+        assert f"||{domain}^" in compiled_filters
+
+    rule_ids = set()
+    for r in rules:
+        assert r["id"] not in rule_ids
+        rule_ids.add(r["id"])
+        assert r["action"]["type"] == "block"
+        assert r["condition"]["domainType"] == "thirdParty"
+        assert "main_frame" not in r["condition"]["resourceTypes"]
+        assert "script" in r["condition"]["resourceTypes"]
+        assert "xmlhttprequest" in r["condition"]["resourceTypes"]

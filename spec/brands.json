@@ -1,0 +1,578 @@
+{
+  "poste": {
+    "displayName": "Poste Italiane / BancoPosta",
+    "keywords": [
+      "poste",
+      "postepay",
+      "bancoposta",
+      "posteid"
+    ],
+    "officialDomains": [
+      "poste.it",
+      "postepay.it",
+      "bancoposta.it",
+      "posteitaliane.it",
+      "postecert.it"
+    ],
+    "core_crypto": false
+  },
+  "intesa": {
+    "displayName": "Intesa Sanpaolo",
+    "keywords": [
+      "intesa",
+      "intesasanpaolo",
+      "intesasanpaolobank",
+      "isysmart"
+    ],
+    "officialDomains": [
+      "intesasanpaolo.com",
+      "intesasanpaolobank.com",
+      "isysmart.com"
+    ],
+    "core_crypto": false
+  },
+  "unicredit": {
+    "displayName": "UniCredit",
+    "keywords": [
+      "unicredit",
+      "unicreditbank"
+    ],
+    "officialDomains": [
+      "unicredit.it",
+      "unicredit.eu",
+      "unicreditgroup.eu"
+    ],
+    "core_crypto": false
+  },
+  "bper": {
+    "displayName": "BPER Banca",
+    "keywords": [
+      "bper",
+      "bperbanca"
+    ],
+    "officialDomains": [
+      "bper.it"
+    ],
+    "core_crypto": false
+  },
+  "bancobpm": {
+    "displayName": "Banco BPM",
+    "keywords": [
+      "bancobpm",
+      "webank"
+    ],
+    "officialDomains": [
+      "bancobpm.it",
+      "webank.it"
+    ],
+    "core_crypto": false
+  },
+  "credem": {
+    "displayName": "Credem Banca",
+    "keywords": [
+      "credem",
+      "credemonline"
+    ],
+    "officialDomains": [
+      "credem.it"
+    ],
+    "core_crypto": false
+  },
+  "nexi": {
+    "displayName": "Nexi Payments",
+    "keywords": [
+      "nexi",
+      "cartasi",
+      "nexipay"
+    ],
+    "officialDomains": [
+      "nexi.it",
+      "nexipay.it"
+    ],
+    "core_crypto": false
+  },
+  "fineco": {
+    "displayName": "FinecoBank",
+    "keywords": [
+      "fineco",
+      "finecobank"
+    ],
+    "officialDomains": [
+      "finecobank.com",
+      "fineco.it"
+    ],
+    "core_crypto": false
+  },
+  "mediolanum": {
+    "displayName": "Banca Mediolanum",
+    "keywords": [
+      "mediolanum",
+      "bancamediolanum"
+    ],
+    "officialDomains": [
+      "bancamediolanum.it",
+      "mediolanum.it"
+    ],
+    "core_crypto": false
+  },
+  "widiba": {
+    "displayName": "Banca Widiba",
+    "keywords": [
+      "widiba",
+      "bancawidiba"
+    ],
+    "officialDomains": [
+      "widiba.it"
+    ],
+    "core_crypto": false
+  },
+  "mps": {
+    "displayName": "Banca Monte dei Paschi di Siena",
+    "keywords": [
+      "bancamps",
+      "mpsbanca"
+    ],
+    "officialDomains": [
+      "mps.it",
+      "bancamps.it"
+    ],
+    "core_crypto": false
+  },
+  "bnl": {
+    "displayName": "BNL BNP Paribas",
+    "keywords": [
+      "bnlparibas",
+      "bnpparibas"
+    ],
+    "officialDomains": [
+      "bnl.it",
+      "bnpparibas.it",
+      "bnpparibas.com"
+    ],
+    "core_crypto": false
+  },
+  "chebanca": {
+    "displayName": "CheBanca! / Mediobanca Premier",
+    "keywords": [
+      "chebanca",
+      "mediobancapremier"
+    ],
+    "officialDomains": [
+      "chebanca.it",
+      "mediobancapremier.com"
+    ],
+    "core_crypto": false
+  },
+  "inps": {
+    "displayName": "INPS",
+    "keywords": [
+      "inps",
+      "serviziinps"
+    ],
+    "officialDomains": [
+      "inps.it"
+    ],
+    "core_crypto": false
+  },
+  "agenziaentrate": {
+    "displayName": "Agenzia delle Entrate",
+    "keywords": [
+      "agenziaentrate",
+      "fiscoonline"
+    ],
+    "officialDomains": [
+      "agenziaentrate.gov.it",
+      "agenziadelleentrate.gov.it"
+    ],
+    "core_crypto": false
+  },
+  "spid": {
+    "displayName": "SPID / Identità Digitale",
+    "keywords": [
+      "spid",
+      "lepida",
+      "spiditalia"
+    ],
+    "officialDomains": [
+      "spid.gov.it",
+      "lepida.it",
+      "sielteid.it",
+      "arubapec.it"
+    ],
+    "core_crypto": false
+  },
+  "brt": {
+    "displayName": "BRT Corriere Espresso",
+    "keywords": [
+      "brt",
+      "bartolini",
+      "brtspedizioni"
+    ],
+    "officialDomains": [
+      "brt.it",
+      "dpd.com"
+    ],
+    "core_crypto": false
+  },
+  "dhl": {
+    "displayName": "DHL Express",
+    "keywords": [
+      "dhl",
+      "dhlexpress",
+      "dhltracking"
+    ],
+    "officialDomains": [
+      "dhl.com",
+      "dhl.it"
+    ],
+    "core_crypto": false
+  },
+  "gls": {
+    "displayName": "GLS Italy",
+    "keywords": [
+      "gls",
+      "glsitaly",
+      "glscourier"
+    ],
+    "officialDomains": [
+      "gls-italy.com",
+      "gls-group.com"
+    ],
+    "core_crypto": false
+  },
+  "fedex": {
+    "displayName": "FedEx",
+    "keywords": [
+      "fedex",
+      "fedexpress"
+    ],
+    "officialDomains": [
+      "fedex.com"
+    ],
+    "core_crypto": false
+  },
+  "ups": {
+    "displayName": "UPS",
+    "keywords": [
+      "upscourier"
+    ],
+    "officialDomains": [
+      "ups.com"
+    ],
+    "core_crypto": false
+  },
+  "telepass": {
+    "displayName": "Telepass",
+    "keywords": [
+      "telepass",
+      "telepasspay"
+    ],
+    "officialDomains": [
+      "telepass.com",
+      "telepasspay.com"
+    ],
+    "core_crypto": false
+  },
+  "enel": {
+    "displayName": "Enel / Enel Energia",
+    "keywords": [
+      "enel",
+      "enelenergia"
+    ],
+    "officialDomains": [
+      "enel.it",
+      "enelenergia.it",
+      "enel.com"
+    ],
+    "core_crypto": false
+  },
+  "plenitude": {
+    "displayName": "Eni Plenitude",
+    "keywords": [
+      "plenitude",
+      "eniplenitude"
+    ],
+    "officialDomains": [
+      "eniplenitude.com",
+      "eni.com"
+    ],
+    "core_crypto": false
+  },
+  "paypal": {
+    "displayName": "PayPal",
+    "keywords": [
+      "paypal",
+      "paypalme"
+    ],
+    "officialDomains": [
+      "paypal.com",
+      "paypal.me"
+    ],
+    "core_crypto": false
+  },
+  "amazon": {
+    "displayName": "Amazon",
+    "keywords": [
+      "amazon",
+      "primevideo"
+    ],
+    "officialDomains": [
+      "amazon.it",
+      "amazon.com",
+      "primevideo.com",
+      "amazonaws.com",
+      "media-amazon.com",
+      "ssl-images-amazon.com",
+      "a2z.com"
+    ],
+    "core_crypto": false
+  },
+  "microsoft": {
+    "displayName": "Microsoft",
+    "keywords": [
+      "microsoft",
+      "office365",
+      "onedrive",
+      "sharepoint"
+    ],
+    "officialDomains": [
+      "microsoft.com",
+      "office.com",
+      "onedrive.com",
+      "sharepoint.com",
+      "azure.com",
+      "live.com",
+      "outlook.com",
+      "msn.com"
+    ],
+    "core_crypto": false
+  },
+  "google": {
+    "displayName": "Google",
+    "keywords": [
+      "google",
+      "gmail",
+      "googledrive"
+    ],
+    "officialDomains": [
+      "google.com",
+      "google.it",
+      "gmail.com",
+      "youtube.com"
+    ],
+    "core_crypto": false
+  },
+  "apple": {
+    "displayName": "Apple",
+    "keywords": [
+      "apple",
+      "icloud",
+      "appleid"
+    ],
+    "officialDomains": [
+      "apple.com",
+      "icloud.com"
+    ],
+    "core_crypto": false
+  },
+  "netflix": {
+    "displayName": "Netflix",
+    "keywords": [
+      "netflix"
+    ],
+    "officialDomains": [
+      "netflix.com"
+    ],
+    "core_crypto": false
+  },
+  "subito": {
+    "displayName": "Subito.it",
+    "keywords": [
+      "subito",
+      "subitopay"
+    ],
+    "officialDomains": [
+      "subito.it"
+    ],
+    "core_crypto": false
+  },
+  "vinted": {
+    "displayName": "Vinted",
+    "keywords": [
+      "vinted"
+    ],
+    "officialDomains": [
+      "vinted.it",
+      "vinted.com"
+    ],
+    "core_crypto": false
+  },
+  "metamask": {
+    "displayName": "MetaMask",
+    "keywords": [
+      "metamask"
+    ],
+    "officialDomains": [
+      "metamask.io",
+      "metamask.zendesk.com"
+    ],
+    "core_crypto": true
+  },
+  "phantom": {
+    "displayName": "Phantom Wallet",
+    "keywords": [
+      "phantom-wallet",
+      "phantomapp"
+    ],
+    "officialDomains": [
+      "phantom.app",
+      "phantom.com"
+    ],
+    "core_crypto": true
+  },
+  "rabby": {
+    "displayName": "Rabby Wallet",
+    "keywords": [
+      "rabby-wallet"
+    ],
+    "officialDomains": [
+      "rabby.io"
+    ],
+    "core_crypto": true
+  },
+  "uniswap": {
+    "displayName": "Uniswap",
+    "keywords": [
+      "uniswap"
+    ],
+    "officialDomains": [
+      "uniswap.org",
+      "app.uniswap.org"
+    ],
+    "core_crypto": true
+  },
+  "curve": {
+    "displayName": "Curve Finance",
+    "keywords": [
+      "curvefi",
+      "curve-fi"
+    ],
+    "officialDomains": [
+      "curve.fi"
+    ],
+    "core_crypto": true
+  },
+  "aave": {
+    "displayName": "Aave",
+    "keywords": [
+      "aave-app",
+      "aave-finance"
+    ],
+    "officialDomains": [
+      "aave.com",
+      "app.aave.com"
+    ],
+    "core_crypto": true
+  },
+  "lido": {
+    "displayName": "Lido Finance",
+    "keywords": [
+      "lido-fi",
+      "lido-stake"
+    ],
+    "officialDomains": [
+      "lido.fi",
+      "stake.lido.fi"
+    ],
+    "core_crypto": true
+  },
+  "opensea": {
+    "displayName": "OpenSea",
+    "keywords": [
+      "opensea"
+    ],
+    "officialDomains": [
+      "opensea.io"
+    ],
+    "core_crypto": true
+  },
+  "revolut": {
+    "displayName": "Revolut",
+    "keywords": [
+      "revolut"
+    ],
+    "officialDomains": [
+      "revolut.com"
+    ],
+    "core_crypto": false
+  },
+  "binance": {
+    "displayName": "Binance",
+    "keywords": [
+      "binance"
+    ],
+    "officialDomains": [
+      "binance.com",
+      "binance.us",
+      "binance.je"
+    ],
+    "core_crypto": true
+  },
+  "coinbase": {
+    "displayName": "Coinbase",
+    "keywords": [
+      "coinbase"
+    ],
+    "officialDomains": [
+      "coinbase.com",
+      "pro.coinbase.com"
+    ],
+    "core_crypto": true
+  },
+  "kraken": {
+    "displayName": "Kraken",
+    "keywords": [
+      "kraken-exchange"
+    ],
+    "officialDomains": [
+      "kraken.com"
+    ],
+    "core_crypto": true
+  },
+  "ledger": {
+    "displayName": "Ledger",
+    "keywords": [
+      "ledgerlive",
+      "ledger-live",
+      "ledger-support"
+    ],
+    "officialDomains": [
+      "ledger.com",
+      "support.ledger.com"
+    ],
+    "core_crypto": true
+  },
+  "trezor": {
+    "displayName": "Trezor",
+    "keywords": [
+      "trezorsuite",
+      "trezor-suite"
+    ],
+    "officialDomains": [
+      "trezor.io",
+      "suite.trezor.io"
+    ],
+    "core_crypto": true
+  },
+  "blur": {
+    "displayName": "Blur.io",
+    "keywords": [
+      "blur-market",
+      "blur-nft"
+    ],
+    "officialDomains": [
+      "blur.io"
+    ],
+    "core_crypto": true
+  }
+}

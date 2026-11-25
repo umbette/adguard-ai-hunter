@@ -20,7 +20,7 @@ try:
 except ImportError:
     yaml = None
 
-logger = logging.getLogger("ai_hunter.device_shield")
+logger = logging.getLogger("sentinel.device_shield")
 
 @dataclass
 class DeviceShieldMatch:
@@ -95,8 +95,20 @@ DEVICE_PROFILES_PATH = os.path.join(
 )
 
 
+_PROFILE_CATEGORY_MAP = {
+    "smart_tv": "smart_tv",
+    "robot_vacuum": "vacuum_privacy",
+    "3d_printer": "maker_3dprinter",
+    "smart_kitchen": "smart_appliance",
+    "smart_home": "smart_appliance",
+    "automotive": "car_telemetry",
+    "hospitality_network": "public_venue_guest",
+}
+DYNAMIC_PROFILE_BLOCKS: Dict[str, Set[str]] = {}
+
+
 def load_device_profiles(filepath: Optional[str] = None) -> List[Dict[str, Any]]:
-    """Loads device profiles from sources/device_profiles.yaml and populates ESSENTIAL_COMPANION_ALLOWLIST."""
+    """Loads device profiles from sources/device_profiles.yaml into allowlists and category blocklists."""
     if yaml is None:
         return []
     target_path = filepath or DEVICE_PROFILES_PATH
@@ -111,6 +123,13 @@ def load_device_profiles(filepath: Optional[str] = None) -> List[Dict[str, Any]]
                 for domain in control.get("allowed_domains", []):
                     if domain:
                         ESSENTIAL_COMPANION_ALLOWLIST.add(domain.lower().strip())
+                cat_key = _PROFILE_CATEGORY_MAP.get(str(dev.get("category", "")).lower().strip())
+                if cat_key:
+                    bucket = DYNAMIC_PROFILE_BLOCKS.setdefault(cat_key, set())
+                    data_plane = dev.get("data_plane", {})
+                    for domain in data_plane.get("blocked_domains", []):
+                        if domain:
+                            bucket.add(domain.lower().strip())
             return devices
     except Exception as e:
         logger.warning(f"Failed to load device profiles from {target_path}: {e}")
@@ -387,7 +406,8 @@ evaluate_nintendo_telemetry = evaluate_gaming_console_telemetry
 def evaluate_vacuum_telemetry(hostname: str) -> Optional[DeviceShieldMatch]:
     """Evaluates whether a domain targets vacuum video, LiDAR, or floorplan cloud uploaders."""
     h_lower = hostname.lower().strip()
-    if h_lower in VACUUM_EXACT_BLOCKS or any(h_lower.endswith(s) for s in VACUUM_SUFFIX_BLOCKS):
+    extra = DYNAMIC_PROFILE_BLOCKS.get("vacuum_privacy", set())
+    if h_lower in VACUUM_EXACT_BLOCKS or h_lower in extra or any(h_lower.endswith(s) for s in VACUUM_SUFFIX_BLOCKS):
         return DeviceShieldMatch(
             domain=h_lower,
             shield_type="VACUUM_PRIVACY",
@@ -402,7 +422,8 @@ def evaluate_vacuum_telemetry(hostname: str) -> Optional[DeviceShieldMatch]:
 def evaluate_maker_3dprinter_telemetry(hostname: str) -> Optional[DeviceShieldMatch]:
     """Evaluates whether a domain targets 3D printer diagnostic and cloud telemetry uploads across major brands."""
     h_lower = hostname.lower().strip()
-    if h_lower in MAKER_3DPRINTER_EXACT_BLOCKS or any(h_lower.endswith(s) for s in MAKER_3DPRINTER_SUFFIX_BLOCKS):
+    extra = DYNAMIC_PROFILE_BLOCKS.get("maker_3dprinter", set())
+    if h_lower in MAKER_3DPRINTER_EXACT_BLOCKS or h_lower in extra or any(h_lower.endswith(s) for s in MAKER_3DPRINTER_SUFFIX_BLOCKS):
         return DeviceShieldMatch(
             domain=h_lower,
             shield_type="MAKER_3DPRINTER",
@@ -435,7 +456,8 @@ def evaluate_gaming_jitter_telemetry(hostname: str) -> Optional[DeviceShieldMatc
 def evaluate_appliance_telemetry(hostname: str) -> Optional[DeviceShieldMatch]:
     """Evaluates whether a domain targets smart appliance profiling and ad tracking networks."""
     h_lower = hostname.lower().strip()
-    if h_lower in APPLIANCE_EXACT_BLOCKS or any(h_lower.endswith(s) for s in APPLIANCE_SUFFIX_BLOCKS):
+    extra = DYNAMIC_PROFILE_BLOCKS.get("smart_appliance", set())
+    if h_lower in APPLIANCE_EXACT_BLOCKS or h_lower in extra or any(h_lower.endswith(s) for s in APPLIANCE_SUFFIX_BLOCKS):
         return DeviceShieldMatch(
             domain=h_lower,
             shield_type="APPLIANCE_PRIVACY",
@@ -480,7 +502,8 @@ def evaluate_youth_safeguard_telemetry(hostname: str) -> Optional[DeviceShieldMa
 def evaluate_automotive_telemetry(hostname: str) -> Optional[DeviceShieldMatch]:
     """Evaluates whether a domain targets driving telemetry data brokers or insurance profiling."""
     h_lower = hostname.lower().strip()
-    if h_lower in AUTOMOTIVE_EXACT_BLOCKS or any(h_lower.endswith(s) for s in AUTOMOTIVE_SUFFIX_BLOCKS):
+    extra = DYNAMIC_PROFILE_BLOCKS.get("car_telemetry", set())
+    if h_lower in AUTOMOTIVE_EXACT_BLOCKS or h_lower in extra or any(h_lower.endswith(s) for s in AUTOMOTIVE_SUFFIX_BLOCKS):
         return DeviceShieldMatch(
             domain=h_lower,
             shield_type="AUTOMOTIVE_TELEMETRY",
@@ -551,10 +574,44 @@ PUBLIC_VENUE_SUFFIX_BLOCKS: Tuple[str, ...] = (
 )
 
 
+SMART_TV_EXACT_BLOCKS: Set[str] = {
+    "samsungacr.com",
+    "smetrics.samsung.com",
+    "config.samsungads.com",
+    "lcprd1.samsungcloudsolution.net",
+    "emp-ad.lgsmartad.com",
+    "ibs.lgappstv.com",
+    "rdx2.lgtvsdp.com",
+}
+
+SMART_TV_SUFFIX_BLOCKS: Tuple[str, ...] = (
+    ".samsungacr.com",
+    ".samsungads.com",
+    ".lgsmartad.com",
+)
+
+
+def evaluate_smart_tv_telemetry(hostname: str) -> Optional[DeviceShieldMatch]:
+    """Evaluates whether a domain targets Smart TV ACR, audio sampling, or home-screen ad insertion."""
+    h_lower = hostname.lower().strip()
+    extra = DYNAMIC_PROFILE_BLOCKS.get("smart_tv", set())
+    if h_lower in SMART_TV_EXACT_BLOCKS or h_lower in extra or any(h_lower.endswith(s) for s in SMART_TV_SUFFIX_BLOCKS):
+        return DeviceShieldMatch(
+            domain=h_lower,
+            shield_type="SMART_TV_STEALTH",
+            target_category="SMART_TV",
+            rule_pattern=f"||{h_lower}^",
+            risk_score=0.85,
+            description="Smart TV Stealth: blocco telemetria ACR Samsung/LG e sampling audio; app streaming preservate.",
+        )
+    return None
+
+
 def evaluate_public_venue_shield(hostname: str) -> Optional[DeviceShieldMatch]:
     """Evaluates whether a domain targets public guest abuse (torrent bootstrap trackers, cryptomining, video-ad bandwidth hogs)."""
     h_lower = hostname.lower().strip()
-    if h_lower in PUBLIC_VENUE_EXACT_BLOCKS or any(h_lower.endswith(s) for s in PUBLIC_VENUE_SUFFIX_BLOCKS):
+    extra = DYNAMIC_PROFILE_BLOCKS.get("public_venue_guest", set())
+    if h_lower in PUBLIC_VENUE_EXACT_BLOCKS or h_lower in extra or any(h_lower.endswith(s) for s in PUBLIC_VENUE_SUFFIX_BLOCKS):
         return DeviceShieldMatch(
             domain=h_lower,
             shield_type="PUBLIC_VENUE_GUEST",
@@ -584,6 +641,7 @@ _SHIELD_STATES: Dict[str, Dict[str, Any]] = {
     "youth_safeguard": {"status": "ACTIVE", "paused_until": 0.0},
     "car_telemetry": {"status": "ACTIVE", "paused_until": 0.0},
     "badbox_malware": {"status": "ACTIVE", "paused_until": 0.0},
+    "public_venue_guest": {"status": "ACTIVE", "paused_until": 0.0},
 }
 
 def is_shield_active(shield_id: str) -> bool:
@@ -712,7 +770,7 @@ def get_all_shields() -> List[Dict[str, Any]]:
             "icon": "⚡",
             "desc": "Silenziamento telemetrie launcher Steam/Epic",
             "category": "GAMING_PC",
-            "domains_sample": ["telemetry.valve.net", "epicgames-analytics.com", "ea-telemetry.com"]
+            "domains_sample": ["crash.steampowered.com", "telemetry.steampowered.com", "datarouter.ol.epicgames.com", "pin-river.data.ea.com"]
         },
         {
             "id": "smart_appliance",
@@ -753,6 +811,14 @@ def get_all_shields() -> List[Dict[str, Any]]:
             "desc": "Neutralizzazione malware preinstallato di fabbrica",
             "category": "MALWARE_C2",
             "domains_sample": ["cbty2021.com", "b2c.aospbox.net", "mykingbox.com"]
+        },
+        {
+            "id": "public_venue_guest",
+            "name": "Public Venue & Guest Policy",
+            "icon": "🍕",
+            "desc": "Blocco cryptomining, tracker P2P e ad-video su Wi-Fi ospiti; preserva POS e comande",
+            "category": "HOSPITALITY_NETWORK",
+            "domains_sample": ["tracker.opentrackr.org", "coinhive.com", "adcolony.com"]
         }
     ]
 
@@ -841,9 +907,16 @@ def evaluate_device_shield(hostname: str, device_type: Optional[str] = None) -> 
         if match:
             return match
 
+    # 10.5 Check Smart TV Stealth Telemetry
+    if is_shield_active("smart_tv"):
+        match = evaluate_smart_tv_telemetry(hostname)
+        if match:
+            return match
+
     # 11. Check Public Venue & Guest Network Policy Guard
-    match = evaluate_public_venue_shield(hostname)
-    if match:
-        return match
+    if is_shield_active("public_venue_guest"):
+        match = evaluate_public_venue_shield(hostname)
+        if match:
+            return match
 
     return None

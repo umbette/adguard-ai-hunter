@@ -14,14 +14,21 @@ def audit_engine(temp_storage):
 
 @pytest.mark.asyncio
 async def test_audit_devices_baseline_and_storage(audit_engine, temp_storage):
-    # Running audit without active network should return baseline devices and save to storage
+    # Honest cold-start: empty storage returns 0 devices without fabricating sample hosts
     res = await audit_engine.audit_devices(session=None)
-    assert res["total_devices"] >= 3
-    assert res["approved_count"] >= 3
+    assert res["total_devices"] == 0
+    assert res["approved_count"] == 0
     assert res["pending_count"] == 0
-    assert len(res["devices"]) >= 3
+    assert res["devices"] == []
 
-    # Add a pending device
+    # Add real approved and pending devices
+    temp_storage.upsert_device(
+        ip="192.168.1.1",
+        hostname="Router Gateway",
+        category="GATEWAY",
+        icon="🌐",
+        default_status="APPROVED"
+    )
     temp_storage.upsert_device(
         ip="192.168.1.185",
         hostname="Unknown ESP32 Board",
@@ -31,6 +38,8 @@ async def test_audit_devices_baseline_and_storage(audit_engine, temp_storage):
     )
 
     res2 = await audit_engine.audit_devices(session=None)
+    assert res2["total_devices"] == 2
+    assert res2["approved_count"] == 1
     assert res2["pending_count"] == 1
     assert any(d["ip"] == "192.168.1.185" and d["approval_status"] == "PENDING" for d in res2["devices"])
 

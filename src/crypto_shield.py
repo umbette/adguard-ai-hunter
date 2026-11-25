@@ -11,6 +11,7 @@ from:
    local configuration file without leaking portfolio affiliations to public git.
 """
 
+import json
 import os
 import re
 import time
@@ -33,9 +34,9 @@ class CryptoThreatMatch:
     description: str
 
 # ------------------------------------------------------------------------------
-# 1. Default Public Protected Brands (Ubiquitous Industry Protocols & Benchmarks)
+# 1. Default Public Protected Brands (Compiled from SSOT spec/brands.json)
 # ------------------------------------------------------------------------------
-DEFAULT_PROTECTED_CRYPTO_BRANDS: Dict[str, Dict] = {
+_FALLBACK_PROTECTED_CRYPTO_BRANDS: Dict[str, Dict] = {
     "metamask": {
         "displayName": "MetaMask",
         "officialDomains": ["metamask.io", "metamask.zendesk.com"],
@@ -151,13 +152,69 @@ DEFAULT_ESSENTIAL_TRANSACTION_INFRASTRUCTURE: Set[str] = {
 # ------------------------------------------------------------------------------
 # 3. Known signature patterns of automated wallet drainers & phishing kits
 # ------------------------------------------------------------------------------
-DEFAULT_DRAINER_REGEX_PATTERNS: List[Tuple[re.Pattern, str, str]] = [
+_FALLBACK_DRAINER_REGEX_PATTERNS: List[Tuple[re.Pattern, str, str]] = [
     (re.compile(r"(^|[-_0-9\.])(claim[-_]?airdrop|airdrop[-_]?claim)([-_0-9\.]|$)", re.I), "WALLET_DRAINER", "Finto airdrop per autorizzare lo svuotamento del wallet."),
     (re.compile(r"(^|[-_0-9\.])(connect[-_]?wallet|sync[-_]?wallet|rectify[-_]?wallet)([-_0-9\.]|$)", re.I), "WALLET_DRAINER", "Phishing kit di 'rettifica' o 'connessione' wallet."),
     (re.compile(r"(^|[-_0-9\.])(claim[-_]?reward|token[-_]?reward|presale[-_]?token)([-_0-9\.]|$)", re.I), "WALLET_DRAINER", "Esca per minting o presale malevola."),
     (re.compile(r"(^|[-_0-9\.])(ledger[-_]?live[-_]?update|trezor[-_]?firmware|hardware[-_]?wallet[-_]?backup|seed[-_]?phrase[-_]?backup)([-_0-9\.]|$)", re.I), "WALLET_DRAINER", "Falso aggiornamento firmware o backup per estorsione di chiavi o seed phrase."),
     (re.compile(r"(^|[-_0-9\.])(rwa[-_]?yield|property[-_]?token|asset[-_]?token|token[-_]?dividend)([-_0-9\.]|$)", re.I), "WALLET_DRAINER", "Phishing mirato per finto claim di dividendi o token RWA.")
 ]
+
+_GENERATED_DIR = Path(__file__).resolve().parent / "generated"
+
+
+def _load_ssot_brands() -> Tuple[Dict[str, Dict], Dict[str, Dict]]:
+    """Loads compiled SSOT brands for core crypto protection and caregiver monitoring."""
+    ssot_path = _GENERATED_DIR / "ssot_brands.json"
+    if ssot_path.is_file():
+        try:
+            raw = json.loads(ssot_path.read_text(encoding="utf-8"))
+            if isinstance(raw, dict):
+                crypto_brands: Dict[str, Dict] = {}
+                caregiver_brands: Dict[str, Dict] = {}
+                for k, info in raw.items():
+                    if not isinstance(info, dict):
+                        continue
+                    entry = {
+                        "displayName": str(info.get("displayName", k)),
+                        "officialDomains": [str(d).lower().strip() for d in info.get("officialDomains", [])],
+                        "keywords": [str(kw).lower().strip() for kw in info.get("keywords", [k])],
+                    }
+                    if info.get("core_crypto"):
+                        crypto_brands[k] = entry
+                    else:
+                        caregiver_brands[k] = entry
+                if crypto_brands:
+                    return crypto_brands, caregiver_brands
+        except Exception:
+            pass
+    return dict(_FALLBACK_PROTECTED_CRYPTO_BRANDS), {}
+
+
+def _load_ssot_drainers() -> List[Tuple[re.Pattern, str, str]]:
+    """Loads compiled SSOT drainer regex patterns with fallback to built-in patterns."""
+    ssot_path = _GENERATED_DIR / "ssot_drainers.json"
+    if ssot_path.is_file():
+        try:
+            raw = json.loads(ssot_path.read_text(encoding="utf-8"))
+            if isinstance(raw, list):
+                compiled: List[Tuple[re.Pattern, str, str]] = []
+                for item in raw:
+                    if isinstance(item, dict) and item.get("pattern"):
+                        compiled.append((
+                            re.compile(str(item["pattern"]), re.I),
+                            str(item.get("threat_type", "WALLET_DRAINER")),
+                            str(item.get("description", "Wallet drainer pattern")),
+                        ))
+                if compiled:
+                    return compiled
+        except Exception:
+            pass
+    return list(_FALLBACK_DRAINER_REGEX_PATTERNS)
+
+
+DEFAULT_PROTECTED_CRYPTO_BRANDS, CAREGIVER_PROTECTED_BRANDS = _load_ssot_brands()
+DEFAULT_DRAINER_REGEX_PATTERNS = _load_ssot_drainers()
 
 # ------------------------------------------------------------------------------
 # 4. Runtime Active State & Dynamic Custom Vault Loader
@@ -318,12 +375,18 @@ def evaluate_crypto_financial_threat(hostname: str) -> Optional[CryptoThreatMatc
         if any(h_lower == d or h_lower.endswith(f".{d}") for d in brand.get("officialDomains", [])):
             return None
 
-    # 2. Check for IDN Homograph Punycode traps on protected brands (e.g. xn--uniswp-... -> uniswáp)
+    # 2. Check for IDN Homograph Punycode traps on protected brands (e.g. xn--uniswp-... -> uniswáp / Cyrillic)
     if "xn--" in h_lower:
         try:
             decoded = h_lower.encode("ascii").decode("idna")
-            # Decompose and strip diacritics / combining accents to expose homoglyph base characters
-            normalized = "".join(c for c in unicodedata.normalize("NFKD", decoded) if not unicodedata.combining(c)).lower()
+            # Decompose, strip diacritics, and fold Cyrillic/Greek homoglyphs to ASCII lookalikes
+            homoglyph_map = str.maketrans({
+                "а": "a", "е": "e", "о": "o", "р": "p", "с": "c", "х": "x", "у": "y", "і": "i", "ј": "j", "ѕ": "s",
+                "α": "a", "ο": "o", "ρ": "p", "ε": "e", "τ": "t", "ν": "v", "ι": "i",
+            })
+            normalized = "".join(
+                c for c in unicodedata.normalize("NFKD", decoded) if not unicodedata.combining(c)
+            ).lower().translate(homoglyph_map)
             for brand_key, brand in PROTECTED_CRYPTO_BRANDS.items():
                 if brand_key in normalized:
                     return CryptoThreatMatch(

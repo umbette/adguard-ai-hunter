@@ -1,187 +1,531 @@
 {
-  "poste": {
-    "displayName": "Poste Italiane / BancoPosta",
-    "keywords": ["poste", "postepay", "bancoposta", "posteid"],
-    "officialDomains": ["poste.it", "postepay.it", "bancoposta.it", "posteitaliane.it", "postecert.it"]
-  },
-  "intesa": {
-    "displayName": "Intesa Sanpaolo",
-    "keywords": ["intesa", "intesasanpaolo", "intesasanpaolobank", "isysmart"],
-    "officialDomains": ["intesasanpaolo.com", "intesasanpaolobank.com", "isysmart.com"]
-  },
-  "unicredit": {
-    "displayName": "UniCredit",
-    "keywords": ["unicredit", "unicreditbank"],
-    "officialDomains": ["unicredit.it", "unicredit.eu", "unicreditgroup.eu"]
-  },
-  "bper": {
-    "displayName": "BPER Banca",
-    "keywords": ["bper", "bperbanca"],
-    "officialDomains": ["bper.it"]
-  },
-  "bancobpm": {
-    "displayName": "Banco BPM",
-    "keywords": ["bancobpm", "webank"],
-    "officialDomains": ["bancobpm.it", "webank.it"]
-  },
-  "credem": {
-    "displayName": "Credem Banca",
-    "keywords": ["credem", "credemonline"],
-    "officialDomains": ["credem.it"]
-  },
-  "nexi": {
-    "displayName": "Nexi Payments",
-    "keywords": ["nexi", "cartasi", "nexipay"],
-    "officialDomains": ["nexi.it", "nexipay.it"]
-  },
-  "fineco": {
-    "displayName": "FinecoBank",
-    "keywords": ["fineco", "finecobank"],
-    "officialDomains": ["finecobank.com", "fineco.it"]
-  },
-  "mediolanum": {
-    "displayName": "Banca Mediolanum",
-    "keywords": ["mediolanum", "bancamediolanum"],
-    "officialDomains": ["bancamediolanum.it", "mediolanum.it"]
-  },
-  "widiba": {
-    "displayName": "Banca Widiba",
-    "keywords": ["widiba", "bancawidiba"],
-    "officialDomains": ["widiba.it"]
-  },
-  "mps": {
-    "displayName": "Banca Monte dei Paschi di Siena",
-    "keywords": ["bancamps", "mpsbanca"],
-    "officialDomains": ["mps.it", "bancamps.it"]
-  },
-  "bnl": {
-    "displayName": "BNL BNP Paribas",
-    "keywords": ["bnlparibas", "bnpparibas"],
-    "officialDomains": ["bnl.it", "bnpparibas.it", "bnpparibas.com"]
-  },
-  "chebanca": {
-    "displayName": "CheBanca! / Mediobanca Premier",
-    "keywords": ["chebanca", "mediobancapremier"],
-    "officialDomains": ["chebanca.it", "mediobancapremier.com"]
-  },
-  "inps": {
-    "displayName": "INPS",
-    "keywords": ["inps", "serviziinps"],
-    "officialDomains": ["inps.it"]
+  "aave": {
+    "displayName": "Aave",
+    "keywords": [
+      "aave-app",
+      "aave-finance"
+    ],
+    "officialDomains": [
+      "aave.com",
+      "app.aave.com"
+    ]
   },
   "agenziaentrate": {
     "displayName": "Agenzia delle Entrate",
-    "keywords": ["agenziaentrate", "fiscoonline"],
-    "officialDomains": ["agenziaentrate.gov.it", "agenziadelleentrate.gov.it"]
-  },
-  "spid": {
-    "displayName": "SPID / Identità Digitale",
-    "keywords": ["spid", "lepida", "spiditalia"],
-    "officialDomains": ["spid.gov.it", "lepida.it", "sielteid.it", "arubapec.it"]
-  },
-  "brt": {
-    "displayName": "BRT Corriere Espresso",
-    "keywords": ["brt", "bartolini", "brtspedizioni"],
-    "officialDomains": ["brt.it", "dpd.com"]
-  },
-  "dhl": {
-    "displayName": "DHL Express",
-    "keywords": ["dhl", "dhlexpress", "dhltracking"],
-    "officialDomains": ["dhl.com", "dhl.it"]
-  },
-  "gls": {
-    "displayName": "GLS Italy",
-    "keywords": ["gls", "glsitaly", "glscourier"],
-    "officialDomains": ["gls-italy.com", "gls-group.com"]
-  },
-  "fedex": {
-    "displayName": "FedEx",
-    "keywords": ["fedex", "fedexpress"],
-    "officialDomains": ["fedex.com"]
-  },
-  "ups": {
-    "displayName": "UPS",
-    "keywords": ["upscourier"],
-    "officialDomains": ["ups.com"]
-  },
-  "telepass": {
-    "displayName": "Telepass",
-    "keywords": ["telepass", "telepasspay"],
-    "officialDomains": ["telepass.com", "telepasspay.com"]
-  },
-  "enel": {
-    "displayName": "Enel / Enel Energia",
-    "keywords": ["enel", "enelenergia"],
-    "officialDomains": ["enel.it", "enelenergia.it", "enel.com"]
-  },
-  "plenitude": {
-    "displayName": "Eni Plenitude",
-    "keywords": ["plenitude", "eniplenitude"],
-    "officialDomains": ["eniplenitude.com", "eni.com"]
-  },
-  "paypal": {
-    "displayName": "PayPal",
-    "keywords": ["paypal", "paypalme"],
-    "officialDomains": ["paypal.com", "paypal.me"]
+    "keywords": [
+      "agenziaentrate",
+      "fiscoonline"
+    ],
+    "officialDomains": [
+      "agenziaentrate.gov.it",
+      "agenziadelleentrate.gov.it"
+    ]
   },
   "amazon": {
     "displayName": "Amazon",
-    "keywords": ["amazon", "primevideo"],
-    "officialDomains": ["amazon.it", "amazon.com", "primevideo.com", "amazonaws.com", "media-amazon.com", "ssl-images-amazon.com", "a2z.com"]
-  },
-  "microsoft": {
-    "displayName": "Microsoft",
-    "keywords": ["microsoft", "office365", "onedrive", "sharepoint"],
-    "officialDomains": ["microsoft.com", "office.com", "onedrive.com", "sharepoint.com", "azure.com", "live.com", "outlook.com", "msn.com"]
-  },
-  "google": {
-    "displayName": "Google",
-    "keywords": ["google", "gmail", "googledrive"],
-    "officialDomains": ["google.com", "google.it", "gmail.com", "youtube.com"]
+    "keywords": [
+      "amazon",
+      "primevideo"
+    ],
+    "officialDomains": [
+      "amazon.it",
+      "amazon.com",
+      "primevideo.com",
+      "amazonaws.com",
+      "media-amazon.com",
+      "ssl-images-amazon.com",
+      "a2z.com"
+    ]
   },
   "apple": {
     "displayName": "Apple",
-    "keywords": ["apple", "icloud", "appleid"],
-    "officialDomains": ["apple.com", "icloud.com"]
+    "keywords": [
+      "apple",
+      "icloud",
+      "appleid"
+    ],
+    "officialDomains": [
+      "apple.com",
+      "icloud.com"
+    ]
   },
-  "netflix": {
-    "displayName": "Netflix",
-    "keywords": ["netflix"],
-    "officialDomains": ["netflix.com"]
-  },
-  "subito": {
-    "displayName": "Subito.it",
-    "keywords": ["subito", "subitopay"],
-    "officialDomains": ["subito.it"]
-  },
-  "vinted": {
-    "displayName": "Vinted",
-    "keywords": ["vinted"],
-    "officialDomains": ["vinted.it", "vinted.com"]
-  },
-  "metamask": {
-    "displayName": "MetaMask",
-    "keywords": ["metamask"],
-    "officialDomains": ["metamask.io"]
-  },
-  "revolut": {
-    "displayName": "Revolut",
-    "keywords": ["revolut"],
-    "officialDomains": ["revolut.com"]
+  "bancobpm": {
+    "displayName": "Banco BPM",
+    "keywords": [
+      "bancobpm",
+      "webank"
+    ],
+    "officialDomains": [
+      "bancobpm.it",
+      "webank.it"
+    ]
   },
   "binance": {
     "displayName": "Binance",
-    "keywords": ["binance"],
-    "officialDomains": ["binance.com", "binance.us", "binance.je"]
+    "keywords": [
+      "binance"
+    ],
+    "officialDomains": [
+      "binance.com",
+      "binance.us",
+      "binance.je"
+    ]
+  },
+  "blur": {
+    "displayName": "Blur.io",
+    "keywords": [
+      "blur-market",
+      "blur-nft"
+    ],
+    "officialDomains": [
+      "blur.io"
+    ]
+  },
+  "bnl": {
+    "displayName": "BNL BNP Paribas",
+    "keywords": [
+      "bnlparibas",
+      "bnpparibas"
+    ],
+    "officialDomains": [
+      "bnl.it",
+      "bnpparibas.it",
+      "bnpparibas.com"
+    ]
+  },
+  "bper": {
+    "displayName": "BPER Banca",
+    "keywords": [
+      "bper",
+      "bperbanca"
+    ],
+    "officialDomains": [
+      "bper.it"
+    ]
+  },
+  "brt": {
+    "displayName": "BRT Corriere Espresso",
+    "keywords": [
+      "brt",
+      "bartolini",
+      "brtspedizioni"
+    ],
+    "officialDomains": [
+      "brt.it",
+      "dpd.com"
+    ]
+  },
+  "chebanca": {
+    "displayName": "CheBanca! / Mediobanca Premier",
+    "keywords": [
+      "chebanca",
+      "mediobancapremier"
+    ],
+    "officialDomains": [
+      "chebanca.it",
+      "mediobancapremier.com"
+    ]
+  },
+  "coinbase": {
+    "displayName": "Coinbase",
+    "keywords": [
+      "coinbase"
+    ],
+    "officialDomains": [
+      "coinbase.com",
+      "pro.coinbase.com"
+    ]
+  },
+  "credem": {
+    "displayName": "Credem Banca",
+    "keywords": [
+      "credem",
+      "credemonline"
+    ],
+    "officialDomains": [
+      "credem.it"
+    ]
+  },
+  "curve": {
+    "displayName": "Curve Finance",
+    "keywords": [
+      "curvefi",
+      "curve-fi"
+    ],
+    "officialDomains": [
+      "curve.fi"
+    ]
+  },
+  "dhl": {
+    "displayName": "DHL Express",
+    "keywords": [
+      "dhl",
+      "dhlexpress",
+      "dhltracking"
+    ],
+    "officialDomains": [
+      "dhl.com",
+      "dhl.it"
+    ]
+  },
+  "enel": {
+    "displayName": "Enel / Enel Energia",
+    "keywords": [
+      "enel",
+      "enelenergia"
+    ],
+    "officialDomains": [
+      "enel.it",
+      "enelenergia.it",
+      "enel.com"
+    ]
+  },
+  "fedex": {
+    "displayName": "FedEx",
+    "keywords": [
+      "fedex",
+      "fedexpress"
+    ],
+    "officialDomains": [
+      "fedex.com"
+    ]
+  },
+  "fineco": {
+    "displayName": "FinecoBank",
+    "keywords": [
+      "fineco",
+      "finecobank"
+    ],
+    "officialDomains": [
+      "finecobank.com",
+      "fineco.it"
+    ]
+  },
+  "gls": {
+    "displayName": "GLS Italy",
+    "keywords": [
+      "gls",
+      "glsitaly",
+      "glscourier"
+    ],
+    "officialDomains": [
+      "gls-italy.com",
+      "gls-group.com"
+    ]
+  },
+  "google": {
+    "displayName": "Google",
+    "keywords": [
+      "google",
+      "gmail",
+      "googledrive"
+    ],
+    "officialDomains": [
+      "google.com",
+      "google.it",
+      "gmail.com",
+      "youtube.com"
+    ]
+  },
+  "inps": {
+    "displayName": "INPS",
+    "keywords": [
+      "inps",
+      "serviziinps"
+    ],
+    "officialDomains": [
+      "inps.it"
+    ]
+  },
+  "intesa": {
+    "displayName": "Intesa Sanpaolo",
+    "keywords": [
+      "intesa",
+      "intesasanpaolo",
+      "intesasanpaolobank",
+      "isysmart"
+    ],
+    "officialDomains": [
+      "intesasanpaolo.com",
+      "intesasanpaolobank.com",
+      "isysmart.com"
+    ]
+  },
+  "kraken": {
+    "displayName": "Kraken",
+    "keywords": [
+      "kraken-exchange"
+    ],
+    "officialDomains": [
+      "kraken.com"
+    ]
   },
   "ledger": {
     "displayName": "Ledger",
-    "keywords": ["ledgerlive", "ledger-live"],
-    "officialDomains": ["ledger.com"]
+    "keywords": [
+      "ledgerlive",
+      "ledger-live",
+      "ledger-support"
+    ],
+    "officialDomains": [
+      "ledger.com",
+      "support.ledger.com"
+    ]
+  },
+  "lido": {
+    "displayName": "Lido Finance",
+    "keywords": [
+      "lido-fi",
+      "lido-stake"
+    ],
+    "officialDomains": [
+      "lido.fi",
+      "stake.lido.fi"
+    ]
+  },
+  "mediolanum": {
+    "displayName": "Banca Mediolanum",
+    "keywords": [
+      "mediolanum",
+      "bancamediolanum"
+    ],
+    "officialDomains": [
+      "bancamediolanum.it",
+      "mediolanum.it"
+    ]
+  },
+  "metamask": {
+    "displayName": "MetaMask",
+    "keywords": [
+      "metamask"
+    ],
+    "officialDomains": [
+      "metamask.io",
+      "metamask.zendesk.com"
+    ]
+  },
+  "microsoft": {
+    "displayName": "Microsoft",
+    "keywords": [
+      "microsoft",
+      "office365",
+      "onedrive",
+      "sharepoint"
+    ],
+    "officialDomains": [
+      "microsoft.com",
+      "office.com",
+      "onedrive.com",
+      "sharepoint.com",
+      "azure.com",
+      "live.com",
+      "outlook.com",
+      "msn.com"
+    ]
+  },
+  "mps": {
+    "displayName": "Banca Monte dei Paschi di Siena",
+    "keywords": [
+      "bancamps",
+      "mpsbanca"
+    ],
+    "officialDomains": [
+      "mps.it",
+      "bancamps.it"
+    ]
+  },
+  "netflix": {
+    "displayName": "Netflix",
+    "keywords": [
+      "netflix"
+    ],
+    "officialDomains": [
+      "netflix.com"
+    ]
+  },
+  "nexi": {
+    "displayName": "Nexi Payments",
+    "keywords": [
+      "nexi",
+      "cartasi",
+      "nexipay"
+    ],
+    "officialDomains": [
+      "nexi.it",
+      "nexipay.it"
+    ]
+  },
+  "opensea": {
+    "displayName": "OpenSea",
+    "keywords": [
+      "opensea"
+    ],
+    "officialDomains": [
+      "opensea.io"
+    ]
+  },
+  "paypal": {
+    "displayName": "PayPal",
+    "keywords": [
+      "paypal",
+      "paypalme"
+    ],
+    "officialDomains": [
+      "paypal.com",
+      "paypal.me"
+    ]
+  },
+  "phantom": {
+    "displayName": "Phantom Wallet",
+    "keywords": [
+      "phantom-wallet",
+      "phantomapp"
+    ],
+    "officialDomains": [
+      "phantom.app",
+      "phantom.com"
+    ]
+  },
+  "plenitude": {
+    "displayName": "Eni Plenitude",
+    "keywords": [
+      "plenitude",
+      "eniplenitude"
+    ],
+    "officialDomains": [
+      "eniplenitude.com",
+      "eni.com"
+    ]
+  },
+  "poste": {
+    "displayName": "Poste Italiane / BancoPosta",
+    "keywords": [
+      "poste",
+      "postepay",
+      "bancoposta",
+      "posteid"
+    ],
+    "officialDomains": [
+      "poste.it",
+      "postepay.it",
+      "bancoposta.it",
+      "posteitaliane.it",
+      "postecert.it"
+    ]
+  },
+  "rabby": {
+    "displayName": "Rabby Wallet",
+    "keywords": [
+      "rabby-wallet"
+    ],
+    "officialDomains": [
+      "rabby.io"
+    ]
+  },
+  "revolut": {
+    "displayName": "Revolut",
+    "keywords": [
+      "revolut"
+    ],
+    "officialDomains": [
+      "revolut.com"
+    ]
+  },
+  "spid": {
+    "displayName": "SPID / Identità Digitale",
+    "keywords": [
+      "spid",
+      "lepida",
+      "spiditalia"
+    ],
+    "officialDomains": [
+      "spid.gov.it",
+      "lepida.it",
+      "sielteid.it",
+      "arubapec.it"
+    ]
+  },
+  "subito": {
+    "displayName": "Subito.it",
+    "keywords": [
+      "subito",
+      "subitopay"
+    ],
+    "officialDomains": [
+      "subito.it"
+    ]
+  },
+  "telepass": {
+    "displayName": "Telepass",
+    "keywords": [
+      "telepass",
+      "telepasspay"
+    ],
+    "officialDomains": [
+      "telepass.com",
+      "telepasspay.com"
+    ]
   },
   "trezor": {
     "displayName": "Trezor",
-    "keywords": ["trezorsuite", "trezor-suite"],
-    "officialDomains": ["trezor.io"]
+    "keywords": [
+      "trezorsuite",
+      "trezor-suite"
+    ],
+    "officialDomains": [
+      "trezor.io",
+      "suite.trezor.io"
+    ]
+  },
+  "unicredit": {
+    "displayName": "UniCredit",
+    "keywords": [
+      "unicredit",
+      "unicreditbank"
+    ],
+    "officialDomains": [
+      "unicredit.it",
+      "unicredit.eu",
+      "unicreditgroup.eu"
+    ]
+  },
+  "uniswap": {
+    "displayName": "Uniswap",
+    "keywords": [
+      "uniswap"
+    ],
+    "officialDomains": [
+      "uniswap.org",
+      "app.uniswap.org"
+    ]
+  },
+  "ups": {
+    "displayName": "UPS",
+    "keywords": [
+      "upscourier"
+    ],
+    "officialDomains": [
+      "ups.com"
+    ]
+  },
+  "vinted": {
+    "displayName": "Vinted",
+    "keywords": [
+      "vinted"
+    ],
+    "officialDomains": [
+      "vinted.it",
+      "vinted.com"
+    ]
+  },
+  "widiba": {
+    "displayName": "Banca Widiba",
+    "keywords": [
+      "widiba",
+      "bancawidiba"
+    ],
+    "officialDomains": [
+      "widiba.it"
+    ]
   }
 }

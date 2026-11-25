@@ -1,27 +1,29 @@
-# RePlug™ Brand & Trademark Policy
+# Sentinel™ Brand & Trademark Policy
 
 ## 1. Ownership & First-Use Record
 
 The following marks, product identifiers, and visual assets were conceived, authored, and first publicly established by **Umberto (`umbette`)**:
 
-* **RePlug™** — Ethical smartphone/tablet upcycling platform for local-first smart home defense and appliance preservation.
-* **RePlug Sentinel Shield™** — Local DNS behavioral defense engine, 15 deterministic IoT/privacy shields, and endpoint phishing guard.
-* **RePlug Nozzle Guardian™** — Repurposed-device automated inkjet (CISS/EcoTank) and 3D printer head preservation engine via local IPP polling and optical test-pattern inspection.
-* **RePlug Infinity-Ascension Emblem** — The continuous cyber-mint Möbius infinity ribbon ascending into a 45° vector arrow (`assets/replug_icon.png`, `assets/replug_logo.png`).
+* **Sentinel Core™** — Local DNS behavioral cyber-defense daemon integrating AdGuard Home, Home Assistant, Zero-Trust Device Admission Control, and Scan on Demand network auditing.
+* **Sentinel Shield™** — 15 deterministic IoT/privacy shields, CDN-safe Malicious IP/DNS-answer correlation, and the Manifest V3 browser extension (`Sentinel Shield`).
+* **Sentinel Drive™** — In-car OBD-II / USB Wi-Fi DNS sinkhole hardware appliance protecting vehicular infotainment systems (`hardware/sentinel_drive/`).
 
 ---
 
-## 2. Permissible vs. Restricted Usage
+## 2. Hybrid Open-Core License Boundary
 
-While the software code in this repository is openly licensed under the [MIT License](LICENSE), the **RePlug™** trademarks and visual logos exist to protect end users from counterfeit builds, spyware forks, or deceptive cloud-harvesting clones masquerading under the RePlug identity.
+* Software Core, Home Assistant Add-on, CLI & MV3 Extension: **GNU AGPLv3** (`LICENSE`).
+* Hardware Appliance Blueprints & Bundled Firmware (`hardware/`): **PolyForm Noncommercial License 1.0.0** (`LICENSE-COMMERCIAL-HARDWARE`).
+
+While users may freely inspect and self-host upstream source code, the **Sentinel™**, **Sentinel Core™**, **Sentinel Shield™**, and **Sentinel Drive™** names and trademarks may **not** be used on commercial dongles, routers, SaaS offerings, counterfeit APKs, or cloned browser store listings without written consent and a Commercial OEM License from **Umberto (`umbette`)**.
 
 ### Permitted Without Prior Written Consent:
-* Truthfully stating that your fork or integration *"is built on RePlug open-source code"* or *"is compatible with RePlug Sentinel Core"*.
+* Truthfully stating that your fork or integration *"is built on Sentinel open-source code"* or *"is compatible with Sentinel Core"*.
 * Linking directly to `https://github.com/umbette/sentinel` or `https://umbette.github.io/sentinel/` in reviews, tutorials, or community articles.
 
 ### Restricted Without Explicit Written Permission:
-* Distributing modified app binaries, Android APKs, iOS builds, browser extensions, or SaaS products named **RePlug**, **RePlug Nozzle Guardian**, or **RePlug Sentinel Shield**.
-* Using the RePlug Infinity-Ascension emblem on third-party commercial websites, app store listings, or hardware packaging.
+* Manufacturing or selling commercial hardware dongles/appliances using `hardware/` or pre-flashing commercial routers/boxes without an OEM agreement.
+* Distributing modified browser extensions, binaries, or SaaS products named **Sentinel Core**, **Sentinel Shield**, or **Sentinel Drive** while claiming official affiliation.
 * Implying official sponsorship or endorsement of derivative products.
 
 ---

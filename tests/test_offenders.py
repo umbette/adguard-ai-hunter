@@ -81,13 +81,24 @@ class TestOffendersDashboardAPI(AioHTTPTestCase):
         return self.dashboard.app
 
     async def test_api_offenders_endpoint(self):
+        # 1. Cold empty stats remain honest (0 offenses, no fabricated devices/brands)
         resp = await self.client.get("/api/offenders")
         assert resp.status == 200
         data = await resp.json()
-        assert "total_offenses" in data
-        assert "by_brand" in data
-        assert "by_device" in data
-        assert "by_category" in data
-        assert "by_geography" in data
-        assert "summary" in data
-        assert len(data["by_brand"]) > 0
+        assert data["total_offenses"] == 0
+        assert data["by_brand"] == []
+        assert data["by_device"] == []
+
+        # 2. Live blocked domains compute 4-vector analytics without fake device injection
+        from unittest.mock import AsyncMock
+        self.dashboard._fetch_adguard_stats = AsyncMock(return_value={
+            "num_dns_queries": 500,
+            "num_blocked_filtering": 25,
+            "top_blocked_domains": [{"domain": "samsungqbe.com", "count": 25}]
+        })
+        resp2 = await self.client.get("/api/offenders")
+        assert resp2.status == 200
+        data2 = await resp2.json()
+        assert data2["total_offenses"] == 25
+        assert data2["by_brand"][0]["brand"] == "Samsung"
+        assert data2["by_device"] == []

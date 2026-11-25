@@ -8,7 +8,7 @@ from typing import Dict, Optional, Tuple, Any
 import aiohttp
 from src.config import Settings
 
-logger = logging.getLogger("ai_hunter.device_resolver")
+logger = logging.getLogger("sentinel.device_resolver")
 
 DEVICE_KEYWORDS = [
     # Budget Android TV Box / AOSP Clones (Peachpit / Badbox botnet targets)
@@ -43,8 +43,8 @@ DEVICE_KEYWORDS = [
     (["macbook", "imac", "mac", "pc", "laptop", "desktop", "thinkpad", "dell", "windows", "linux", "workstation"], "💻", "COMPUTER"),
     # 3D Printers & Maker Lab (Bambu Lab, Prusa, Voron, Klipper)
     (["bambu", "bambulab", "x1c", "p1s", "p1p", "a1-mini", "prusa", "creality", "ender", "voron", "klipper", "octoprint", "elegoo"], "🖨️", "3D_PRINTER"),
-    # Standard Paper Printers
-    (["printer", "epson", "hp", "canon", "brother"], "🖨️", "PRINTER"),
+    # Standard Paper Printers (Inkjet / Tank / Multifunction)
+    (["printer", "epson", "ecotank", "hp", "smarttank", "smart-tank", "canon", "megatank", "pixma", "maxify", "brother", "lexmark", "xerox", "ricoh", "kyocera", "pantum"], "🖨️", "PRINTER"),
 ]
 
 @dataclass

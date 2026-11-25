@@ -1,9 +1,9 @@
 # ==============================================================================
-# AI Hunter - DGA Validation & Seed Samples
+# Sentinel Shield - DGA Validation & Seed Samples
 # Sample domains flagged by entropy scoring ($H > 3.85$) used for pipeline
 # regression testing and crowdsourced verification.
 #
-# NOTE: AI Hunter is a local anomaly detection daemon, not a primary DNS list.
+# NOTE: Sentinel Core is a local anomaly detection daemon, not a primary DNS list.
 # For production network filtering, always run comprehensive CTI feeds
 # (e.g., HaGeZi TIF, RuffKez CTI, OISD) in AdGuard Home.
 # ==============================================================================

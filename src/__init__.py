@@ -1,2 +1,2 @@
-"""AI Hunter Daemon Package"""
-__version__ = "1.0.0"
+"""Sentinel Core Network Defense Package"""
+__version__ = "0.4.1"

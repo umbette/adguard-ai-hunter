@@ -5,97 +5,126 @@
   <title>Sito Bloccato - Sentinel Shield</title>
   <style>
     :root {
-      --bg: #0f172a;
-      --card-bg: #1e293b;
-      --danger: #ef4444;
+      --bg: #090d14;
+      --card-bg: #101622;
+      --surface-alt: #0d121c;
+      --danger: #f87171;
       --text: #f8fafc;
       --text-muted: #94a3b8;
-      --border: #334155;
-      --btn-primary: #3b82f6;
-      --btn-secondary: #475569;
+      --border: #1e293b;
+      --accent: #00e599;
+      --accent-secondary: #00bfa5;
     }
     body {
       margin: 0;
-      padding: 0;
+      padding: 20px;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: radial-gradient(circle at top, rgba(0, 229, 153, 0.08) 0%, var(--bg) 55%);
       background-color: var(--bg);
       color: var(--text);
       display: flex;
       align-items: center;
       justify-content: center;
       min-height: 100vh;
+      box-sizing: border-box;
     }
     .card {
       background: var(--card-bg);
       border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 40px;
+      border-radius: 20px;
+      padding: 36px;
       max-width: 580px;
-      width: 90%;
-      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+      width: 100%;
+      box-shadow: 0 24px 48px rgba(0, 0, 0, 0.55);
     }
-    .icon {
-      font-size: 48px;
+    .brand-bar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 22px;
+    }
+    .brand-bar img {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      border: 1px solid rgba(0, 229, 153, 0.3);
+    }
+    .brand-pill {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
       color: var(--danger);
-      margin-bottom: 16px;
+      background: rgba(248, 113, 113, 0.12);
+      border: 1px solid rgba(248, 113, 113, 0.35);
+      padding: 4px 10px;
+      border-radius: 9999px;
     }
     h1 {
       font-size: 24px;
+      font-weight: 800;
       margin: 0 0 12px 0;
       color: var(--text);
+      letter-spacing: -0.4px;
     }
     p {
       color: var(--text-muted);
       line-height: 1.6;
-      margin: 0 0 20px 0;
+      margin: 0 0 18px 0;
+      font-size: 15px;
     }
     .domain-badge {
       display: inline-block;
-      background: #0f172a;
-      border: 1px solid var(--danger);
+      background: var(--surface-alt);
+      border: 1px solid rgba(248, 113, 113, 0.45);
       color: #fca5a5;
-      padding: 4px 10px;
-      border-radius: 6px;
-      font-family: monospace;
-      font-size: 15px;
-      margin-bottom: 24px;
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 14px;
+      margin-bottom: 20px;
       word-break: break-all;
     }
     .actions {
       display: flex;
       gap: 12px;
       margin-top: 24px;
+      flex-wrap: wrap;
     }
     button {
       flex: 1;
+      min-width: 200px;
       padding: 12px 20px;
       font-size: 14px;
-      font-weight: 600;
-      border-radius: 8px;
+      font-weight: 700;
+      border-radius: 9999px;
       cursor: pointer;
       border: none;
-      transition: background 0.2s;
+      transition: transform 0.15s ease, filter 0.15s ease, background 0.15s ease;
     }
     .btn-back {
-      background: var(--btn-primary);
-      color: #fff;
+      background: linear-gradient(135deg, var(--accent) 0%, var(--accent-secondary) 100%);
+      color: #051410;
+      box-shadow: 0 4px 18px rgba(0, 229, 153, 0.25);
     }
     .btn-back:hover {
-      background: #2563eb;
+      transform: translateY(-1px);
+      filter: brightness(1.06);
     }
     .btn-proceed {
-      background: transparent;
+      background: var(--surface-alt);
       color: var(--text-muted);
       border: 1px solid var(--border);
     }
     .btn-proceed:hover {
-      background: var(--border);
+      background: #162033;
       color: var(--text);
     }
     .footer {
-      margin-top: 32px;
+      margin-top: 28px;
       font-size: 12px;
-      color: #64748b;
+      color: var(--text-muted);
       border-top: 1px solid var(--border);
       padding-top: 16px;
     }
@@ -103,12 +132,15 @@
 </head>
 <body>
   <div class="card">
-    <div class="icon">🛡️</div>
+    <div class="brand-bar">
+      <img src="../icons/icon48.png" alt="Sentinel Emblem">
+      <span class="brand-pill">Sentinel Shield • Blocco Preventivo</span>
+    </div>
     <h1>Collegamento Bloccato per Sicurezza</h1>
     <p>Sentinel Shield ha interrotto la connessione a questo indirizzo perché è stato identificato come minaccia attiva (phishing, frode o distribuzione di malware).</p>
-    
+
     <div class="domain-badge" id="domainDisplay">dominio-sospetto.com</div>
-    
+
     <p>Navigare su questo sito potrebbe compromettere la tua sicurezza o sottrarre credenziali personali e coordinate bancarie.</p>
 
     <div class="actions">

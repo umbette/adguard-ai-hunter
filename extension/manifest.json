@@ -1,21 +1,33 @@
 {
   "manifest_version": 3,
   "name": "Sentinel Shield",
-  "version": "0.3.1",
-  "description": "Protezione locale da phishing, truffe e domini ingannevoli. Elaborazione 100% in-browser, zero telemetria.",
+  "short_name": "Sentinel",
+  "version": "0.4.1",
+  "description": "Protezione locale in-browser contro phishing, imitazione brand, dynamic pricing e cookie/tracker di terze parti. 100% offline, zero telemetria.",
   "permissions": [
     "activeTab",
     "declarativeNetRequest",
     "storage",
     "webNavigation"
   ],
+  "optional_permissions": [
+    "cookies"
+  ],
   "host_permissions": [],
+  "optional_host_permissions": [
+    "<all_urls>"
+  ],
   "declarative_net_request": {
     "rule_resources": [
       {
         "id": "sentinel_ruleset",
         "enabled": true,
         "path": "rules/ruleset.json"
+      },
+      {
+        "id": "pricing_tracker_ruleset",
+        "enabled": true,
+        "path": "rules/pricing_trackers.json"
       }
     ]
   },

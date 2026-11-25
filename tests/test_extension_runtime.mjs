@@ -13,6 +13,14 @@ const EXTENSION_DIR = path.join(ROOT_DIR, "extension");
 // Helper to construct a realistic Chrome MV3 sandbox environment
 function createChromeMock() {
   const sessionRules = [];
+  const dynamicRules = [];
+  const enabledRulesets = new Set(["sentinel_ruleset", "pricing_tracker_ruleset"]);
+  const grantedPermissions = { cookies: false, origins: [] };
+  const cookieStore = [
+    { name: "_ga", value: "123", domain: ".example-shop.com", path: "/", secure: true, storeId: "0" },
+    { name: "criteo_uid", value: "xyz", domain: "www.example-shop.com", path: "/", secure: false, storeId: "0" },
+    { name: "other_site", value: "abc", domain: "other.org", path: "/", secure: true, storeId: "0" }
+  ];
   const sessionStorage = {};
   const localStorage = {};
   const tabs = [{ id: 42, url: "https://0-24bpautomentes.hu/login" }];
@@ -36,6 +44,31 @@ function createChromeMock() {
       onMessage: { addListener: (fn) => listeners.onMessage.push(fn) },
       lastError: null
     },
+    permissions: {
+      contains: async ({ permissions = [], origins = [] }) => {
+        const hasPerm = permissions.every(p => p === "cookies" && grantedPermissions.cookies);
+        const hasOrig = origins.every(o => grantedPermissions.origins.includes(o));
+        return hasPerm && hasOrig;
+      }
+    },
+    cookies: {
+      getAll: async ({ domain }) => {
+        if (!domain) return [...cookieStore];
+        return cookieStore.filter(c => {
+          const clean = c.domain.replace(/^\./, "");
+          return clean === domain || clean.endsWith("." + domain);
+        });
+      },
+      remove: async ({ url, name }) => {
+        const parsed = new URL(url);
+        const idx = cookieStore.findIndex(c => c.name === name && c.domain.replace(/^\./, "") === parsed.hostname);
+        if (idx >= 0) {
+          const [removed] = cookieStore.splice(idx, 1);
+          return removed;
+        }
+        return null;
+      }
+    },
     declarativeNetRequest: {
       getSessionRules: (cb) => {
         const rulesCopy = [...sessionRules];
@@ -55,6 +88,21 @@ function createChromeMock() {
           }
         }
         if (cb) cb();
+      },
+      getDynamicRules: async () => [...dynamicRules],
+      updateDynamicRules: async ({ addRules = [], removeRuleIds = [] }) => {
+        for (const id of removeRuleIds) {
+          const idx = dynamicRules.findIndex(r => r.id === id);
+          if (idx >= 0) dynamicRules.splice(idx, 1);
+        }
+        for (const r of addRules) {
+          dynamicRules.push(r);
+        }
+      },
+      getEnabledRulesets: async () => [...enabledRulesets],
+      updateEnabledRulesets: async ({ enableRulesetIds = [], disableRulesetIds = [] }) => {
+        for (const id of disableRulesetIds) enabledRulesets.delete(id);
+        for (const id of enableRulesetIds) enabledRulesets.add(id);
       }
     },
     storage: {
@@ -131,6 +179,10 @@ function createChromeMock() {
     chromeMock,
     fetchMock,
     sessionRules,
+    dynamicRules,
+    enabledRulesets,
+    grantedPermissions,
+    cookieStore,
     sessionStorage,
     localStorage,
     listeners,
@@ -392,6 +444,20 @@ test("Service Worker: bypassDomain registers monotonic collision-free session al
   assert.equal(reply3?.ruleId, 100002);
   assert.equal(env.sessionRules.length, 2);
   assert.equal(env.sessionRules[1].id, 100002);
+
+  // 4. Tab-scoped bypass via sender.tab.id + automatic DNR cleanup on chrome.tabs.onRemoved
+  let reply4 = null;
+  messageListener({ action: "bypassDomain", domain: "scoped-tab.example" }, { tab: { id: 77 } }, (r) => { reply4 = r; });
+  await new Promise(resolve => setTimeout(resolve, 20));
+  assert.equal(reply4?.success, true);
+  assert.equal(reply4?.tabScoped, true);
+  assert.equal(JSON.stringify(env.sessionRules.find(r => r.id === reply4.ruleId)?.condition.tabIds), "[77]");
+
+  const onRemovedListener = env.listeners.onRemoved[0];
+  assert.ok(onRemovedListener, "Missing onRemoved listener");
+  await onRemovedListener(77);
+  await new Promise(resolve => setTimeout(resolve, 20));
+  assert.equal(env.sessionRules.some(r => r.id === reply4.ruleId), false);
 });
 
 test("Popup: extracts activeHostname from standard tab and from blocked.html warning URL", async () => {
@@ -419,4 +485,151 @@ test("Popup: extracts activeHostname from standard tab and from blocked.html war
 
   // 3. System chrome URL
   assert.equal(extractHostname("chrome://extensions"), "extensions");
+});
+
+test("Service Worker: Crypto drainer patterns, expanded Web3 brands and NFKD diacritics", async () => {
+  const { context } = await loadServiceWorker();
+
+  const drainerDomains = [
+    "claim-airdrop-eth.xyz",
+    "connect-wallet-sync.org",
+    "rwa-yield-claim.io",
+    "seed-phrase-backup.net"
+  ];
+  for (const d of drainerDomains) {
+    const res = vm.runInContext(`checkBrandImpersonation("${d}")`, context);
+    assert.equal(res.spoofed, true, `Expected drainer ${d} to be flagged`);
+    assert.equal(res.vector, "drainer");
+  }
+
+  // Ledger firmware/update spoof still gets caught (with officialDomains hint)
+  const ledgerSpoof = vm.runInContext(`checkBrandImpersonation("ledger-live-update.io")`, context);
+  assert.equal(ledgerSpoof.spoofed, true);
+  assert.equal(ledgerSpoof.brandName, "Ledger");
+
+  // NFKD diacritic & expanded Web3 brand checks
+  const spoofed = ["pàypal-sicuro.com", "uniswap-airdrop.net", "phantom-wallet-verify.org"];
+  for (const d of spoofed) {
+    const res = vm.runInContext(`checkBrandImpersonation("${d}")`, context);
+    assert.equal(res.spoofed, true, `Expected ${d} to be flagged`);
+  }
+
+  const officialWeb3 = ["uniswap.org", "app.uniswap.org", "phantom.app", "rabby.io", "aave.com", "lido.fi", "opensea.io", "coinbase.com", "kraken.com"];
+  for (const d of officialWeb3) {
+    const res = vm.runInContext(`checkBrandImpersonation("${d}")`, context);
+    assert.equal(res.spoofed, false, `Expected official domain ${d} NOT to be flagged`);
+  }
+});
+
+test("Service Worker: Anti-Dynamic Pricing toggle, Opt-In Cookie Guard DNR rules, and site cookie cleanup", async () => {
+  const { env } = await loadServiceWorker();
+  const messageListener = env.listeners.onMessage[0];
+  const sendMsg = (msg) => new Promise(resolve => messageListener(msg, {}, resolve));
+
+  // 1. Toggle Anti-Dynamic Pricing ruleset OFF then ON
+  const pOff = await sendMsg({ action: "setPricingShield", enabled: false });
+  assert.equal(pOff.success, true);
+  assert.equal(env.enabledRulesets.has("pricing_tracker_ruleset"), false);
+  assert.equal(env.enabledRulesets.has("sentinel_ruleset"), true);
+
+  const pOn = await sendMsg({ action: "setPricingShield", enabled: true });
+  assert.equal(pOn.success, true);
+  assert.equal(env.enabledRulesets.has("pricing_tracker_ruleset"), true);
+
+  // 2. Cookie Guard cannot be enabled without optional host & cookies permissions
+  const denied = await sendMsg({ action: "setCookieGuard", enabled: true });
+  assert.equal(denied.success, false);
+  assert.equal(env.dynamicRules.length, 0);
+
+  // 3. Grant permissions and enable Cookie & Tracking Param Guard
+  env.grantedPermissions.cookies = true;
+  env.grantedPermissions.origins = ["<all_urls>"];
+  const enabled = await sendMsg({ action: "setCookieGuard", enabled: true });
+  assert.equal(enabled.success, true);
+  assert.equal(enabled.cookieGuardEnabled, true);
+
+  const cookieRule = env.dynamicRules.find(r => r.id === 200001);
+  const paramRule = env.dynamicRules.find(r => r.id === 200002);
+  assert.ok(cookieRule, "Expected 3rd-party Cookie modifyHeaders dynamic rule");
+  assert.equal(cookieRule.action.type, "modifyHeaders");
+  assert.equal(cookieRule.condition.domainType, "thirdParty");
+  assert.ok(cookieRule.condition.excludedRequestDomains.includes("stripe.com"));
+  assert.ok(paramRule, "Expected tracking query param redirect dynamic rule");
+  assert.ok(paramRule.action.redirect.transform.queryTransform.removeParams.includes("fbclid"));
+
+  // 4. Per-site privacy exception adds priority 3 allow rule and excludes site from Cookie Guard
+  const ex = await sendMsg({ action: "toggleSitePrivacyException", domain: "shop.example-shop.com" });
+  assert.equal(ex.success, true);
+  assert.equal(ex.sitePrivacyExempt, true);
+  assert.equal(ex.etld1, "example-shop.com");
+  const allowRule = env.dynamicRules.find(r => r.id >= 300000);
+  assert.ok(allowRule, "Expected per-site allow rule");
+  assert.equal(allowRule.priority, 3);
+  assert.deepEqual([...allowRule.condition.initiatorDomains], ["example-shop.com"]);
+
+  const updatedCookieRule = env.dynamicRules.find(r => r.id === 200001);
+  assert.deepEqual([...updatedCookieRule.condition.excludedInitiatorDomains], ["example-shop.com"]);
+
+  // 5. Site cookie count & 1-click cleanup scoped to eTLD+1
+  const countBefore = await sendMsg({ action: "getSiteCookiesCount", domain: "www.example-shop.com" });
+  assert.equal(countBefore.count, 2);
+  const cleaned = await sendMsg({ action: "cleanSiteCookies", domain: "www.example-shop.com" });
+  assert.equal(cleaned.success, true);
+  assert.equal(cleaned.removed, 2);
+  assert.equal(env.cookieStore.length, 1, "Cookies belonging to other.org must remain intact");
+
+  // 6. Disabling Cookie Guard removes rules 200001 and 200002 cleanly
+  const disabled = await sendMsg({ action: "setCookieGuard", enabled: false });
+  assert.equal(disabled.success, true);
+  assert.equal(env.dynamicRules.some(r => r.id === 200001 || r.id === 200002), false);
+});
+
+test("Service Worker: bare-IP C2 list triggers blocked.html redirect and popup warning without blocking benign hosts", async () => {
+  const { env, swCode, loadIntoContext } = await (async () => {
+    const base = createChromeMock();
+    const origFetch = base.fetchMock;
+    base.fetchMock = async (urlStr) => {
+      if (urlStr.endsWith("data/blocked_ips.json")) {
+        return {
+          ok: true,
+          json: async () => ["198.51.100.77", "2001:db8:bad::1"]
+        };
+      }
+      return origFetch(urlStr);
+    };
+    const code = await fs.readFile(path.join(EXTENSION_DIR, "background/service_worker.js"), "utf-8");
+    const sandbox = {
+      chrome: base.chromeMock,
+      fetch: base.fetchMock,
+      URL,
+      URLSearchParams,
+      Set,
+      Map,
+      RegExp,
+      console: { log: () => {}, warn: () => {}, error: () => {} }
+    };
+    const context = vm.createContext(sandbox);
+    vm.runInContext(code, context);
+    return { env: base, swCode: code, loadIntoContext: context };
+  })();
+
+  await env.listeners.onErrorOccurred[0]({
+    frameId: 0,
+    tabId: 71,
+    error: "net::ERR_BLOCKED_BY_CLIENT",
+    url: "http://198.51.100.77/gate.php"
+  });
+  assert.equal(env.updatedTabs.length, 1);
+  assert.ok(env.updatedTabs[0].updateProps.url.includes("blocked.html?domain=198.51.100.77"));
+
+  // Check bracketed IPv6 support via getTabWarning
+  const tabWarning = await new Promise((resolve) => {
+    env.listeners.onMessage[0]({ action: "getTabWarning", tabId: 71, domain: "[2001:db8:bad::1]" }, {}, resolve);
+  });
+  assert.equal(tabWarning.isBlocked, true);
+
+  const safeCheck = await new Promise((resolve) => {
+    env.listeners.onMessage[0]({ action: "getTabWarning", tabId: 72, domain: "1.1.1.1" }, {}, resolve);
+  });
+  assert.equal(safeCheck.isBlocked, false);
 });

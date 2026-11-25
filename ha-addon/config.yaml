@@ -1,7 +1,7 @@
 name: "Sentinel Core"
 slug: "sentinel_core"
-version: "0.3.0"
-description: "Autonomous Smart Home Security, Anti-Dynamic Pricing, Crypto Vault & Behavioral DNS Shield for Home Assistant."
+version: "0.4.1"
+description: "Autonomous Local Cyber Defense Console — 15 IoT & Privacy Shields, CDN-Safe Malicious IP Correlation, Anti-Dynamic Pricing, Crypto Vault, and Zero-Trust Device Admission Control for AdGuard Home & Home Assistant."
 url: "https://github.com/umbette/sentinel"
 arch:
   - aarch64
@@ -9,6 +9,7 @@ arch:
   - armv7
 startup: services
 boot: auto
+host_network: true
 homeassistant_api: true
 init: false
 ingress: true
@@ -24,6 +25,9 @@ options:
   rate_burst_threshold: 30
   rate_window_sec: 60
   notify_service: "notify.notify"
+  admission_enabled: false
+  quarantine_unapproved: false
+  notify_on_new_device: true
 schema:
   adguard_url: str
   adguard_username: str
@@ -33,3 +37,6 @@ schema:
   rate_burst_threshold: int
   rate_window_sec: int
   notify_service: str
+  admission_enabled: bool?
+  quarantine_unapproved: bool?
+  notify_on_new_device: bool?

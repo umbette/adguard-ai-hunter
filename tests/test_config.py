@@ -5,7 +5,7 @@ from src.config import Settings
 def test_config_ha_options_and_supervisor_token(tmp_path, monkeypatch):
     options_file = tmp_path / "options.json"
     options_data = {
-        "adguard_url": "http://core-adguard:80",
+        "adguard_url": "https://core-adguard:443",
         "adguard_username": "addon_admin",
         "adguard_password": "super_secret_pw",
         "gemini_api_key": "test_gemini_key_123",
@@ -18,15 +18,18 @@ def test_config_ha_options_and_supervisor_token(tmp_path, monkeypatch):
 
     monkeypatch.setenv("OPTIONS_PATH", str(options_file))
     monkeypatch.setenv("SUPERVISOR_TOKEN", "mock_supervisor_token_abc")
+    monkeypatch.setenv("SENTINEL_API_KEY", "dash_api_secret_99")
 
     settings = Settings.load(config_path=str(tmp_path / "non_existent.yaml"))
 
-    # Verify AdGuard settings loaded from HA Add-on options
+    # Verify AdGuard settings loaded from HA Add-on options (preserving https://)
+    assert settings.adguard.scheme == "https"
     assert settings.adguard.host == "core-adguard"
-    assert settings.adguard.port == 80
+    assert settings.adguard.port == 443
     assert settings.adguard.username == "addon_admin"
     assert settings.adguard.password == "super_secret_pw"
-    assert settings.adguard.base_url == "http://core-adguard:80"
+    assert settings.adguard.base_url == "https://core-adguard:443"
+    assert settings.dashboard.api_key == "dash_api_secret_99"
 
     # Verify Gemini & Heuristics
     assert settings.gemini.api_key == "test_gemini_key_123"
@@ -67,7 +70,27 @@ def test_adguard_credentials_loaded_from_env(tmp_path, monkeypatch):
     cfg_file = tmp_path / "config.yaml"
     cfg_file.write_text("adguard:\n  host: 127.0.0.1\n  port: 8080\n", encoding="utf-8")
 
+    # Verify AdGuard credentials loaded from env
     settings = Settings.load(config_path=str(cfg_file))
     assert settings.adguard.username == "custom_adguard_admin"
     assert settings.adguard.password == "custom_adguard_pw_456"
+
+
+def test_config_ha_admission_options(tmp_path, monkeypatch):
+    options_file = tmp_path / "options_admission.json"
+    options_file.write_text(json.dumps({
+        "adguard_url": "http://core-adguard:80",
+        "adguard_username": "admin",
+        "adguard_password": "pw",
+        "admission_enabled": True,
+        "quarantine_unapproved": True,
+        "notify_on_new_device": False
+    }), encoding="utf-8")
+
+    monkeypatch.setenv("OPTIONS_PATH", str(options_file))
+    settings = Settings.load(config_path=str(tmp_path / "non_existent.yaml"))
+
+    assert settings.admission.enabled is True
+    assert settings.admission.quarantine_unapproved is True
+    assert settings.admission.notify_on_new_device is False
 

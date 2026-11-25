@@ -1,10 +1,14 @@
+import logging
 import os
 from typing import Optional
 from pydantic import BaseModel, Field
 from pydantic_settings import BaseSettings
 import yaml
 
+logger = logging.getLogger("sentinel.config")
+
 class AdGuardConfig(BaseModel):
+    scheme: str = "http"
     host: str = "127.0.0.1"
     port: int = 8080
     username: str = ""
@@ -14,7 +18,7 @@ class AdGuardConfig(BaseModel):
 
     @property
     def base_url(self) -> str:
-        return f"http://{self.host}:{self.port}"
+        return f"{self.scheme}://{self.host}:{self.port}"
 
 class HomeAssistantConfig(BaseModel):
     base_url: str = "http://127.0.0.1:8123"
@@ -40,6 +44,7 @@ class DashboardConfig(BaseModel):
     host: str = "0.0.0.0"
     port: int = 8087
     enabled: bool = True
+    api_key: str = ""
 
 class AdmissionConfig(BaseModel):
     enabled: bool = False
@@ -84,6 +89,7 @@ class Settings(BaseSettings):
 
                 if "adguard_url" in ha_options:
                     parsed = urlparse(ha_options["adguard_url"])
+                    data.setdefault("adguard", {})["scheme"] = parsed.scheme or "http"
                     data.setdefault("adguard", {})["host"] = parsed.hostname or "127.0.0.1"
                     data.setdefault("adguard", {})["port"] = parsed.port or (443 if parsed.scheme == "https" else 80)
                 if "adguard_username" in ha_options:
@@ -103,8 +109,14 @@ class Settings(BaseSettings):
                     if svc.startswith("notify."):
                         svc = svc.replace("notify.", "")
                     data.setdefault("home_assistant", {})["notify_service"] = svc
-            except Exception:
-                pass
+                if "admission_enabled" in ha_options:
+                    data.setdefault("admission", {})["enabled"] = bool(ha_options["admission_enabled"])
+                if "quarantine_unapproved" in ha_options:
+                    data.setdefault("admission", {})["quarantine_unapproved"] = bool(ha_options["quarantine_unapproved"])
+                if "notify_on_new_device" in ha_options:
+                    data.setdefault("admission", {})["notify_on_new_device"] = bool(ha_options["notify_on_new_device"])
+            except Exception as exc:
+                logger.warning(f"Failed parsing HA options at {options_path}: {exc}")
 
         # Check Home Assistant Supervisor Token (auto-authentication in HA OS Add-on)
         supervisor_token = os.getenv("SUPERVISOR_TOKEN")
@@ -132,5 +144,9 @@ class Settings(BaseSettings):
         if data_dir:
             storage_data["db_path"] = os.path.join(data_dir, "hunter_decisions.db")
         data["storage"] = storage_data
+
+        dash_data = data.get("dashboard", {})
+        dash_data["api_key"] = os.getenv("SENTINEL_API_KEY") or os.getenv("DASHBOARD_API_KEY") or dash_data.get("api_key", "")
+        data["dashboard"] = dash_data
 
         return cls(**data)

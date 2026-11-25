@@ -1,14 +1,72 @@
 /**
  * Sentinel Shield - Manifest V3 Background Service Worker
- * 100% Local Heuristic Inspection & Brand Impersonation Guard
- * Adversarial Hardened (EGM / Arena.ai Tested)
+ * 100% Local Heuristic Inspection, Brand Impersonation Guard,
+ * Anti-Dynamic Pricing DNR & Opt-In Cookie/Tracking Param Shield
  */
 
 let BRANDS = {};
 let PUBLIC_SUFFIXES = new Set();
 let BLOCKED_DOMAINS = new Set();
+let BLOCKED_IPS = new Set();
 let loadDataPromise = null;
 let memorySessionRuleId = 100000;
+
+const PRICING_RULESET_ID = "pricing_tracker_ruleset";
+const COOKIE_HEADER_RULE_ID = 200001;
+const TRACKING_PARAM_RULE_ID = 200002;
+const SITE_ALLOW_RULE_BASE_ID = 300000;
+
+const THIRD_PARTY_SUBRESOURCE_TYPES = [
+  "sub_frame", "stylesheet", "script", "image", "font", "object",
+  "xmlhttprequest", "ping", "csp_report", "media", "websocket",
+  "webtransport", "webbundle", "other"
+];
+
+// Essential payment, 2FA, captcha and SSO endpoints excluded from 3rd-party cookie stripping
+const ESSENTIAL_AUTH_PAYMENT_DOMAINS = [
+  "stripe.com", "paypal.com", "nexi.it", "satispay.com", "sumup.com",
+  "adyen.com", "braintreegateway.com", "accounts.google.com",
+  "appleid.apple.com", "login.microsoftonline.com", "login.live.com",
+  "auth0.com", "okta.com", "challenges.cloudflare.com", "hcaptcha.com",
+  "recaptcha.net", "walletconnect.com", "walletconnect.org"
+];
+
+// Cross-site tracking query parameters stripped when Cookie & Param Guard is active
+const TRACKING_QUERY_PARAMS = [
+  "fbclid", "gclid", "dclid", "gbraid", "wbraid", "msclkid", "yclid",
+  "mc_cid", "mc_eid", "igshid", "_hsenc", "_hsmi",
+  "utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content", "utm_id",
+  "vero_id", "oly_enc_id", "oly_anon_id", "__s"
+];
+
+// Synchronized with SSOT spec/drainer_patterns.json (loaded dynamically in ensureDataLoaded)
+let DRAINER_PATTERNS = [
+  {
+    pattern: /(^|[-_0-9.])(claim[-_]?airdrop|airdrop[-_]?claim)([-_0-9.]|$)/i,
+    label: "claim-airdrop",
+    description: "Finto airdrop Web3 progettato per autorizzare lo svuotamento del wallet."
+  },
+  {
+    pattern: /(^|[-_0-9.])(connect[-_]?wallet|sync[-_]?wallet|rectify[-_]?wallet)([-_0-9.]|$)/i,
+    label: "connect-wallet",
+    description: "Phishing kit di falsa connessione o sincronizzazione wallet."
+  },
+  {
+    pattern: /(^|[-_0-9.])(claim[-_]?reward|token[-_]?reward|presale[-_]?token)([-_0-9.]|$)/i,
+    label: "claim-reward",
+    description: "Esca per minting o presale malevola."
+  },
+  {
+    pattern: /(^|[-_0-9.])(ledger[-_]?live[-_]?update|trezor[-_]?firmware|hardware[-_]?wallet[-_]?backup|seed[-_]?phrase[-_]?backup)([-_0-9.]|$)/i,
+    label: "wallet-backup",
+    description: "Falso aggiornamento firmware o backup per estorsione di seed phrase."
+  },
+  {
+    pattern: /(^|[-_0-9.])(rwa[-_]?yield|property[-_]?token|asset[-_]?token|token[-_]?dividend)([-_0-9.]|$)/i,
+    label: "rwa-yield",
+    description: "Phishing mirato per finto claim di dividendi o token RWA."
+  }
+];
 
 // Verified benign domains that share dictionary words or international brands/services
 const BENIGN_DOMAINS = new Set([
@@ -98,6 +156,14 @@ function adaptPunycode(delta, numPoints, firstTime) {
   return Math.floor(k + (36 * delta) / (delta + 38));
 }
 
+// Strip Latin combining diacritics via NFKD normalization
+function stripDiacritics(str) {
+  if (!str) return "";
+  return typeof str.normalize === "function"
+    ? str.normalize("NFKD").replace(/[\u0300-\u036f]/g, "")
+    : str;
+}
+
 // Fold homoglyphs to ASCII for resilient comparison
 function foldHomoglyphs(str) {
   if (!str) return "";
@@ -108,11 +174,11 @@ function foldHomoglyphs(str) {
   return out;
 }
 
-// Normalize domain label (punycode decode + homoglyph folding)
+// Normalize domain label (punycode decode + NFKD diacritics strip + homoglyph folding)
 function normalizeDomain(hostname) {
   if (!hostname) return "";
   const parts = hostname.toLowerCase().split(".");
-  const normalizedParts = parts.map(p => foldHomoglyphs(decodePunycodeLabel(p)));
+  const normalizedParts = parts.map(p => foldHomoglyphs(stripDiacritics(decodePunycodeLabel(p))));
   return normalizedParts.join(".");
 }
 
@@ -129,6 +195,21 @@ function ensureDataLoaded() {
         const suffixesResp = await fetch(suffixesUrl);
         const suffixesArr = await suffixesResp.json();
         PUBLIC_SUFFIXES = new Set(suffixesArr);
+
+        try {
+          const drainersUrl = chrome.runtime.getURL("data/drainer_patterns.json");
+          const drainersResp = await fetch(drainersUrl);
+          const drainersArr = await drainersResp.json();
+          if (Array.isArray(drainersArr) && drainersArr.length > 0) {
+            DRAINER_PATTERNS = drainersArr.map(d => ({
+              pattern: new RegExp(d.pattern, "i"),
+              label: d.label,
+              description: d.description
+            }));
+          }
+        } catch (e) {
+          // Retain fallback inline DRAINER_PATTERNS if bundled file is absent
+        }
 
         // Load compact blocked domains array for sub-millisecond, low-memory inspection
         try {
@@ -152,8 +233,20 @@ function ensureDataLoaded() {
           }
         }
 
+        // Load compact blocked malicious C2 IPs array (optional / bare-IP DNR matches)
+        try {
+          const blockedIpsUrl = chrome.runtime.getURL("data/blocked_ips.json");
+          const blockedIpsResp = await fetch(blockedIpsUrl);
+          const blockedIpsArr = await blockedIpsResp.json();
+          BLOCKED_IPS = new Set(
+            Array.isArray(blockedIpsArr) ? blockedIpsArr.map(ip => String(ip).replace(/^\[|\]$/g, "").toLowerCase()) : []
+          );
+        } catch (e) {
+          BLOCKED_IPS = new Set();
+        }
+
         console.log(
-          `[Sentinel Shield] Loaded verified brand database (${Object.keys(BRANDS).length} brands), PSL (${PUBLIC_SUFFIXES.size} suffixes), and ${BLOCKED_DOMAINS.size} DNR blocked domains.`
+          `[Sentinel Shield] Loaded verified brand database (${Object.keys(BRANDS).length} brands), PSL (${PUBLIC_SUFFIXES.size} suffixes), ${BLOCKED_DOMAINS.size} DNR blocked domains, and ${BLOCKED_IPS.size} C2 IPs.`
         );
       } catch (err) {
         loadDataPromise = null; // Reset to allow retry on transient failure
@@ -226,7 +319,7 @@ function keywordMatches(domainCore, kw) {
   return false;
 }
 
-// Comprehensive brand impersonation inspection with subdomain and homoglyph defense
+// Comprehensive brand impersonation & crypto drainer inspection with subdomain and homoglyph defense
 function checkBrandImpersonation(rawHostname) {
   if (!rawHostname) return { spoofed: false };
 
@@ -245,7 +338,7 @@ function checkBrandImpersonation(rawHostname) {
     return { spoofed: false };
   }
 
-  // 3. Normalize domain (Punycode decode + Homoglyph folding)
+  // 3. Normalize domain (Punycode decode + NFKD diacritic strip + Homoglyph folding)
   const normalizedHostname = normalizeDomain(rawHostname);
   const etld1 = getETLDPlusOne(normalizedHostname);
   const domainCore = etld1.split(".")[0];
@@ -279,7 +372,6 @@ function checkBrandImpersonation(rawHostname) {
 
     // Core Domain Inspection
     for (const kw of brand.keywords) {
-      // Keyword boundary or compound word match (e.g. "postelogin", "serviziposte")
       if (keywordMatches(domainCore, kw)) {
         return {
           spoofed: true,
@@ -308,17 +400,166 @@ function checkBrandImpersonation(rawHostname) {
     }
   }
 
+  // 4. Crypto / Web3 Wallet Drainer Signatures
+  for (const drainer of DRAINER_PATTERNS) {
+    if (drainer.pattern.test(normalizedHostname)) {
+      return {
+        spoofed: true,
+        brandName: "Wallet / Web3 Security",
+        officialDomains: [],
+        matchedKeyword: drainer.label,
+        hostname: rawHostname,
+        vector: "drainer",
+        description: drainer.description
+      };
+    }
+  }
+
   return { spoofed: false };
+}
+
+// Check whether optional Cookie & Tracking Param permissions are granted
+async function hasCookiePermissions() {
+  if (!chrome.permissions || typeof chrome.permissions.contains !== "function") {
+    return false;
+  }
+  try {
+    return await chrome.permissions.contains({
+      permissions: ["cookies"],
+      origins: ["<all_urls>"]
+    });
+  } catch (e) {
+    return false;
+  }
+}
+
+// Synchronize static tracker ruleset, per-site exceptions, and opt-in Cookie/Param Guard dynamic DNR rules
+async function syncPrivacyShields() {
+  try {
+    const stored = await chrome.storage.local.get([
+      "pricingShieldEnabled",
+      "cookieGuardEnabled",
+      "sitePrivacyExceptions"
+    ]);
+    const pricingEnabled = stored.pricingShieldEnabled !== false; // Enabled by default (0 host permissions)
+    const cookieRequested = stored.cookieGuardEnabled === true;
+    const siteExceptions = Array.isArray(stored.sitePrivacyExceptions)
+      ? stored.sitePrivacyExceptions.filter(d => typeof d === "string" && d.length > 0)
+      : [];
+
+    // 1. Toggle Zero-Permission Anti-Dynamic Pricing & 3rd-Party Tracker static ruleset
+    if (chrome.declarativeNetRequest && typeof chrome.declarativeNetRequest.updateEnabledRulesets === "function") {
+      await chrome.declarativeNetRequest.updateEnabledRulesets({
+        enableRulesetIds: pricingEnabled ? ["sentinel_ruleset", PRICING_RULESET_ID] : ["sentinel_ruleset"],
+        disableRulesetIds: pricingEnabled ? [] : [PRICING_RULESET_ID]
+      });
+    }
+
+    // 2. Sync dynamic rules for Opt-In Cookie/Param Guard and Per-Site Exceptions
+    if (chrome.declarativeNetRequest && typeof chrome.declarativeNetRequest.updateDynamicRules === "function") {
+      const existingDynamic = typeof chrome.declarativeNetRequest.getDynamicRules === "function"
+        ? await chrome.declarativeNetRequest.getDynamicRules()
+        : [];
+      const removeRuleIds = (existingDynamic || [])
+        .map(r => r.id)
+        .filter(id => id === COOKIE_HEADER_RULE_ID || id === TRACKING_PARAM_RULE_ID || id >= SITE_ALLOW_RULE_BASE_ID);
+
+      const addRules = [];
+
+      // Per-site third-party allow rules (priority 3 overrides static rulesets for user-whitelisted sites)
+      siteExceptions.forEach((siteDomain, idx) => {
+        addRules.push({
+          id: SITE_ALLOW_RULE_BASE_ID + idx,
+          priority: 3,
+          action: { type: "allow" },
+          condition: {
+            initiatorDomains: [siteDomain],
+            domainType: "thirdParty",
+            resourceTypes: THIRD_PARTY_SUBRESOURCE_TYPES
+          }
+        });
+      });
+
+      const cookiePermitted = cookieRequested && await hasCookiePermissions();
+      if (cookiePermitted) {
+        const cookieCondition = {
+          domainType: "thirdParty",
+          resourceTypes: [
+            "sub_frame", "script", "image", "xmlhttprequest",
+            "ping", "media", "font", "stylesheet", "other"
+          ],
+          excludedRequestDomains: ESSENTIAL_AUTH_PAYMENT_DOMAINS
+        };
+        if (siteExceptions.length > 0) {
+          cookieCondition.excludedInitiatorDomains = siteExceptions;
+        }
+
+        addRules.push({
+          id: COOKIE_HEADER_RULE_ID,
+          priority: 1,
+          action: {
+            type: "modifyHeaders",
+            requestHeaders: [{ header: "cookie", operation: "remove" }],
+            responseHeaders: [{ header: "set-cookie", operation: "remove" }]
+          },
+          condition: cookieCondition
+        });
+
+        const paramCondition = {
+          urlFilter: "*",
+          resourceTypes: ["main_frame"]
+        };
+        if (siteExceptions.length > 0) {
+          paramCondition.excludedInitiatorDomains = siteExceptions;
+          paramCondition.excludedRequestDomains = siteExceptions;
+        }
+
+        addRules.push({
+          id: TRACKING_PARAM_RULE_ID,
+          priority: 1,
+          action: {
+            type: "redirect",
+            redirect: {
+              transform: {
+                queryTransform: {
+                  removeParams: TRACKING_QUERY_PARAMS
+                }
+              }
+            }
+          },
+          condition: paramCondition
+        });
+      }
+
+      await chrome.declarativeNetRequest.updateDynamicRules({
+        removeRuleIds,
+        addRules
+      });
+    }
+  } catch (err) {
+    console.error("[Sentinel Shield] Failed to sync privacy shields:", err);
+  }
 }
 
 // Lifecycle events
 chrome.runtime.onInstalled.addListener(() => {
   ensureDataLoaded();
+  syncPrivacyShields();
 });
 
 chrome.runtime.onStartup.addListener(() => {
   ensureDataLoaded();
+  syncPrivacyShields();
 });
+
+function normalizeBareHost(hostname) {
+  return (hostname || "").toLowerCase().trim().replace(/^\[|\]$/g, "");
+}
+
+function isHostBlocked(hostname, etld1) {
+  const bare = normalizeBareHost(hostname);
+  return BLOCKED_DOMAINS.has(bare) || BLOCKED_DOMAINS.has(etld1) || BLOCKED_IPS.has(bare);
+}
 
 // Catch DNR network blocks on main_frame and seamlessly display local blocked.html without requiring host permissions.
 // Disambiguates against other content blockers and prevents infinite redirect loops when a session allow rule exists.
@@ -327,17 +568,17 @@ chrome.webNavigation.onErrorOccurred.addListener(async (details) => {
   if (details.error === "net::ERR_BLOCKED_BY_CLIENT" && details.url && details.url.startsWith("http")) {
     try {
       await ensureDataLoaded();
-      const hostname = new URL(details.url).hostname.toLowerCase();
+      const hostname = normalizeBareHost(new URL(details.url).hostname);
       const etld1 = getETLDPlusOne(hostname);
 
-      if (BLOCKED_DOMAINS.has(hostname) || BLOCKED_DOMAINS.has(etld1)) {
-        // Prevent infinite loop with other extensions: if domain is already bypassed in Sentinel session rules, do not redirect
+      if (isHostBlocked(hostname, etld1)) {
         const existingSessionRules = await new Promise(resolve => {
           chrome.declarativeNetRequest.getSessionRules(resolve);
         });
 
         const isAlreadyAllowed = (existingSessionRules || []).some(
           r => r.action && r.action.type === "allow" &&
+               (!r.condition?.tabIds || r.condition.tabIds.includes(details.tabId)) &&
                r.condition && (
                  r.condition.urlFilter === `||${hostname}^` ||
                  r.condition.urlFilter === `||${etld1}^`
@@ -366,7 +607,6 @@ chrome.webNavigation.onBeforeNavigate.addListener(async (details) => {
     const url = new URL(details.url);
     const hostname = url.hostname;
 
-    // Check user exceptions
     const storage = await chrome.storage.local.get(["exceptions"]);
     const exceptions = storage.exceptions || [];
     const warningKey = `tab_${details.tabId}`;
@@ -383,8 +623,8 @@ chrome.webNavigation.onBeforeNavigate.addListener(async (details) => {
     if (result.spoofed) {
       await chrome.storage.session.set({ [warningKey]: result });
       chrome.action.setBadgeText({ text: "!", tabId: details.tabId });
-      chrome.action.setBadgeBackgroundColor({ color: "#f57c00", tabId: details.tabId });
-      console.warn(`[Sentinel Shield] Brand impersonation alert for tab ${details.tabId}:`, result);
+      chrome.action.setBadgeBackgroundColor({ color: "#f59e0b", tabId: details.tabId });
+      console.warn(`[Sentinel Shield] Threat alert for tab ${details.tabId}:`, result);
     } else {
       await chrome.storage.session.remove(warningKey);
       chrome.action.setBadgeText({ text: "", tabId: details.tabId });
@@ -394,23 +634,50 @@ chrome.webNavigation.onBeforeNavigate.addListener(async (details) => {
   }
 });
 
-// Clean up tab tracking in session storage on tab close
-chrome.tabs.onRemoved.addListener((tabId) => {
+// Clean up tab tracking and tab-scoped DNR session bypass rules on tab close
+chrome.tabs.onRemoved.addListener(async (tabId) => {
   const warningKey = `tab_${tabId}`;
-  chrome.storage.session.remove(warningKey);
+  const bypassKey = `tabBypass_${tabId}`;
+  try {
+    const stored = await chrome.storage.session.get([bypassKey]);
+    const ruleIds = Array.isArray(stored[bypassKey]) ? stored[bypassKey] : [];
+    await chrome.storage.session.remove([warningKey, bypassKey]);
+    if (ruleIds.length > 0 && chrome.declarativeNetRequest?.updateSessionRules) {
+      chrome.declarativeNetRequest.updateSessionRules({ removeRuleIds: ruleIds });
+    }
+  } catch (e) {
+    chrome.storage.session.remove(warningKey);
+  }
 });
 
-// Message handling for popup UI and bypass requests
+// Message handling for popup UI, privacy toggles, cookie cleanup, and bypass requests
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === "getTabWarning") {
     const warningKey = `tab_${request.tabId}`;
-    chrome.storage.session.get([warningKey], (res) => {
-      const warning = res[warningKey] || null;
-      const domain = (request.domain || "").toLowerCase().trim();
+    (async () => {
+      await ensureDataLoaded();
+      const [sessRes, localRes, cookiePermitted] = await Promise.all([
+        chrome.storage.session.get([warningKey]),
+        chrome.storage.local.get(["pricingShieldEnabled", "cookieGuardEnabled", "sitePrivacyExceptions"]),
+        hasCookiePermissions()
+      ]);
+
+      const warning = sessRes[warningKey] || null;
+      const domain = normalizeBareHost(request.domain);
       const etld1 = getETLDPlusOne(domain);
-      const isBlocked = BLOCKED_DOMAINS.has(domain) || BLOCKED_DOMAINS.has(etld1);
-      sendResponse({ warning: warning, isBlocked: isBlocked });
-    });
+      const isBlocked = isHostBlocked(domain, etld1);
+      const siteExceptions = Array.isArray(localRes.sitePrivacyExceptions) ? localRes.sitePrivacyExceptions : [];
+
+      sendResponse({
+        warning,
+        isBlocked,
+        etld1,
+        pricingShieldEnabled: localRes.pricingShieldEnabled !== false,
+        cookieGuardEnabled: localRes.cookieGuardEnabled === true && cookiePermitted,
+        hasCookiePermission: cookiePermitted,
+        sitePrivacyExempt: Boolean(etld1 && siteExceptions.includes(etld1))
+      });
+    })();
     return true;
   }
 
@@ -435,6 +702,113 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     return true;
   }
 
+  if (request.action === "setPricingShield") {
+    const enabled = Boolean(request.enabled);
+    chrome.storage.local.set({ pricingShieldEnabled: enabled }, async () => {
+      await syncPrivacyShields();
+      sendResponse({ success: true, pricingShieldEnabled: enabled });
+    });
+    return true;
+  }
+
+  if (request.action === "setCookieGuard") {
+    const enabled = Boolean(request.enabled);
+    (async () => {
+      if (enabled) {
+        const permitted = await hasCookiePermissions();
+        if (!permitted) {
+          sendResponse({ success: false, error: "Cookie & host permissions not granted" });
+          return;
+        }
+      }
+      await chrome.storage.local.set({ cookieGuardEnabled: enabled });
+      await syncPrivacyShields();
+      sendResponse({ success: true, cookieGuardEnabled: enabled });
+    })();
+    return true;
+  }
+
+  if (request.action === "toggleSitePrivacyException") {
+    (async () => {
+      await ensureDataLoaded();
+      const rawDomain = (request.domain || "").toLowerCase().trim();
+      const etld1 = getETLDPlusOne(rawDomain);
+      if (!etld1) {
+        sendResponse({ success: false, error: "Invalid domain" });
+        return;
+      }
+      const stored = await chrome.storage.local.get(["sitePrivacyExceptions"]);
+      const list = Array.isArray(stored.sitePrivacyExceptions) ? [...stored.sitePrivacyExceptions] : [];
+      const idx = list.indexOf(etld1);
+      let exempt = false;
+      if (idx >= 0) {
+        list.splice(idx, 1);
+        exempt = false;
+      } else {
+        list.push(etld1);
+        exempt = true;
+      }
+      await chrome.storage.local.set({ sitePrivacyExceptions: list });
+      await syncPrivacyShields();
+      sendResponse({ success: true, sitePrivacyExempt: exempt, etld1 });
+    })();
+    return true;
+  }
+
+  if (request.action === "getSiteCookiesCount") {
+    (async () => {
+      await ensureDataLoaded();
+      const permitted = await hasCookiePermissions();
+      if (!permitted || !chrome.cookies) {
+        sendResponse({ permitted: false, count: 0, etld1: "" });
+        return;
+      }
+      const rawDomain = (request.domain || "").toLowerCase().trim();
+      const etld1 = getETLDPlusOne(rawDomain);
+      if (!etld1) {
+        sendResponse({ permitted: true, count: 0, etld1: "" });
+        return;
+      }
+      const cookies = await chrome.cookies.getAll({ domain: etld1 });
+      sendResponse({ permitted: true, count: cookies.length, etld1 });
+    })();
+    return true;
+  }
+
+  if (request.action === "cleanSiteCookies") {
+    (async () => {
+      await ensureDataLoaded();
+      const permitted = await hasCookiePermissions();
+      if (!permitted || !chrome.cookies) {
+        sendResponse({ success: false, removed: 0, error: "Permission required" });
+        return;
+      }
+      const rawDomain = (request.domain || "").toLowerCase().trim();
+      const etld1 = getETLDPlusOne(rawDomain);
+      if (!etld1) {
+        sendResponse({ success: false, removed: 0, error: "Invalid domain" });
+        return;
+      }
+      const cookies = await chrome.cookies.getAll({ domain: etld1 });
+      let removed = 0;
+      for (const c of cookies) {
+        const cleanHost = (c.domain || etld1).replace(/^\./, "");
+        const protocol = c.secure ? "https" : "http";
+        const cookieUrl = `${protocol}://${cleanHost}${c.path || "/"}`;
+        try {
+          const details = { url: cookieUrl, name: c.name };
+          if (c.storeId) details.storeId = c.storeId;
+          const res = await chrome.cookies.remove(details);
+          if (res) removed += 1;
+        } catch (e) {
+          // Ignore individual cookie removal edge cases (e.g. partitionKey differences)
+        }
+      }
+      sendResponse({ success: true, removed, etld1 });
+    })();
+    return true;
+  }
+
   // Session-scoped bypass for DNR blocked sites (overrides static block rules via priority 2 allow rule)
   if (request.action === "bypassDomain") {
     const domain = (request.domain || "").toLowerCase().trim();
@@ -443,9 +817,16 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       return true;
     }
 
+    const resolvedTabId = Number.isInteger(request.tabId)
+      ? request.tabId
+      : (sender && sender.tab && Number.isInteger(sender.tab.id) ? sender.tab.id : null);
+
     chrome.declarativeNetRequest.getSessionRules(async (existingRules) => {
       const alreadyAllowed = (existingRules || []).some(
-        r => r.condition && r.condition.urlFilter === `||${domain}^` && r.action && r.action.type === "allow"
+        r => r.condition &&
+             r.condition.urlFilter === `||${domain}^` &&
+             r.action && r.action.type === "allow" &&
+             (resolvedTabId === null ? !r.condition.tabIds : (!r.condition.tabIds || r.condition.tabIds.includes(resolvedTabId)))
       );
       if (alreadyAllowed) {
         sendResponse({ success: true, alreadyAllowed: true });
@@ -461,8 +842,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       const condition = {
         urlFilter: `||${domain}^`
       };
-      if (request.tabId) {
-        condition.tabIds = [request.tabId];
+      if (resolvedTabId !== null) {
+        condition.tabIds = [resolvedTabId];
       }
 
       const allowRule = {
@@ -474,13 +855,20 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
       chrome.declarativeNetRequest.updateSessionRules({
         addRules: [allowRule]
-      }, () => {
+      }, async () => {
         if (chrome.runtime.lastError) {
           console.error("[Sentinel Shield] Failed to add session bypass rule:", chrome.runtime.lastError);
           sendResponse({ success: false, error: chrome.runtime.lastError.message });
         } else {
+          if (resolvedTabId !== null) {
+            const bypassKey = `tabBypass_${resolvedTabId}`;
+            const cur = await chrome.storage.session.get([bypassKey]);
+            const prevIds = Array.isArray(cur[bypassKey]) ? cur[bypassKey] : [];
+            if (!prevIds.includes(nextId)) prevIds.push(nextId);
+            await chrome.storage.session.set({ [bypassKey]: prevIds });
+          }
           console.log(`[Sentinel Shield] Added session bypass allow rule (id ${nextId}) for ${domain}`);
-          sendResponse({ success: true, ruleId: nextId });
+          sendResponse({ success: true, ruleId: nextId, tabScoped: resolvedTabId !== null });
         }
       });
     });

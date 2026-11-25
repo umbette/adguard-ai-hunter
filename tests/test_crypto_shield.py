@@ -41,11 +41,17 @@ def test_default_crypto_shield_drainers_and_phishing():
     assert c2.target_brand == "MetaMask"
     assert c2.threat_type == "DAPP_CLONE"
 
-    # 3. Punycode IDN homograph attack (e.g. xn--uniswp-tta.org -> uniswáp.org)
+    # 3. Punycode IDN homograph attack (e.g. xn--uniswp-tta.org -> uniswáp.org & Cyrillic lookalikes)
     p1 = evaluate_crypto_financial_threat("xn--uniswp-tta.org")
     assert p1 is not None
     assert p1.target_brand == "Uniswap"
     assert p1.threat_type == "HOMOGRAPH_PUNYCODE"
+
+    cyrillic_uniswap = "unisw\u0430p.org".encode("idna").decode("ascii")  # Cyrillic 'а'
+    p2 = evaluate_crypto_financial_threat(cyrillic_uniswap)
+    assert p2 is not None
+    assert p2.target_brand == "Uniswap"
+    assert p2.threat_type == "HOMOGRAPH_PUNYCODE"
 
 def test_default_official_rpc_and_dapps_allowed():
     reset_to_defaults()

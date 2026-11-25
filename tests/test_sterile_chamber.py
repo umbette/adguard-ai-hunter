@@ -164,3 +164,38 @@ class TestDashboardSterileRoom(AioHTTPTestCase):
             assert status_data2["is_active"] is False
         finally:
             deactivate_sterile_chamber(test_ip)
+
+
+@pytest.mark.asyncio
+async def test_ingestion_enforces_active_sterile_chamber(tmp_path):
+    """IngestionWorker must actively block and dispatch AdGuard rules for unauthorized queries during Stanza Sterile."""
+    from unittest.mock import AsyncMock, MagicMock
+    from src.ingestion import IngestionWorker
+    from src.heuristics import HeuristicsEngine
+    from src.gemini_client import GeminiClassifier
+    from src.dispatcher import Dispatcher
+
+    settings = Settings()
+    storage = StorageEngine(str(tmp_path / "sterile.db"))
+    heuristics = HeuristicsEngine()
+    gemini = GeminiClassifier(settings.gemini.api_key)
+    dispatcher = Dispatcher(settings, storage)
+    dispatcher.inject_adguard_rule = AsyncMock(return_value=True)
+    dispatcher.send_mobile_alert = AsyncMock(return_value=True)
+
+    worker = IngestionWorker(settings, storage, heuristics, gemini, dispatcher)
+    client_ip = "192.168.1.212"
+    storage.upsert_device(ip=client_ip, hostname="Vault Device", default_status="APPROVED")
+    activate_sterile_chamber(client_ip, duration_minutes=10, reason="Vault Session")
+    try:
+        await worker._process_entries(
+            [
+                {"question": {"name": "criteo.com"}, "client": client_ip, "time": "2026-11-24T20:00:00Z", "reason": "NotFilteredNotFound"},
+                {"question": {"name": "metamask.io"}, "client": client_ip, "time": "2026-11-24T20:00:01Z", "reason": "NotFilteredNotFound"},
+            ]
+        )
+        dispatcher.inject_adguard_rule.assert_awaited_once_with(f"||criteo.com^$client={client_ip}")
+        dispatcher.send_mobile_alert.assert_awaited_once()
+        assert dispatcher.send_mobile_alert.call_args.kwargs["classification"] == "STERILE_CHAMBER_BLOCK"
+    finally:
+        deactivate_sterile_chamber(client_ip)

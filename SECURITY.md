@@ -2,7 +2,7 @@
 
 ## Our Zero-Telemetry Security Model
 
-RePlug™ and Sentinel Core are designed around **100% local-first execution**:
+Sentinel Core and Sentinel Shield are designed around **100% local-first execution**:
 - DNS inspection, behavioral anomaly scoring, and phishing heuristics execute strictly inside your local LAN or browser runtime.
 - No browsing history, device MAC addresses, private IP allocations, or credential tokens are ever collected by upstream maintainers.
 - Community filter updates (`filters/threat_blacklist.txt`) and device compatibility profiles (`sources/device_profiles.yaml`) are public, human-auditable files.
@@ -13,9 +13,8 @@ RePlug™ and Sentinel Core are designed around **100% local-first execution**:
 
 | Component | Version | Security Support |
 | :--- | :--- | :--- |
-| Sentinel Core Daemon | `0.4.x` (`main`) | ✅ Active |
-| Sentinel Shield MV3 Extension | `0.3.x` (`extension/`) | ✅ Active |
-| Nozzle Guardian Spec & Alpha | Pre-release Design | 🟡 Design Hardening |
+| Sentinel Core Daemon | `0.4.1` (`src/`) | ✅ Active |
+| Sentinel Shield MV3 Extension | `0.4.1` (`extension/`) | ✅ Active |
 
 ---
 

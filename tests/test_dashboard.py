@@ -36,6 +36,8 @@ class TestSentinelDashboard(AioHTTPTestCase):
         assert "Risparmio Stima Dynamic Pricing" in text
         assert "Risoluzione Rapida Companion App" in text
         assert "Zero-Knowledge" in text
+        assert "fetch('/api/" not in text
+        assert "./api/stats" in text
 
     async def test_dashboard_api_stats(self):
         resp = await self.client.get("/api/stats")
@@ -44,13 +46,25 @@ class TestSentinelDashboard(AioHTTPTestCase):
         assert data["dns_queries"] == 36000
         assert data["blocked_queries"] == 10000
         assert data["blocked_percentage"] == 27.8
-        assert data["shields_total"] == 14
-        assert data["shields_active"] == 14
-        assert len(data["shields"]) == 14
+        assert data["shields_total"] == 15
+        assert data["shields_active"] == 15
+        assert len(data["shields"]) == 15
         assert len(data["top_blocked"]) == 2
         assert data["top_blocked"][0]["domain"] == "api.ad.intl.xiaomi.com"
         assert data["estimated_savings_eur"] > 0
+        assert data["devices"] == []
         assert data["system_status"] == "MASSIMA PROTEZIONE ATTIVA"
+
+        # Honest zero-savings check when zero pricing trackers blocked
+        self.dashboard._fetch_adguard_stats = AsyncMock(return_value={
+            "num_dns_queries": 100,
+            "num_blocked_filtering": 0,
+            "top_blocked_domains": []
+        })
+        resp_zero = await self.client.get("/api/stats")
+        data_zero = await resp_zero.json()
+        assert data_zero["estimated_savings_eur"] == 0
+        assert data_zero["pricing_details"]["protected_sessions"] == 0
 
     async def test_dashboard_api_blocked_queries(self):
         resp = await self.client.get("/api/blocked_queries")
@@ -104,7 +118,8 @@ class TestSentinelDashboard(AioHTTPTestCase):
         assert resp.status == 200
         data = await resp.json()
         assert data["status"] == "success"
-        assert len(data["shields"]) == 14
+        assert len(data["shields"]) == 15
+        assert any(s["id"] == "public_venue_guest" for s in data["shields"])
         # Verify console_telemetry exists and has safe description
         console_shield = next((s for s in data["shields"] if s["id"] == "console_telemetry"), None)
         assert console_shield is not None
@@ -134,3 +149,20 @@ class TestSentinelDashboard(AioHTTPTestCase):
     async def test_dashboard_api_shields_toggle_invalid(self):
         resp = await self.client.post("/api/shields/toggle", json={})
         assert resp.status == 400
+
+    async def test_dashboard_auth_and_csrf_protection(self):
+        self.dashboard.settings.dashboard.api_key = "secret_dash_token_42"
+        # Missing API key -> 401
+        r_unauth = await self.client.get("/api/stats")
+        assert r_unauth.status == 401
+        # Valid X-API-Key -> 200
+        r_auth = await self.client.get("/api/stats", headers={"X-API-Key": "secret_dash_token_42"})
+        assert r_auth.status == 200
+        # Cross-origin POST -> 403 CSRF rejection
+        r_csrf = await self.client.post(
+            "/api/shields/toggle",
+            json={"id": "console_telemetry", "status": "ACTIVE"},
+            headers={"X-API-Key": "secret_dash_token_42", "Origin": "https://attacker.example"},
+        )
+        assert r_csrf.status == 403
+        self.dashboard.settings.dashboard.api_key = ""

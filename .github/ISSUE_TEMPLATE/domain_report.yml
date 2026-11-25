@@ -1,11 +1,11 @@
 name: Report Suspicious / DGA Domain
-description: Submit a malicious or DGA domain detected by your RePlug Sentinel Shield instance
+description: Submit a malicious or DGA domain detected by your Sentinel Shield instance
 title: "[Threat Report]: <domain.com>"
 labels: ["community-threat-report"]
 body:
   - type: markdown
     attributes:
-      value: "Thank you for contributing to the RePlug Sentinel community threat blacklist!"
+      value: "Thank you for contributing to the Sentinel community threat blacklist!"
   - type: input
     id: domain
     attributes:

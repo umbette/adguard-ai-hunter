@@ -1,6 +1,6 @@
-# Contributing to RePlug™ (Sentinel Core & Nozzle Guardian)
+# Contributing to Sentinel Core & Sentinel Shield
 
-We welcome contributions, bug fixes, printer IPP profiles, and whitelist recommendations from the community!
+We welcome contributions, bug fixes, device profiles, and whitelist recommendations from the community!
 
 ## How to Contribute
 

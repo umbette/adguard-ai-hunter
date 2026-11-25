@@ -28,6 +28,10 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt -r requirements-dev.txt
 
+      - name: Verify Single Source of Truth sync (zero drift)
+        run: |
+          PYTHONPATH=. python scripts/compile_ssot.py --check
+
       - name: Run pytest test suite
         run: |
           PYTHONPATH=. pytest tests -v

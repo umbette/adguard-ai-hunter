@@ -3,37 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RePlug™ — Ethical Smartphone Upcycling for Smart Home Defense &amp; Printer Care</title>
-    <meta name="description" content="Transform dormant smartphones into local-first cyber sentinels (Sentinel Shield) and automated inkjet/3D printer guardians (Nozzle Guardian). Zero new plastic, 100% zero-cloud privacy.">
+    <title>Sentinel Core &amp; Sentinel Shield — 100% Local Network &amp; Browser Defense</title>
+    <meta name="description" content="Zero-cloud home DNS cyber-defense (Sentinel Core) and Manifest V3 browser protection (Sentinel Shield) running on Docker, Home Assistant, PC, or mini-PC.">
     <meta name="author" content="Umberto (umbette)">
-    <meta name="keywords" content="RePlug, Sentinel Shield, Nozzle Guardian, smartphone upcycling, anti e-waste, local privacy, Home Assistant, AdGuard Home, CISS printer maintenance, EcoTank, IPP">
+    <meta name="keywords" content="Sentinel Core, Sentinel Shield, local privacy, Home Assistant, AdGuard Home, Chrome MV3, anti-dynamic pricing, crypto vault, IoT firewall">
     <link rel="canonical" href="https://umbette.github.io/sentinel/">
-    <link rel="icon" type="image/png" href="assets/replug_icon.png">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23090d14'/%3E%3Cpath d='M32 10L14 18v14c0 12 7.8 22.8 18 26 10.2-3.2 18-14 18-26V18L32 10z' fill='none' stroke='%2300e599' stroke-width='4.5' stroke-linejoin='round'/%3E%3Cpath d='M24 32l6 6 12-13' fill='none' stroke='%2300e599' stroke-width='4.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
 
     <!-- Open Graph / Social Media -->
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://umbette.github.io/sentinel/">
-    <meta property="og:title" content="RePlug™ — Upcycled. Connected. Secure.">
-    <meta property="og:description" content="Don't buy new plastic gadgets. Repurpose dormant smartphones into autonomous cyber sentinels and automated printer guardians — 100% local, zero cloud.">
-    <meta property="og:image" content="https://umbette.github.io/sentinel/assets/replug_og_banner.png">
-    <meta property="og:image:width" content="1280">
-    <meta property="og:image:height" content="640">
+    <meta property="og:title" content="Sentinel — Sovereign Home &amp; Browser Cyber-Defense">
+    <meta property="og:description" content="15 IoT &amp; privacy shields, CDN-safe malicious IP correlation, anti-dynamic pricing, and MV3 browser defense with zero cloud telemetry.">
 
     <!-- Twitter Card -->
-    <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="RePlug™ — Upcycled Smart Home &amp; Privacy Guardians">
-    <meta name="twitter:description" content="Zero new plastic. 100% local-first privacy. Meet RePlug Sentinel Shield &amp; Nozzle Guardian.">
-    <meta name="twitter:image" content="https://umbette.github.io/sentinel/assets/replug_og_banner.png">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="Sentinel — Local DNS &amp; MV3 Browser Defense">
+    <meta name="twitter:description" content="100% local-first home &amp; endpoint security bridging AdGuard Home, Home Assistant, and Chrome/Edge MV3 (v0.4.1).">
 
     <!-- Structured Data (JSON-LD) -->
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
       "@type": "SoftwareApplication",
-      "name": "RePlug",
-      "alternateName": ["RePlug Sentinel Shield", "RePlug Nozzle Guardian"],
+      "name": "Sentinel Core",
+      "alternateName": ["Sentinel Shield"],
       "applicationCategory": "SecurityApplication",
-      "operatingSystem": "Linux, Docker, Home Assistant, ChromeOS, Android",
+      "operatingSystem": "Linux, Windows, macOS, Docker, Home Assistant, ChromeOS, Android",
       "url": "https://umbette.github.io/sentinel/",
       "author": {
         "@type": "Person",
@@ -639,13 +635,17 @@
     <nav>
         <div class="nav-inner">
             <a href="#" class="logo-group">
-                <img src="assets/replug_icon.png" alt="RePlug Emblem" class="logo-img">
-                <span class="logo-title">RePlug™</span>
+                <svg width="28" height="28" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" class="logo-img" aria-hidden="true">
+                    <rect width="64" height="64" rx="14" fill="#101622"/>
+                    <path d="M32 10L14 18v14c0 12 7.8 22.8 18 26 10.2-3.2 18-14 18-26V18L32 10z" stroke="#00e599" stroke-width="4.5" stroke-linejoin="round"/>
+                    <path d="M24 32l6 6 12-13" stroke="#00e599" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <span class="logo-title">Sentinel</span>
             </a>
             <div class="nav-links">
-                <a href="#modules">Ecosystem</a>
+                <a href="#modules">Architecture</a>
                 <a href="#architecture">How It Works</a>
-                <a href="#manifesto">Manifesto</a>
+                <a href="#manifesto">Zero-Trust</a>
                 <a href="https://github.com/umbette/sentinel" target="_blank" rel="noopener" class="btn-github">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
                     GitHub Repo
@@ -656,82 +656,86 @@
 
     <header class="hero">
         <div class="hero-emblem-wrap">
-            <img src="assets/replug_icon.png" alt="RePlug Infinity Ascension Emblem" class="hero-emblem">
+            <svg width="72" height="72" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" class="hero-emblem" aria-hidden="true">
+                <rect width="64" height="64" rx="16" fill="#101622"/>
+                <path d="M32 10L14 18v14c0 12 7.8 22.8 18 26 10.2-3.2 18-14 18-26V18L32 10z" stroke="#00e599" stroke-width="4" stroke-linejoin="round"/>
+                <path d="M24 32l6 6 12-13" stroke="#00e599" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
         </div>
         <div>
-            <span class="badge-pill">Zero New Plastic &bull; 100% Local-First</span>
+            <span class="badge-pill">Local-First &bull; Zero-Telemetry &bull; AGPLv3 + Noncommercial Hardware</span>
         </div>
-        <h1>Don't buy new plastic.<br>RePlug your old smartphone.</h1>
-        <p>Over 5 billion functional smartphones sit dormant in drawers. RePlug gives them a new mission as autonomous, zero-cloud sentinels for your network privacy and printer preservation.</p>
+        <h1>Sovereign Network<br>&amp; Browser Defense.</h1>
+        <p>Protect every smart device at home and every tab on the road. Run <strong>Sentinel Core</strong> locally with AdGuard Home / Home Assistant plus the <strong>Sentinel Shield</strong> MV3 browser extension—zero cloud, zero tracking.</p>
         <div class="cta-group">
             <a href="https://github.com/umbette/sentinel" target="_blank" rel="noopener" class="btn-primary">
                 Explore Code on GitHub
             </a>
             <a href="#early-access" class="btn-secondary">
-                Deploy Now or Join Alpha
+                Deploy Sentinel v0.4.1
             </a>
         </div>
     </header>
 
     <div class="impact-banner">
         <div>
-            <div class="impact-metric">185g</div>
-            <div class="impact-label">E-Waste Prevented per Phone</div>
+            <div class="impact-metric">15 Shields</div>
+            <div class="impact-label">Deterministic IoT &amp; Privacy Guards</div>
         </div>
         <div>
             <div class="impact-metric">0 Bytes</div>
             <div class="impact-label">Cloud Telemetry Egressed</div>
         </div>
         <div>
-            <div class="impact-metric">15 Shields</div>
-            <div class="impact-label">Deterministic IoT Defenses</div>
+            <div class="impact-metric">47 Brands</div>
+            <div class="impact-label">SSOT Phishing &amp; Drainer Guards</div>
         </div>
         <div>
-            <div class="impact-metric">98/98</div>
-            <div class="impact-label">Automated Tests Passing</div>
+            <div class="impact-metric">MV3 0.4.1</div>
+            <div class="impact-label">Zero-Permission Blocking + Cookie Guard</div>
         </div>
     </div>
 
     <main class="container" id="modules">
         <div class="section-title">
-            <h2>The RePlug™ Ecosystem</h2>
-            <p>Specialized local modules designed to transform existing silicon into dependable household guardians without subscriptions or disposable hubs.</p>
+            <h2>Core Security Architecture</h2>
+            <p>Two tightly aligned defenses — household DNS protection via Sentinel Core and on-the-go browser hardening via Sentinel Shield MV3.</p>
         </div>
 
         <div class="modules-grid">
             <div class="module-card">
-                <span class="module-tag">Module 01 &bull; Available Now</span>
-                <h3>RePlug Sentinel Shield</h3>
-                <p>Network defense console bridging local DNS resolvers (AdGuard Home / Pi-hole) with Home Assistant to block tracking, telemetry, and predatory pricing.</p>
+                <span class="module-tag">Layer 01 &bull; Home Network Daemon</span>
+                <h3>Sentinel Core (`src/`)</h3>
+                <p>Autonomous cyber-defense daemon bridging AdGuard Home / Pi-hole and Home Assistant Ingress with zero cloud telemetry.</p>
                 <ul class="feature-list">
-                    <li>15 deterministic shields for Smart TVs, vacuums, 3D printers &amp; cars</li>
-                    <li>Anti-dynamic pricing protection against travel &amp; hotel price gouging</li>
-                    <li>Caregiver anti-phishing SMS alerts &amp; Crypto RPC integrity vault</li>
-                    <li>Zero-knowledge 1-click unbreak catalog &amp; Scan-on-Demand audit</li>
+                    <li>15 deterministic shields (Smart TV ACR, Vacuum, Badbox AOSP C2, Automotive, 3D Printers)</li>
+                    <li>CDN-safe Malicious IP &amp; DNS-answer correlation (Feodo / Spamhaus DROP)</li>
+                    <li>Multi-Label Shannon Entropy DGA detector (<code>H &gt; 3.85</code>) + Gemini advisory</li>
+                    <li>Zero-Trust Device Admission Control &amp; 1-Click Unbreak Console</li>
                 </ul>
             </div>
 
             <div class="module-card">
-                <span class="module-tag">Module 02 &bull; Core Flagship Design</span>
-                <h3>RePlug Nozzle Guardian</h3>
-                <p>Protects inkjet EcoTank (CISS) and 3D printer heads from drying out or failing unattended, operated entirely over local LAN via IPP and camera vision.</p>
+                <span class="module-tag">Layer 02 &bull; Browser Extension MV3</span>
+                <h3>Sentinel Shield (`0.4.1`)</h3>
+                <p>Lightweight Chrome &amp; Edge Manifest V3 extension protecting laptops even outside your home LAN with zero always-on host permissions.</p>
                 <ul class="feature-list">
-                    <li>Idle-window state tracking via RFC 8011 local IPP protocol</li>
-                    <li>Adaptive low-waste micro-purge before ink crystallization</li>
-                    <li>On-device macro vision check for nozzle test &amp; first-layer integrity</li>
-                    <li>Thermal 50%–80% battery ceiling guard via Home Assistant smart plug</li>
+                    <li>Brand lookalike, Punycode homograph &amp; bare-IP phishing interception</li>
+                    <li>47 SSOT-compiled protected brands + Web3 drainer signature shield</li>
+                    <li>Zero-permission Anti-Dynamic Pricing DNR ruleset (70+ ad/pricing networks)</li>
+                    <li>Opt-in Cookie &amp; Tracking Param Guard + 1-click session bypass</li>
                 </ul>
             </div>
 
             <div class="module-card">
-                <span class="module-tag">Module 03 &bull; Roadmap Nodes</span>
-                <h3>Ambient &amp; Blackout Sentinels</h3>
-                <p>Leverages built-in lithium battery backup, MEMS accelerometers, and microphones cleanly inside RAM for resilience when the grid drops.</p>
+                <span class="module-tag">Layer 03 &bull; Proactive Intelligence</span>
+                <h3>Threat Miner &amp; SSOT Pipeline</h3>
+                <p>Automated zero-trust compiler validating threat feeds and synchronizing all brand registries across Python backend and MV3 extension.</p>
                 <ul class="feature-list">
-                    <li>Blackout Beacon: emergency LED trigger &amp; freezer thaw warnings</li>
-                    <li>Acoustic Sentry: local smoke/CO siren tonal recognition</li>
-                    <li>Optical Meter OCR: periodic flash-assisted analog meter logging</li>
-                    <li>Offline LAN emergency intercom during external ISP outages</li>
+                    <li>CDN/Resolver exclusion guard prevents Cloudflare or Google DNS collateral blocks</li>
+                    <li>8,700+ Public Suffix List boundary checks &amp; RFC 1123 sanitization</li>
+                    <li>Single Source of Truth (`spec/` + `scripts/compile_ssot.py --check`)</li>
+                    <li>Zero-Knowledge community unbreak workflow without leaking IP or MAC PII</li>
                 </ul>
             </div>
         </div>
@@ -739,24 +743,24 @@
 
     <section class="container" id="architecture">
         <div class="section-title">
-            <h2>How It Works Safely 24/7</h2>
-            <p>Engineered to protect aging lithium batteries while delivering real-time local defense.</p>
+            <h2>Runs On Hardware You Own</h2>
+            <p>Deploy Sentinel Core in minutes on an existing Home Assistant host, Docker server, Raspberry Pi, mini-PC, or spare Linux laptop.</p>
         </div>
         <div class="steps-grid" style="margin-bottom: 56px;">
             <div class="step-card">
                 <div class="step-num">STEP 01</div>
-                <h4>Reclaim Old Silicon</h4>
-                <p>Take any retired phone or tablet out of your drawer—multi-core ARM CPUs and optics vastly outperform €80 retail IoT boxes.</p>
+                <h4>Deploy Sentinel Core</h4>
+                <p>Install via Home Assistant Add-on Store or <code>docker compose up -d</code> alongside AdGuard Home / Pi-hole.</p>
             </div>
             <div class="step-card">
                 <div class="step-num">STEP 02</div>
-                <h4>Plug Into Local LAN</h4>
-                <p>Connect directly to AdGuard Home, Home Assistant, or network IPP printers with zero external cloud telemetry or port forwarding.</p>
+                <h4>Enable Targeted Shields</h4>
+                <p>Toggle all 15 deterministic IoT, smart TV, gaming, and anti-dynamic-pricing shields with fail-closed auth &amp; CSRF guards.</p>
             </div>
             <div class="step-card">
                 <div class="step-num">STEP 03</div>
-                <h4>Thermal Battery Guard</h4>
-                <p>A Home Assistant smart-plug loop keeps charge cycling safely between 50% and 80%, preventing 24/7 battery swelling hazards.</p>
+                <h4>Add Sentinel Shield MV3</h4>
+                <p>Load the companion Chrome/Edge extension on desktop browsers for phishing, wallet-drainer, and off-network protection.</p>
             </div>
         </div>
 
@@ -765,30 +769,30 @@
                 <thead>
                     <tr>
                         <th>Design Dimension</th>
-                        <th>Retail Plastic IoT Gadgets</th>
-                        <th>RePlug™ Upcycled Ecosystem</th>
+                        <th>Consumer Cloud Boxes &amp; Telemetry Proxies</th>
+                        <th>Sentinel Core &amp; Sentinel Shield</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr>
-                        <td>Hardware Footprint</td>
-                        <td class="col-bad">New disposable plastic &amp; weak MCU</td>
-                        <td class="col-good">Zero new plastic — reuses dormant phones</td>
+                        <td>Hardware Lock-in</td>
+                        <td class="col-bad">Proprietary plastic gateways &amp; forced subscriptions</td>
+                        <td class="col-good">Standard Docker &amp; Home Assistant Add-on on your own host</td>
                     </tr>
                     <tr>
                         <td>Data Privacy</td>
-                        <td class="col-bad">Mandatory vendor cloud &amp; telemetry</td>
-                        <td class="col-good">100% local LAN processing, zero cloud leaks</td>
+                        <td class="col-bad">Mandatory vendor cloud logging &amp; behavioral profiling</td>
+                        <td class="col-good">100% local LAN + offline MV3 extension, zero telemetry</td>
                     </tr>
                     <tr>
-                        <td>Printer Maintenance</td>
-                        <td class="col-bad">Manual prints or dried printheads</td>
-                        <td class="col-good">Automated IPP tracking &amp; optical checks</td>
+                        <td>False Positives</td>
+                        <td class="col-bad">Opaque blocklists breaking smart-home companion apps</td>
+                        <td class="col-good">Curated device profiles + 1-click Zero-Knowledge Unbreak</td>
                     </tr>
                     <tr>
-                        <td>Pricing &amp; Lock-in</td>
-                        <td class="col-bad">€10–€15/month mandatory subscriptions</td>
-                        <td class="col-good">Open-source core under MIT License</td>
+                        <td>Browser Permissions</td>
+                        <td class="col-bad">Heavy extensions demanding <code>&lt;all_urls&gt;</code> upfront</td>
+                        <td class="col-good">Zero always-on host permissions; Cookie Guard is strictly opt-in</td>
                     </tr>
                 </tbody>
             </table>
@@ -797,63 +801,54 @@
 
     <section class="container" id="manifesto">
         <div class="manifesto-box">
-            <h3>The Anti-Obsolescence Manifesto</h3>
-            <p><strong>1. Zero New Plastic:</strong> If hardware already inside your home can handle the workload, selling you a new disposable dongle is environmental waste.</p>
-            <p><strong>2. Dignity for Silicon:</strong> Hardware from 2018 possesses ten times the compute capability of modern commercial smart-home sensors. It deserves sovereign software, not a landfill.</p>
-            <p><strong>3. Privacy Without Subscriptions:</strong> Domestic cameras, DNS logs, and microphones never belong on third-party ad-tech servers.</p>
-            <p style="margin-top: 22px; margin-bottom: 0;">
-                <a href="https://github.com/umbette/sentinel/blob/main/docs/ECOSYSTEM_ARCHITECTURE.md" target="_blank" rel="noopener" style="color: var(--accent); font-weight: 700; text-decoration: none;">
-                    Read Full Public Architecture &amp; Prior Art Spec &rarr;
-                </a>
-            </p>
+            <h3>The Zero-Telemetry Security Covenant</h3>
+            <p><strong>1. Sovereign Inspection:</strong> Your DNS query logs, connected LAN devices, and browsing history never leave your hardware.</p>
+            <p><strong>2. Deterministic Precision:</strong> Targeted IoT rules and CDN-safe IP correlation silence abuse while keeping streaming and companion apps working.</p>
+            <p><strong>3. Open &amp; Verifiable:</strong> Every shield, brand list, and DNR rule compiles reproducibly from <code>spec/</code> with full automated test coverage.</p>
         </div>
     </section>
 
     <section class="waitlist-section" id="early-access">
         <div class="section-title" style="margin-bottom: 24px;">
-            <h2>Deploy Today or Join Alpha</h2>
-            <p>Run Sentinel Shield right now on your homelab, or register your interest for upcoming Nozzle Guardian mobile builds.</p>
+            <h2>Deploy Sentinel Core &amp; Shield Today</h2>
+            <p>Self-host the Home Assistant Add-on / Docker stack right now, or report false positives &amp; threat domains via GitHub.</p>
         </div>
 
         <div class="action-cards">
             <div class="action-card">
                 <span class="module-tag">Available Now &bull; Self-Hosted</span>
-                <h3>Run RePlug Sentinel Shield</h3>
-                <p>Deploy the Docker console or Home Assistant Add-on locally in under two minutes with full unit &amp; browser test verification.</p>
+                <h3>Run Sentinel Core</h3>
+                <p>Deploy Full Hub (Docker / Home Assistant Add-on) with fail-closed API key authentication, SSOT verification, and automated tests.</p>
                 <div class="code-snippet" id="cliSnippet">git clone https://github.com/umbette/sentinel.git
 cd sentinel &amp;&amp; cp .env.example .env &amp;&amp; docker compose up -d</div>
                 <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
                     <button type="button" class="copy-btn" onclick="copyCli()">Copy Setup Command</button>
-                    <a href="https://github.com/umbette/sentinel/releases" target="_blank" rel="noopener" style="color: var(--accent); font-size: 0.85rem; font-weight: 600; text-decoration: none;">Watch Releases &rarr;</a>
+                    <a href="https://github.com/umbette/sentinel/blob/main/docs/V1_LAUNCH_CHECKLIST.md" target="_blank" rel="noopener" style="color: var(--accent); font-size: 0.85rem; font-weight: 600; text-decoration: none;">V1 Launch Checklist &rarr;</a>
                 </div>
                 <div class="inline-note" id="copyStatus"></div>
             </div>
 
             <div class="action-card">
-                <span class="module-tag">Alpha Onboarding &bull; Zero-Backend</span>
-                <h3>Request Mobile / Nozzle Guardian Alpha</h3>
-                <p>Select the module and hardware profile you want to test to pre-fill a direct GitHub Alpha onboarding ticket (no third-party mailing list tracking).</p>
-                <div class="track-selector" id="trackSelector">
-                    <button type="button" class="track-chip active" data-track="Nozzle Guardian (Inkjet / EcoTank)">Nozzle Guardian (Inkjet)</button>
-                    <button type="button" class="track-chip" data-track="Nozzle Guardian (3D Printer)">3D Printer Guard</button>
-                    <button type="button" class="track-chip" data-track="Full Android Upcycling Bundle">Android Companion</button>
-                </div>
-                <a id="alphaIssueBtn" href="https://github.com/umbette/sentinel/issues/new?template=alpha_access.yml&title=%5BAlpha%20Access%5D%20Nozzle%20Guardian%20(Inkjet%20%2F%20EcoTank)&track=Nozzle%20Guardian%20(Inkjet%20%2F%20EcoTank)" target="_blank" rel="noopener" class="btn-primary" style="width: 100%;">
-                    Join Alpha via GitHub Issue
+                <span class="module-tag">Community Driven &bull; Zero-Knowledge</span>
+                <h3>Submit Threat or Unbreak Report</h3>
+                <p>Contribute verified phishing domains, false-positive companion rules, or security feedback directly via GitHub Issues.</p>
+                <a href="https://github.com/umbette/sentinel/issues/new?template=domain_report.yml" target="_blank" rel="noopener" class="btn-primary" style="width: 100%; margin-top: 12px;">
+                    Report Domain via GitHub Issue
                 </a>
-                <div class="inline-note" id="alphaNote" style="color: var(--text-secondary);">Opens pre-filled opt-in form directly on GitHub.</div>
+                <div class="inline-note" style="color: var(--text-secondary);">Opens pre-filled opt-in issue form directly on GitHub.</div>
             </div>
         </div>
     </section>
 
     <footer>
-        <p>&copy; 2026 Umberto (<code>umbette</code>) &amp; RePlug Contributors. Prior Art &amp; Brand Architecture owned by Umberto.</p>
+        <p>&copy; 2026 Umberto (<code>umbette</code>) &amp; Sentinel Contributors. 100% Local-First Cybersecurity.</p>
         <p style="margin-top: 8px;">
             <a href="https://github.com/umbette/sentinel">GitHub Repository</a> &bull;
-            <a href="https://github.com/umbette/sentinel/blob/main/docs/ECOSYSTEM_ARCHITECTURE.md">Architecture Spec</a> &bull;
+            <a href="https://github.com/umbette/sentinel/blob/main/docs/PRIOR_ART.md">Prior Art</a> &bull;
             <a href="https://github.com/umbette/sentinel/blob/main/TRADEMARKS.md">Trademark Policy</a> &bull;
             <a href="https://github.com/umbette/sentinel/blob/main/SECURITY.md">Security</a> &bull;
-            <a href="https://github.com/umbette/sentinel/blob/main/LICENSE">MIT License</a>
+            <a href="https://github.com/umbette/sentinel/blob/main/LICENSE">AGPLv3</a> &bull;
+            <a href="https://github.com/umbette/sentinel/blob/main/LICENSE-COMMERCIAL-HARDWARE">Hardware NC</a>
         </p>
     </footer>
 
@@ -868,19 +863,6 @@ cd sentinel &amp;&amp; cp .env.example .env &amp;&amp; docker compose up -d</div
                 status.textContent = 'Select and copy the snippet above.';
             });
         }
-
-        const chips = document.querySelectorAll('.track-chip');
-        const issueBtn = document.getElementById('alphaIssueBtn');
-        chips.forEach(chip => {
-            chip.addEventListener('click', () => {
-                chips.forEach(c => c.classList.remove('active'));
-                chip.classList.add('active');
-                const trackName = chip.dataset.track;
-                const title = encodeURIComponent('[Alpha Access] ' + trackName);
-                const track = encodeURIComponent(trackName);
-                issueBtn.href = `https://github.com/umbette/sentinel/issues/new?template=alpha_access.yml&title=${title}&track=${track}`;
-            });
-        });
     </script>
 </body>
 </html>

@@ -2,6 +2,7 @@ import asyncio
 import logging
 import signal
 import sys
+
 sys.stdout.reconfigure(line_buffering=True)
 from src.config import Settings
 from src.storage import StorageEngine
@@ -18,12 +19,13 @@ logging.basicConfig(
     handlers=[logging.StreamHandler(sys.stdout)],
     force=True
 )
-logger = logging.getLogger("ai_hunter.main")
+logger = logging.getLogger("sentinel.main")
+
 
 async def main():
-    logger.info("Starting AI Hunter Daemon on Dell OptiPlex Server...")
+    logger.info("Starting Sentinel Core Daemon...")
     settings = Settings.load()
-    
+
     storage = StorageEngine(settings.storage.db_path)
     heuristics = HeuristicsEngine(
         entropy_threshold=settings.heuristics.entropy_threshold,
@@ -38,8 +40,12 @@ async def main():
     dispatcher = Dispatcher(settings, storage)
     ingestion = IngestionWorker(settings, storage, heuristics, gemini, dispatcher)
 
-    resolver = DeviceResolver(settings)
-    dashboard = SentinelDashboard(settings, storage, resolver) if settings.dashboard.enabled else None
+    resolver = DeviceResolver(settings, storage=storage)
+    dashboard = SentinelDashboard(
+        settings,
+        storage,
+        resolver,
+    ) if settings.dashboard.enabled else None
     if dashboard:
         await dashboard.start()
 
@@ -53,25 +59,24 @@ async def main():
     for sig in (signal.SIGINT, signal.SIGTERM):
         loop.add_signal_handler(sig, _signal_handler)
 
-    # Launch ingestion polling and Home Assistant WebSocket event listener concurrently
     tasks = [
         asyncio.create_task(ingestion.run(), name="IngestionTask"),
-        asyncio.create_task(dispatcher.listen_ha_websocket(), name="WebSocketTask")
+        asyncio.create_task(dispatcher.listen_ha_websocket(), name="WebSocketTask"),
     ]
 
-    logger.info("AI Hunter Daemon initialized and active.")
-
+    logger.info("Sentinel Core initialized and active.")
     await stop_event.wait()
 
     logger.info("Stopping background tasks...")
     for task in tasks:
         task.cancel()
-    
+
     await asyncio.gather(*tasks, return_exceptions=True)
     if dashboard:
         await dashboard.stop()
     await dispatcher.close()
-    logger.info("AI Hunter Daemon cleanly halted.")
+    logger.info("Sentinel Core cleanly halted.")
+
 
 if __name__ == "__main__":
     try:

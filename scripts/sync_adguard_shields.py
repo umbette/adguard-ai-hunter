@@ -9,8 +9,11 @@ except ImportError:
     yaml = None
 
 ADGUARD_URL = os.getenv("ADGUARD_URL", "http://127.0.0.1:8080")
-USERNAME = os.getenv("ADGUARD_USERNAME", "umbette")
-PASSWORD = os.getenv("ADGUARD_PASSWORD", "Agraria86-")
+USERNAME = os.getenv("ADGUARD_USERNAME", "")
+PASSWORD = os.getenv("ADGUARD_PASSWORD", "")
+
+if not USERNAME or not PASSWORD:
+    raise SystemExit("Missing ADGUARD_USERNAME or ADGUARD_PASSWORD environment variable.")
 
 auth_str = f"{USERNAME}:{PASSWORD}".encode("utf-8")
 headers = {

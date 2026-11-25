@@ -1,20 +1,16 @@
 # Sentinel Core — Home Assistant Add-on
 
-Protezione locale per l'intera rete domestica: scudo anti-dynamic pricing per i viaggi, crypto vault per wallet e dApp Web3, caregiver watchdog contro SMS/phishing ai familiari, e silenziamento della telemetria Smart TV/IoT con triage interattivo 1-click via Home Assistant Companion App.
+Difesa DNS locale, 15 scudi di privacy IoT, correlazione IP C2/malicious CDN-safe, Crypto Vault + Stanza Sterile, Zero-Trust Device Admission Control, Scan on Demand e console live integrata nativamente in Home Assistant Ingress (zero telemetria cloud).
 
 ---
 
 ## Caratteristiche Principali
 
-- **Integrazione Nativa DNS:** Ispezione in streaming del querylog locale di AdGuard Home o resolver DNS.
-- **Scudo Prezzi Dinamici:** Neutralizzazione automatica delle reti di profilazione e discriminazione tariffaria (Criteo, AppsFlyer, Adjust, Kochava, SessionCam).
-- **Crypto Vault:** Protezione nodi RPC, contrasto a wallet drainer e phishing omografo IDN Punycode.
-- **Caregiver & Family Watchdog:** Riconoscimento immediato di portali clone (Poste, banche, SPID, INPS, corrieri) con notifica istantanea per-device.
-- **Device Fingerprinting & Friendly Names:** Riconoscimento automatico del tipo di dispositivo (es. `📺 Samsung Smart TV`, `📱 Smartphone Mamma`, `💻 Workstation`) leggendo le etichette client e reverse PTR.
-- **Triage Interattivo su Smartphone:** Notifica push con pulsanti operativi immediati:
-  - `[Blocca per 📺 Samsung Smart TV]` — applica regola mirata `$client=IP`.
-  - `[Blocca per Tutta la Rete]` — blocca il dominio globalmente.
-  - `[Ignora (30 giorni)]` — whitelist temporanea con scadenza automatica.
+- **Integrazione Nativa DNS:** Ispezione in streaming del querylog locale di AdGuard Home con regole granulari `$client=IP` e zero telemetria verso il cloud.
+- **15 Scudi Specializzati IoT & Privacy:** Protezione deterministica per Smart TV (ACR), robot aspirapolvere (video/LiDAR), stampanti 3D (Maker IP Guard), console gaming (SysNAND safe), auto connesse (LexisNexis/Verisk), friggitrici/elettrodomestici smart, IP camera P2P, box TV Badbox, controllo genitori e reti ospiti.
+- **Scudo Anti-Dynamic Pricing:** Neutralizzazione automatica delle reti di profilazione comportamentale e retargeting (Criteo, AppsFlyer, Adjust, Kochava, Hotjar, FullStory, SessionCam) per evitare rincari dinamici su voli e hotel.
+- **Scan on Demand & Zero-Trust Admission Control:** Audit della rete in 4 vettori (port probing, UPnP IGD, backtracking 48h, DNS health score 0–100) e notifiche push istantanee alla connessione di nuovi dispositivi Wi-Fi.
+- **Estensione Companion Browser (`Sentinel Shield` MV3):** Protezione endpoint fuori casa (phishing lookalike, Anti-Dynamic Pricing DNR a zero permessi e Cookie & Tracking Param Guard opt-in) disponibile in [`extension/`](https://github.com/umbette/sentinel/tree/main/extension).
 
 ---
 
@@ -24,8 +20,13 @@ Configura i parametri visualmente dalla scheda **Configurazione** dell'Add-on in
 
 | Parametro | Descrizione | Default |
 |---|---|---|
-| `adguard_url` | URL dell'istanza AdGuard Home (usa `http://core-adguard:80` se usi l'Add-on ufficiale) | `http://core-adguard:80` |
+| `adguard_url` | URL dell'istanza AdGuard Home (usa `http://core-adguard:80` con l'Add-on ufficiale) | `http://core-adguard:80` |
 | `adguard_username` | Nome utente amministratore di AdGuard | `admin` |
 | `adguard_password` | Password amministratore di AdGuard | `""` |
 | `gemini_api_key` | (Opzionale) Chiave API Google AI Studio per classificazione semantica | `""` |
 | `notify_service` | Servizio di notifica Home Assistant (es. `notify.mobile_app_tuo_telefono`) | `notify.notify` |
+| `admission_enabled` | Abilita il controllo Zero-Trust all'ingresso di nuovi dispositivi LAN | `false` |
+| `quarantine_unapproved` | Isola automaticamente in DNS i nuovi dispositivi finché non vengono approvati | `false` |
+| `notify_on_new_device` | Invia notifica push azionabile quando appare un nuovo dispositivo | `true` |
+
+> In Ingress Home Assistant le chiamate API interne usano percorsi relativi `./api/...`; per accesso diretto standalone è supportata l'autenticazione via `SENTINEL_API_KEY`.

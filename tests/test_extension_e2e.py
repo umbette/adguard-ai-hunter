@@ -125,9 +125,17 @@ def test_service_worker_loaded_and_initialized(chrome_env):
     res_dnr_type = asyncio.run(sw_eval(ws_url, "typeof chrome.declarativeNetRequest"))
     assert res_dnr_type == "object"
 
-    # Verify enabled ruleset
+    # Verify enabled rulesets (Phishing/IoC + Anti-Dynamic Pricing & Tracker shield)
     rulesets = asyncio.run(sw_eval(ws_url, "new Promise(r => chrome.declarativeNetRequest.getEnabledRulesets(r))"))
     assert "sentinel_ruleset" in rulesets
+    assert "pricing_tracker_ruleset" in rulesets
+
+    # Verify Zero-Permission default manifest + opt-in Cookie Guard declarations
+    manifest = asyncio.run(sw_eval(ws_url, "chrome.runtime.getManifest()"))
+    assert manifest["name"] == "Sentinel Shield"
+    assert manifest["host_permissions"] == []
+    assert "cookies" in manifest["optional_permissions"]
+    assert "<all_urls>" in manifest["optional_host_permissions"]
 
     # Verify atomic loaded data
     data_counts = asyncio.run(sw_eval(ws_url, "ensureDataLoaded().then(() => ({ brands: Object.keys(BRANDS).length, psl: PUBLIC_SUFFIXES.size, blocked: BLOCKED_DOMAINS.size }))"))
@@ -161,9 +169,17 @@ def test_brand_impersonation_heuristics_in_browser(chrome_env):
     res5 = asyncio.run(sw_eval(ws_url, 'checkBrandImpersonation("serviziposte.com")'))
     assert res5["spoofed"] is True
 
-    # 4. IDN / Punycode homograph attack
+    # 4. IDN / Punycode homograph attack & NFKD diacritics
     res6 = asyncio.run(sw_eval(ws_url, 'checkBrandImpersonation("xn--pypal-4ve.com")'))
     assert res6["spoofed"] is True
+
+    res7 = asyncio.run(sw_eval(ws_url, 'checkBrandImpersonation("pàypal-sicuro.com")'))
+    assert res7["spoofed"] is True
+
+    # 5. Web3 Wallet Drainer signatures
+    res8 = asyncio.run(sw_eval(ws_url, 'checkBrandImpersonation("claim-airdrop-eth.xyz")'))
+    assert res8["spoofed"] is True
+    assert res8["vector"] == "drainer"
 
 
 def test_false_positive_immunity_in_browser(chrome_env):
@@ -251,3 +267,78 @@ def test_popup_ui_rendering(chrome_env):
     assert len(desc) > 0
     # On a safe domain (or about:blank), the bypass button must remain hidden (Anti-YAGNI fix)
     assert not btn_bypass.is_displayed()
+
+    # Verify Sentinel Shield brand identity & privacy/cookie shield toggles in popup
+    assert "Sentinel Shield" in driver.find_element(By.TAG_NAME, "h2").text
+    toggle_pricing = driver.find_element(By.ID, "togglePricingShield")
+    toggle_cookie = driver.find_element(By.ID, "toggleCookieGuard")
+    assert toggle_pricing.is_selected()
+    assert not toggle_cookie.is_selected()
+    assert driver.find_element(By.ID, "pricingTag").text == "ATTIVO"
+    assert driver.find_element(By.ID, "cookieTag").text == "OPT-IN"
+
+
+def test_pricing_shield_and_site_exception_dnr_in_browser(chrome_env):
+    """Verifies Chrome accepts pricing_tracker_ruleset toggles and dynamic per-site allow rules."""
+    _, _, ws_url, _ = chrome_env
+
+    # 1. Toggle Anti-Dynamic Pricing ruleset OFF then back ON in real Chrome
+    off_res = asyncio.run(sw_eval(ws_url, """
+    new Promise(resolve => {
+        chrome.runtime.onMessage.dispatch(
+            { action: "setPricingShield", enabled: false },
+            { id: chrome.runtime.id },
+            resolve
+        );
+    })
+    """))
+    assert off_res["success"] is True
+    assert off_res["pricingShieldEnabled"] is False
+
+    enabled_off = asyncio.run(sw_eval(ws_url, "new Promise(r => chrome.declarativeNetRequest.getEnabledRulesets(r))"))
+    assert "sentinel_ruleset" in enabled_off
+    assert "pricing_tracker_ruleset" not in enabled_off
+
+    on_res = asyncio.run(sw_eval(ws_url, """
+    new Promise(resolve => {
+        chrome.runtime.onMessage.dispatch(
+            { action: "setPricingShield", enabled: true },
+            { id: chrome.runtime.id },
+            resolve
+        );
+    })
+    """))
+    assert on_res["success"] is True
+    assert on_res["pricingShieldEnabled"] is True
+
+    enabled_on = asyncio.run(sw_eval(ws_url, "new Promise(r => chrome.declarativeNetRequest.getEnabledRulesets(r))"))
+    assert "pricing_tracker_ruleset" in enabled_on
+
+    # 2. Register and clear per-site privacy allow rule in real Chrome dynamic DNR
+    ex_on = asyncio.run(sw_eval(ws_url, """
+    new Promise(resolve => {
+        chrome.runtime.onMessage.dispatch(
+            { action: "toggleSitePrivacyException", domain: "shop.example.it" },
+            { id: chrome.runtime.id },
+            resolve
+        );
+    })
+    """))
+    assert ex_on["success"] is True
+    assert ex_on["sitePrivacyExempt"] is True
+    assert ex_on["etld1"] == "example.it"
+
+    dyn_rules = asyncio.run(sw_eval(ws_url, "chrome.declarativeNetRequest.getDynamicRules()"))
+    assert any(r["priority"] == 3 and r["condition"]["initiatorDomains"] == ["example.it"] for r in dyn_rules)
+
+    ex_off = asyncio.run(sw_eval(ws_url, """
+    new Promise(resolve => {
+        chrome.runtime.onMessage.dispatch(
+            { action: "toggleSitePrivacyException", domain: "shop.example.it" },
+            { id: chrome.runtime.id },
+            resolve
+        );
+    })
+    """))
+    assert ex_off["success"] is True
+    assert ex_off["sitePrivacyExempt"] is False

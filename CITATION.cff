@@ -1,0 +1,18 @@
+cff-version: 1.2.0
+message: "If you reference Sentinel Core, Sentinel Shield, CDN-safe C2 IP correlation, or Sentinel Drive, please cite this metadata."
+title: "Sentinel Core & Sentinel Shield: Zero-Telemetry Local DNS Defense, 15 IoT Privacy Shields, and MV3 Browser Protection"
+authors:
+  - family-names: "Umberto"
+    alias: "umbette"
+version: "0.4.1"
+date-released: "2026-11-25"
+url: "https://github.com/umbette/sentinel"
+license: "AGPL-3.0-only"
+keywords:
+  - dns-security
+  - iot-privacy
+  - anti-phishing
+  - manifest-v3
+  - home-assistant
+  - prior-art
+  - defensive-publication

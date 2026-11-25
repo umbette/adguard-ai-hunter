@@ -1,8 +1,11 @@
 import asyncio
 import base64
+import hmac
 import logging
+from pathlib import Path
 import re
 import urllib.parse
+from urllib.parse import urlparse
 from typing import Dict, Any, List, Optional
 import aiohttp
 from aiohttp import web
@@ -27,7 +30,7 @@ from src.crypto_shield import (
     is_client_in_sterile_chamber
 )
 
-logger = logging.getLogger("ai_hunter.dashboard")
+logger = logging.getLogger("sentinel.dashboard")
 
 ACTIVE_SHIELDS_LIST = [
     {"id": "dynamic_pricing", "name": "Anti-Dynamic Pricing", "icon": "🛡️", "desc": "Blocco rincari voli e hotel da profilazione", "status": "ATTIVO"},
@@ -44,6 +47,7 @@ ACTIVE_SHIELDS_LIST = [
     {"id": "youth_safeguard", "name": "Youth Safeguard", "icon": "🧒", "desc": "Anti-grooming, videochat anonime e deepfake AI", "status": "ATTIVO"},
     {"id": "car_telemetry", "name": "Automotive LexisNexis", "icon": "🚗", "desc": "Stop vendita dati guida a broker assicurativi", "status": "ATTIVO"},
     {"id": "badbox_malware", "name": "Badbox & TV Box C2", "icon": "📦", "desc": "Neutralizzazione malware preinstallato di fabbrica", "status": "ATTIVO"},
+    {"id": "public_venue_guest", "name": "Public Venue & Guest Policy", "icon": "🍕", "desc": "Blocco cryptomining, P2P e ad-video ospiti; preserva POS e comande", "status": "ATTIVO"},
 ]
 
 HTML_TEMPLATE = """<!DOCTYPE html>
@@ -51,22 +55,28 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sentinel Core • Cyber Defense Console</title>
+  <meta name="theme-color" content="#090d14">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="./manifest.json">
+  <title>Sentinel Core • Local Cyber Defense Console</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23090d14'/%3E%3Cpath d='M32 10L14 18v14c0 12 7.8 22.8 18 26 10.2-3.2 18-14 18-26V18L32 10z' fill='none' stroke='%2300e599' stroke-width='4.5' stroke-linejoin='round'/%3E%3Cpath d='M24 32l6 6 12-13' fill='none' stroke='%2300e599' stroke-width='4.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg: #07090e;
-      --card-bg: #0e131f;
-      --card-border: #1a2333;
-      --text-main: #f1f5f9;
+      --bg: #090d14;
+      --card-bg: #101622;
+      --card-border: #1e293b;
+      --text-main: #f8fafc;
       --text-muted: #94a3b8;
-      --emerald: #10b981;
-      --emerald-glow: rgba(16, 185, 129, 0.15);
-      --indigo: #6366f1;
-      --indigo-glow: rgba(99, 102, 241, 0.15);
+      --emerald: #00e599;
+      --accent-secondary: #00bfa5;
+      --emerald-glow: rgba(0, 229, 153, 0.14);
+      --indigo: #38bdf8;
+      --indigo-glow: rgba(56, 189, 248, 0.14);
       --amber: #f59e0b;
-      --rose: #f43f5e;
+      --rose: #f87171;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -90,15 +100,15 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     }
     .logo-area { display: flex; align-items: center; gap: 14px; }
     .logo-icon {
-      font-size: 28px;
-      background: linear-gradient(135deg, #10b981 0%, #6366f1 100%);
+      background: #0d121c;
+      border: 1px solid rgba(0, 229, 153, 0.35);
       width: 48px;
       height: 48px;
       display: flex;
       align-items: center;
       justify-content: center;
       border-radius: 12px;
-      box-shadow: 0 0 20px rgba(16, 185, 129, 0.3);
+      box-shadow: 0 0 22px rgba(0, 229, 153, 0.25);
     }
     .logo-text h1 { font-size: 22px; font-weight: 800; letter-spacing: -0.5px; }
     .logo-text span { font-size: 13px; color: var(--text-muted); font-weight: 500; }
@@ -500,10 +510,15 @@ HTML_TEMPLATE = """<!DOCTYPE html>
   <div class="container">
     <header>
       <div class="logo-area">
-        <div class="logo-icon">🛡️</div>
+        <div class="logo-icon" title="Sentinel Core">
+          <svg width="28" height="28" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M32 10L14 18v14c0 12 7.8 22.8 18 26 10.2-3.2 18-14 18-26V18L32 10z" stroke="#00e599" stroke-width="4.5" stroke-linejoin="round"/>
+            <path d="M24 32l6 6 12-13" stroke="#00e599" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
         <div class="logo-text">
           <h1>Sentinel Core</h1>
-          <span>Autonomous Network Security & Privacy Watchdog</span>
+          <span>Local DNS &amp; Network Defense &bull; Zero-Telemetry</span>
         </div>
       </div>
       <div style="display: flex; align-items: center; gap: 12px;">
@@ -547,25 +562,25 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       <div class="metric-card">
         <div class="card-glow glow-emerald"></div>
         <div class="metric-title">⚡ Scudi Ingegnerizzati Attivi</div>
-        <div class="metric-value" id="shieldsRatio">14 / 14</div>
+        <div class="metric-value" id="shieldsRatio">15 / 15</div>
         <div class="metric-sub">100% Protezione Hardware & Rete</div>
       </div>
     </div>
 
     <!-- Main Content Grid -->
     <div class="main-grid">
-      <!-- Left: 14 Active Shields Matrix -->
+      <!-- Left: 15 Active Shields Matrix -->
       <div class="panel">
         <div class="panel-header" style="flex-wrap: wrap; gap: 8px;">
           <div>
             <div class="panel-title">🛡️ Matrice degli Scudi Attivi</div>
             <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">Cockpit interattivo: clicca per attivare, mettere in pausa o esaminare i domini protetti</div>
           </div>
-          <div class="panel-tag" id="shieldsTag">14 Scudi Hardware &amp; DNS</div>
+          <div class="panel-tag" id="shieldsTag">15 Scudi Hardware &amp; DNS</div>
         </div>
 
         <div class="shields-controls" id="shieldsFilters">
-          <button class="filter-btn active" onclick="filterShields('ALL', this)">Tutti (14)</button>
+          <button class="filter-btn active" onclick="filterShields('ALL', this)">Tutti (15)</button>
           <button class="filter-btn" onclick="filterShields('PRIVACY', this)">🏠 Smart Home &amp; IoT</button>
           <button class="filter-btn" onclick="filterShields('MAKER', this)">🛠️ 3D Printing &amp; Maker</button>
           <button class="filter-btn" onclick="filterShields('GAMING', this)">🎮 Gaming &amp; Console</button>
@@ -634,7 +649,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     </div>
 
     <footer>
-      Sentinel Core v0.3.1 • Zero-Data Pure DNS Architecture • Nessuna telemetria cloud centrale
+      Sentinel Core v0.4.1 • Zero-Data Local-First Architecture • Nessuna telemetria cloud centrale
     </footer>
   </div>
 
@@ -800,10 +815,27 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     let activeFilter = 'ALL';
     let activeModalShieldId = null;
     let currentPricingDetails = null;
+    const _dashApiKey = new URLSearchParams(window.location.search).get('api_key') || '';
+
+    function escHtml(v) {
+      return String(v ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function apiFetch(relPath, opts = {}) {
+      const clean = relPath.startsWith('./') ? relPath : ('./' + relPath.replace(/^[/]+/, ''));
+      const headers = Object.assign({}, opts.headers || {});
+      if (_dashApiKey) headers['X-API-Key'] = _dashApiKey;
+      return fetch(clean, Object.assign({}, opts, { headers }));
+    }
 
     async function updateDashboard() {
       try {
-        const resp = await fetch('/api/stats');
+        const resp = await apiFetch('./api/stats');
         if (!resp.ok) return;
         const data = await resp.json();
 
@@ -828,43 +860,54 @@ HTML_TEMPLATE = """<!DOCTYPE html>
           }
         }
 
-        // Populate Top Blocked with 1-Click Unbreak & Report buttons
+        // Populate Top Blocked with 1-Click Unbreak & Report buttons (XSS-safe data attributes)
         const threatListEl = document.getElementById('threatList');
         if (data.top_blocked && data.top_blocked.length > 0) {
-          threatListEl.innerHTML = data.top_blocked.map(t => `
+          threatListEl.innerHTML = data.top_blocked.map(t => {
+            const domEsc = escHtml(t.domain);
+            return `
             <li class="threat-item">
               <div class="threat-info">
-                <span class="threat-domain" title="${t.domain}">${t.domain}</span>
+                <span class="threat-domain" title="${domEsc}">${domEsc}</span>
                 <span class="threat-count-label">${Number(t.count).toLocaleString()} blocchi</span>
               </div>
               <div class="threat-actions">
-                <button class="btn-action btn-unbreak" onclick="unbreakDomain('${t.domain}')" title="Sblocca localmente questo dominio per ripristinare l'app">🔓 Sblocca</button>
-                <button class="btn-action btn-report" onclick="openReportModal('${t.domain}')" title="Segnala alla community su GitHub in modo 100% anonimo">📢 Segnala</button>
+                <button class="btn-action btn-unbreak" data-domain="${domEsc}" title="Sblocca localmente questo dominio per ripristinare l'app">🔓 Sblocca</button>
+                <button class="btn-action btn-report" data-domain="${domEsc}" title="Segnala alla community su GitHub in modo 100% anonimo">📢 Segnala</button>
               </div>
-            </li>
-          `).join('');
+            </li>`;
+          }).join('');
+          threatListEl.querySelectorAll('.btn-unbreak').forEach(btn =>
+            btn.addEventListener('click', () => unbreakDomain(btn.dataset.domain))
+          );
+          threatListEl.querySelectorAll('.btn-report').forEach(btn =>
+            btn.addEventListener('click', () => openReportModal(btn.dataset.domain))
+          );
+        } else {
+          threatListEl.innerHTML = '<li class="threat-item"><span style="font-size:12px; color: var(--text-muted);">Nessun tracker o dominio bloccato rilevato al momento.</span></li>';
         }
 
-        // Populate Devices with Admission Control Badges
+        // Populate Devices with Admission Control Badges (honest real state + XSS-safe bindings)
         const devListEl = document.getElementById('deviceList');
         if (data.devices && data.devices.length > 0) {
           document.getElementById('deviceCountTag').innerText = data.devices.length + ' Dispositivi Sorvegliati';
           devListEl.innerHTML = data.devices.map(d => {
             const status = d.approval_status || 'APPROVED';
+            const ipEsc = escHtml(d.ip);
             let badgeHtml = '';
             if (status === 'PENDING') {
               badgeHtml = `
                 <div style="display: flex; align-items: center; gap: 6px;">
                   <span style="background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.4); color: #f59e0b; font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 6px;">IN ATTESA</span>
-                  <button class="btn-action" onclick="approveDevice('${d.ip}')" title="Autorizza dispositivo" style="background: #10b981; color: #fff; padding: 3px 8px; font-size: 11px;">✅ Approva</button>
-                  <button class="btn-action" onclick="quarantineDevice('${d.ip}')" title="Isola in quarantena" style="background: #f43f5e; color: #fff; padding: 3px 8px; font-size: 11px;">⛔ Isola</button>
+                  <button class="btn-action btn-approve-dev" data-ip="${ipEsc}" title="Autorizza dispositivo" style="background: #10b981; color: #fff; padding: 3px 8px; font-size: 11px;">✅ Approva</button>
+                  <button class="btn-action btn-block-dev" data-ip="${ipEsc}" title="Isola in quarantena" style="background: #f43f5e; color: #fff; padding: 3px 8px; font-size: 11px;">⛔ Isola</button>
                 </div>
               `;
             } else if (status === 'BLOCKED') {
               badgeHtml = `
                 <div style="display: flex; align-items: center; gap: 6px;">
                   <span style="background: rgba(244, 63, 94, 0.15); border: 1px solid rgba(244, 63, 94, 0.4); color: #f43f5e; font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 6px;">QUARANTENA</span>
-                  <button class="btn-action" onclick="approveDevice('${d.ip}')" title="Sblocca dispositivo" style="background: rgba(255,255,255,0.08); color: #fff; padding: 3px 8px; font-size: 11px;">🔓 Sblocca</button>
+                  <button class="btn-action btn-approve-dev" data-ip="${ipEsc}" title="Sblocca dispositivo" style="background: rgba(255,255,255,0.08); color: #fff; padding: 3px 8px; font-size: 11px;">🔓 Sblocca</button>
                 </div>
               `;
             } else {
@@ -874,16 +917,25 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             return `
               <div class="device-item">
                 <div class="device-info">
-                  <span class="device-icon">${d.icon || '🔌'}</span>
+                  <span class="device-icon">${escHtml(d.icon || '🔌')}</span>
                   <div>
-                    <div class="device-name">${d.name}</div>
-                    <div class="device-ip">${d.ip}</div>
+                    <div class="device-name">${escHtml(d.name)}</div>
+                    <div class="device-ip">${ipEsc}</div>
                   </div>
                 </div>
                 ${badgeHtml}
               </div>
             `;
           }).join('');
+          devListEl.querySelectorAll('.btn-approve-dev').forEach(btn =>
+            btn.addEventListener('click', () => approveDevice(btn.dataset.ip))
+          );
+          devListEl.querySelectorAll('.btn-block-dev').forEach(btn =>
+            btn.addEventListener('click', () => quarantineDevice(btn.dataset.ip))
+          );
+        } else {
+          document.getElementById('deviceCountTag').innerText = '0 Dispositivi Sorvegliati';
+          devListEl.innerHTML = '<div class="device-item"><span style="font-size:12px; color: var(--text-muted);">Nessun dispositivo registrato finora. Avvia Scan on Demand o attendi traffico DNS.</span></div>';
         }
       } catch (err) {
         console.error("Dashboard fetch error:", err);
@@ -989,7 +1041,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     async function applyShieldState(newStatus) {
       if (!activeModalShieldId) return;
       try {
-        const resp = await fetch('/api/shields/toggle', {
+        const resp = await apiFetch('./api/shields/toggle', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ id: activeModalShieldId, status: newStatus })
@@ -1022,7 +1074,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     async function unbreakDomain(domain) {
       if (!domain) return;
       try {
-        const resp = await fetch('/api/unbreak', {
+        const resp = await apiFetch('./api/unbreak', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ domain: domain })
@@ -1071,7 +1123,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       const notes = document.getElementById('reportNotes').value;
       
       try {
-        const resp = await fetch('/api/report_unbreak', {
+        const resp = await apiFetch('./api/report_unbreak', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -1111,13 +1163,13 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       btnText.innerText = 'Scansione...';
 
       try {
-        const resp = await fetch('/api/scan', { method: 'POST' });
+        const resp = await apiFetch('./api/scan', { method: 'POST' });
         const report = await resp.json();
         loading.style.display = 'none';
         renderScanReport(report);
       } catch (e) {
         loading.style.display = 'none';
-        resultEl.innerHTML = `<div style="color: #f43f5e; padding: 20px; text-align: center;">Errore durante la scansione: ${e}</div>`;
+        resultEl.innerHTML = `<div style="color: #f43f5e; padding: 20px; text-align: center;">Errore durante la scansione: ${escHtml(e)}</div>`;
       } finally {
         btn.disabled = false;
         btnText.innerText = 'Scan on Demand';
@@ -1129,7 +1181,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       const scoreColor = rep.status_color || '#10b981';
       
       const recsHtml = (rep.recommendations || []).map(r => `
-        <li style="padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 12px; color: #cbd5e1;">${r}</li>
+        <li style="padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 12px; color: #cbd5e1;">${escHtml(r)}</li>
       `).join('');
 
       const exposuresCount = rep.vulnerabilities_audit ? rep.vulnerabilities_audit.open_ports_count : 0;
@@ -1141,27 +1193,27 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         <div style="display: flex; align-items: center; justify-content: space-between; background: rgba(255,255,255,0.02); border: 1px solid var(--card-border); border-radius: 12px; padding: 18px; margin-bottom: 20px;">
           <div>
             <div style="font-size: 12px; color: var(--text-muted); text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;">Network Health Score</div>
-            <div style="font-size: 24px; font-weight: 800; color: ${scoreColor}; margin-top: 2px;">${rep.status_text || 'MASSIMA SICUREZZA'}</div>
+            <div style="font-size: 24px; font-weight: 800; color: ${scoreColor}; margin-top: 2px;">${escHtml(rep.status_text || 'MASSIMA SICUREZZA')}</div>
           </div>
           <div style="background: ${scoreColor}22; border: 2px solid ${scoreColor}; color: ${scoreColor}; width: 64px; height: 64px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 800;">
-            ${rep.health_score}/100
+            ${Number(rep.health_score || 0)}/100
           </div>
         </div>
 
         <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 20px;">
           <div style="background: #07090e; border: 1px solid var(--card-border); border-radius: 10px; padding: 12px;">
             <div style="font-size: 11px; color: var(--text-muted);">📡 Dispositivi Wi-Fi & LAN</div>
-            <div style="font-size: 16px; font-weight: 700; margin-top: 4px;">${devTotal} Nodi Connessi</div>
+            <div style="font-size: 16px; font-weight: 700; margin-top: 4px;">${Number(devTotal)} Nodi Connessi</div>
             <div style="font-size: 11px; color: var(--emerald); margin-top: 2px;">Tutti catalogati con scudi attivi</div>
           </div>
           <div style="background: #07090e; border: 1px solid var(--card-border); border-radius: 10px; padding: 12px;">
             <div style="font-size: 11px; color: var(--text-muted);">🔓 Audit Porte & UPnP</div>
-            <div style="font-size: 16px; font-weight: 700; margin-top: 4px; color: ${exposuresCount > 0 ? '#f59e0b' : '#10b981'};">${exposuresCount} Porte Rilevate</div>
+            <div style="font-size: 16px; font-weight: 700; margin-top: 4px; color: ${exposuresCount > 0 ? '#f59e0b' : '#10b981'};">${Number(exposuresCount)} Porte Rilevate</div>
             <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">${rep.vulnerabilities_audit && rep.vulnerabilities_audit.upnp_detected ? '⚠️ UPnP attivo sul router' : 'Nessuna esposizione critica'}</div>
           </div>
           <div style="background: #07090e; border: 1px solid var(--card-border); border-radius: 10px; padding: 12px;">
             <div style="font-size: 11px; color: var(--text-muted);">🕵️ Threat Hunting Retroattivo</div>
-            <div style="font-size: 16px; font-weight: 700; margin-top: 4px; color: ${threatsCount > 0 ? '#f43f5e' : '#10b981'};">${threatsCount} Anomalie Storico</div>
+            <div style="font-size: 16px; font-weight: 700; margin-top: 4px; color: ${threatsCount > 0 ? '#f43f5e' : '#10b981'};">${Number(threatsCount)} Anomalie Storico</div>
             <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">Rianalisi query ultime 48 ore</div>
           </div>
           <div style="background: #07090e; border: 1px solid var(--card-border); border-radius: 10px; padding: 12px;">
@@ -1183,7 +1235,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     async function approveDevice(ip) {
       if (!ip) return;
       try {
-        const resp = await fetch('/api/devices/approve', {
+        const resp = await apiFetch('./api/devices/approve', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ ip: ip })
@@ -1204,7 +1256,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       if (!ip) return;
       if (!confirm(`Sei sicuro di voler isolare in quarantena il dispositivo ${ip}?`)) return;
       try {
-        const resp = await fetch('/api/devices/block', {
+        const resp = await apiFetch('./api/devices/block', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ ip: ip })
@@ -1226,7 +1278,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 
     async function fetchOffenders() {
       try {
-        const resp = await fetch('/api/offenders');
+        const resp = await apiFetch('./api/offenders');
         if (!resp.ok) return;
         cachedOffendersData = await resp.json();
         if (cachedOffendersData.summary) {
@@ -1266,84 +1318,84 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       let items = [];
       if (currentOffenderTab === 'brand') {
         items = cachedOffendersData.by_brand || [];
-        listEl.innerHTML = items.map(item => `
+        listEl.innerHTML = items.length ? items.map(item => `
           <div class="device-item" style="flex-direction: column; align-items: stretch; gap: 8px;">
             <div style="display: flex; justify-content: space-between; align-items: center;">
               <div style="display: flex; align-items: center; gap: 8px;">
-                <span style="font-size: 20px;">${item.icon || '🏷️'}</span>
+                <span style="font-size: 20px;">${escHtml(item.icon || '🏷️')}</span>
                 <div>
-                  <div style="font-weight: 700; font-size: 13px;">${item.brand}</div>
-                  <div style="font-size: 11px; color: var(--text-muted);">${item.flag || ''} ${item.country || ''} • ${item.category || ''}</div>
+                  <div style="font-weight: 700; font-size: 13px;">${escHtml(item.brand)}</div>
+                  <div style="font-size: 11px; color: var(--text-muted);">${escHtml(item.flag || '')} ${escHtml(item.country || '')} • ${escHtml(item.category || '')}</div>
                 </div>
               </div>
-              <span style="font-weight: 800; font-size: 13px; color: var(--indigo);">${item.percentage}%</span>
+              <span style="font-weight: 800; font-size: 13px; color: var(--indigo);">${Number(item.percentage || 0)}%</span>
             </div>
             <div style="background: rgba(255,255,255,0.06); height: 5px; border-radius: 999px; overflow: hidden;">
-              <div style="background: linear-gradient(90deg, #6366f1, #10b981); width: ${item.percentage}%; height: 100%;"></div>
+              <div style="background: linear-gradient(90deg, #6366f1, #10b981); width: ${Number(item.percentage || 0)}%; height: 100%;"></div>
             </div>
             <div style="font-size: 10px; color: var(--text-muted); text-align: right;">${Number(item.count).toLocaleString()} tentativi bloccati</div>
           </div>
-        `).join('');
+        `).join('') : '<div style="font-size:12px; color:var(--text-muted); padding:8px 0;">Nessun brand rilevato nei blocchi finora.</div>';
       } else if (currentOffenderTab === 'device') {
         items = cachedOffendersData.by_device || [];
-        listEl.innerHTML = items.map(item => `
+        listEl.innerHTML = items.length ? items.map(item => `
           <div class="device-item" style="flex-direction: column; align-items: stretch; gap: 8px;">
             <div style="display: flex; justify-content: space-between; align-items: center;">
               <div style="display: flex; align-items: center; gap: 8px;">
-                <span style="font-size: 20px;">${item.icon || '📱'}</span>
+                <span style="font-size: 20px;">${escHtml(item.icon || '📱')}</span>
                 <div>
-                  <div style="font-weight: 700; font-size: 13px;">${item.name || item.ip}</div>
-                  <div style="font-size: 11px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace;">${item.ip || ''}</div>
+                  <div style="font-weight: 700; font-size: 13px;">${escHtml(item.name || item.ip)}</div>
+                  <div style="font-size: 11px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace;">${escHtml(item.ip || '')}</div>
                 </div>
               </div>
-              <span style="font-weight: 800; font-size: 13px; color: var(--emerald);">${item.percentage}%</span>
+              <span style="font-weight: 800; font-size: 13px; color: var(--emerald);">${Number(item.percentage || 0)}%</span>
             </div>
             <div style="background: rgba(255,255,255,0.06); height: 5px; border-radius: 999px; overflow: hidden;">
-              <div style="background: linear-gradient(90deg, #10b981, #f59e0b); width: ${item.percentage}%; height: 100%;"></div>
+              <div style="background: linear-gradient(90deg, #10b981, #f59e0b); width: ${Number(item.percentage || 0)}%; height: 100%;"></div>
             </div>
             <div style="font-size: 10px; color: var(--text-muted); text-align: right;">${Number(item.count).toLocaleString()} blocchi</div>
           </div>
-        `).join('');
+        `).join('') : '<div style="font-size:12px; color:var(--text-muted); padding:8px 0;">Nessuna attribuzione per dispositivo disponibile.</div>';
       } else if (currentOffenderTab === 'category') {
         items = cachedOffendersData.by_category || [];
-        listEl.innerHTML = items.map(item => `
+        listEl.innerHTML = items.length ? items.map(item => `
           <div class="device-item" style="flex-direction: column; align-items: stretch; gap: 8px;">
             <div style="display: flex; justify-content: space-between; align-items: center;">
               <div style="display: flex; align-items: center; gap: 8px;">
-                <span style="font-size: 20px;">${item.icon || '🛡️'}</span>
+                <span style="font-size: 20px;">${escHtml(item.icon || '🛡️')}</span>
                 <div>
-                  <div style="font-weight: 700; font-size: 13px;">${item.name}</div>
-                  <div style="font-size: 11px; color: var(--text-muted);">${item.category_id}</div>
+                  <div style="font-weight: 700; font-size: 13px;">${escHtml(item.name)}</div>
+                  <div style="font-size: 11px; color: var(--text-muted);">${escHtml(item.category_id)}</div>
                 </div>
               </div>
-              <span style="font-weight: 800; font-size: 13px; color: var(--amber);">${item.percentage}%</span>
+              <span style="font-weight: 800; font-size: 13px; color: var(--amber);">${Number(item.percentage || 0)}%</span>
             </div>
             <div style="background: rgba(255,255,255,0.06); height: 5px; border-radius: 999px; overflow: hidden;">
-              <div style="background: linear-gradient(90deg, #f59e0b, #f43f5e); width: ${item.percentage}%; height: 100%;"></div>
+              <div style="background: linear-gradient(90deg, #f59e0b, #f43f5e); width: ${Number(item.percentage || 0)}%; height: 100%;"></div>
             </div>
             <div style="font-size: 10px; color: var(--text-muted); text-align: right;">${Number(item.count).toLocaleString()} minacce</div>
           </div>
-        `).join('');
+        `).join('') : '<div style="font-size:12px; color:var(--text-muted); padding:8px 0;">Nessuna categoria rilevata finora.</div>';
       } else if (currentOffenderTab === 'geography') {
         items = cachedOffendersData.by_geography || [];
-        listEl.innerHTML = items.map(item => `
+        listEl.innerHTML = items.length ? items.map(item => `
           <div class="device-item" style="flex-direction: column; align-items: stretch; gap: 8px;">
             <div style="display: flex; justify-content: space-between; align-items: center;">
               <div style="display: flex; align-items: center; gap: 8px;">
-                <span style="font-size: 24px;">${item.flag || '🌍'}</span>
+                <span style="font-size: 24px;">${escHtml(item.flag || '🌍')}</span>
                 <div>
-                  <div style="font-weight: 700; font-size: 13px;">${item.country_name} (${item.country_code})</div>
+                  <div style="font-weight: 700; font-size: 13px;">${escHtml(item.country_name)} (${escHtml(item.country_code)})</div>
                   <div style="font-size: 11px; color: var(--text-muted);">Destinazione esfiltrazione</div>
                 </div>
               </div>
-              <span style="font-weight: 800; font-size: 13px; color: #f43f5e;">${item.percentage}%</span>
+              <span style="font-weight: 800; font-size: 13px; color: #f43f5e;">${Number(item.percentage || 0)}%</span>
             </div>
             <div style="background: rgba(255,255,255,0.06); height: 5px; border-radius: 999px; overflow: hidden;">
-              <div style="background: linear-gradient(90deg, #f43f5e, #6366f1); width: ${item.percentage}%; height: 100%;"></div>
+              <div style="background: linear-gradient(90deg, #f43f5e, #6366f1); width: ${Number(item.percentage || 0)}%; height: 100%;"></div>
             </div>
             <div style="font-size: 10px; color: var(--text-muted); text-align: right;">${Number(item.count).toLocaleString()} connessioni bloccate</div>
           </div>
-        `).join('');
+        `).join('') : '<div style="font-size:12px; color:var(--text-muted); padding:8px 0;">Nessun dato geografico registrato finora.</div>';
       }
     }
 
@@ -1351,6 +1403,9 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     updateDashboard();
     fetchOffenders();
     setInterval(() => { updateDashboard(); fetchOffenders(); }, 4000);
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./sw.js').catch(() => {});
+    }
   </script>
 </body>
 </html>
@@ -1365,13 +1420,81 @@ class SentinelDashboard:
         self.resolver = resolver
         self.audit_engine = audit_engine or NetworkAuditEngine(settings, storage, resolver)
         self.offenders_engine = offenders_engine or OffendersAnalyticsEngine()
-        self.app = web.Application()
+        self.app = web.Application(
+            client_max_size=12 * 1024 * 1024,
+            middlewares=[self._auth_and_csrf_middleware],
+        )
+        self._adguard_lock = asyncio.Lock()
         self.runner: Optional[web.AppRunner] = None
         self._site: Optional[web.TCPSite] = None
         self._setup_routes()
 
+    @web.middleware
+    async def _auth_and_csrf_middleware(self, request: web.Request, handler):
+        # 1. Cross-origin CSRF guard on state-mutating requests
+        if request.method in ("POST", "PUT", "DELETE", "PATCH"):
+            origin = request.headers.get("Origin")
+            if origin:
+                origin_host = urlparse(origin).netloc.lower()
+                req_host = (request.host or "").lower()
+                if origin_host and req_host and origin_host != req_host:
+                    return web.json_response({"status": "error", "message": "Cross-origin request rejected (CSRF)."}, status=403)
+
+        # 2. Optional fail-closed API Key auth (bypassed only for real HA Supervisor Ingress proxy)
+        expected_key = (getattr(getattr(self.settings, "dashboard", None), "api_key", "") or "").strip()
+        if expected_key and request.path.startswith("/api/"):
+            remote_ip = (request.remote or "").strip()
+            is_ha_ingress = bool(request.headers.get("X-Ingress-Path")) and (
+                remote_ip.startswith("172.30.32.") or remote_ip in ("127.0.0.1", "::1")
+            )
+            if not is_ha_ingress:
+                provided_key = request.headers.get("X-API-Key", "")
+                if not provided_key:
+                    auth_hdr = request.headers.get("Authorization", "")
+                    if auth_hdr.lower().startswith("bearer "):
+                        provided_key = auth_hdr[7:].strip()
+                if not provided_key:
+                    provided_key = request.query.get("api_key", "")
+                if not provided_key or not hmac.compare_digest(provided_key, expected_key):
+                    return web.json_response({"status": "error", "message": "Unauthorized: invalid or missing API key."}, status=401)
+
+        return await handler(request)
+
+    async def _inject_adguard_user_rule(self, rule_str: str) -> bool:
+        """Serialized Read-Modify-Write helper preventing concurrent AdGuard rule overwrites."""
+        base_url = self.settings.adguard.base_url
+        creds = f"{self.settings.adguard.username}:{self.settings.adguard.password}".encode("utf-8")
+        headers = {
+            "Authorization": f"Basic {base64.b64encode(creds).decode('ascii')}",
+            "Content-Type": "application/json",
+        }
+        async with self._adguard_lock:
+            try:
+                timeout = aiohttp.ClientTimeout(total=3.0)
+                async with aiohttp.ClientSession(timeout=timeout) as session:
+                    async with session.get(f"{base_url}/control/filtering/status", headers=headers) as resp:
+                        if resp.status != 200:
+                            return False
+                        data = await resp.json()
+                        user_rules = data.get("user_rules", [])
+                        if rule_str in user_rules:
+                            return True
+                        user_rules.append(rule_str)
+                        async with session.post(
+                            f"{base_url}/control/filtering/set_rules",
+                            headers=headers,
+                            json={"rules": user_rules},
+                        ) as post_resp:
+                            return post_resp.status in (200, 204)
+            except Exception as ag_err:
+                logger.warning(f"AdGuard Home rule sync notice: {ag_err}")
+                return False
+
     def _setup_routes(self):
         self.app.router.add_get("/", self.handle_index)
+        self.app.router.add_get("/manifest.json", self.handle_manifest)
+        self.app.router.add_get("/sw.js", self.handle_sw)
+        self.app.router.add_get("/favicon.ico", self.handle_favicon)
         self.app.router.add_get("/api/stats", self.handle_api_stats)
         self.app.router.add_get("/api/shields", self.handle_api_shields)
         self.app.router.add_post("/api/shields/toggle", self.handle_api_shields_toggle)
@@ -1391,8 +1514,38 @@ class SentinelDashboard:
     async def handle_index(self, request: web.Request) -> web.Response:
         return web.Response(text=HTML_TEMPLATE, content_type="text/html")
 
+    async def handle_manifest(self, request: web.Request) -> web.Response:
+        return web.json_response({
+            "name": "Sentinel Core Console",
+            "short_name": "Sentinel",
+            "start_url": "./",
+            "display": "standalone",
+            "background_color": "#090d14",
+            "theme_color": "#090d14",
+            "description": "Local DNS Defense, 15 IoT Privacy Shields & Threat Monitor",
+            "icons": [
+                {
+                    "src": "./favicon.ico",
+                    "sizes": "48x48 192x192",
+                    "type": "image/png"
+                }
+            ]
+        })
+
+    async def handle_sw(self, request: web.Request) -> web.Response:
+        return web.Response(
+            text="self.addEventListener('fetch', () => {});",
+            content_type="application/javascript",
+        )
+
+    async def handle_favicon(self, request: web.Request) -> web.Response:
+        icon_path = Path(__file__).resolve().parent.parent / "extension" / "icons" / "icon48.png"
+        if icon_path.exists():
+            return web.Response(body=icon_path.read_bytes(), content_type="image/png")
+        return web.Response(status=204)
+
     async def handle_api_shields(self, request: web.Request) -> web.Response:
-        """Returns all 14 defense shields with current states and metadata."""
+        """Returns all 15 defense shields with current states and metadata."""
         shields = get_all_shields()
         return web.json_response({"status": "success", "shields": shields})
 
@@ -1456,23 +1609,11 @@ class SentinelDashboard:
         # Empirical FTC / OECD consumer benchmark:
         # A travel/shopping comparison session produces ~8 tracking beacons.
         # Benchmark savings: €24.50 avg dynamic surcharge avoided on repeated flight/hotel searches.
-        protected_sessions = max(1, pricing_hits // 8) if pricing_hits > 0 else 3
+        protected_sessions = max(1, pricing_hits // 8) if pricing_hits > 0 else 0
         savings_per_session = 24.50
         estimated_savings = int(protected_sessions * savings_per_session)
 
-        # Device categorization sample
-        devices_sample = [
-            {"name": "Samsung Smart TV", "ip": "192.168.1.104", "icon": "📺", "approval_status": "APPROVED", "category": "SMART_TV"},
-            {"name": "iPhone 15 Pro (Mario)", "ip": "192.168.1.142", "icon": "📱", "approval_status": "APPROVED", "category": "MOBILE"},
-            {"name": "Cosori Smart Air Fryer", "ip": "192.168.1.168", "icon": "🍳", "approval_status": "APPROVED", "category": "SMART_APPLIANCE"},
-            {"name": "Tesla Model Y", "ip": "192.168.1.189", "icon": "🚗", "approval_status": "APPROVED", "category": "CONNECTED_CAR"},
-            {"name": "Roborock S8 Pro", "ip": "192.168.1.177", "icon": "🧹", "approval_status": "APPROVED", "category": "VACUUM_ROBOT"},
-            {"name": "iPad Scuola (Sofia)", "ip": "192.168.1.135", "icon": "🧒", "approval_status": "APPROVED", "category": "YOUTH_DEVICE"},
-            {"name": "Bambu Lab P1S", "ip": "192.168.1.199", "icon": "🖨️", "approval_status": "APPROVED", "category": "3D_PRINTER"},
-            {"name": "MacBook Pro M2", "ip": "192.168.1.110", "icon": "💻", "approval_status": "APPROVED", "category": "COMPUTER"},
-        ]
-
-        devices_list = devices_sample
+        devices_list: List[Dict[str, Any]] = []
         if hasattr(self.storage, "get_devices"):
             try:
                 res = self.storage.get_devices()
@@ -1486,9 +1627,9 @@ class SentinelDashboard:
                             "category": d.get("category", "DEVICE")
                         }
                         for d in res if isinstance(d, dict)
-                    ] or devices_sample
+                    ]
             except Exception:
-                devices_list = devices_sample
+                devices_list = []
 
         all_shields = get_all_shields()
         active_count = len([s for s in all_shields if s.get("status") != "DISABLED"])
@@ -1540,36 +1681,9 @@ class SentinelDashboard:
             # 1. Update in-memory allowlist immediately
             add_runtime_allowlist_domain(domain)
 
-            # 2. Update AdGuard Home user_rules via REST API
-            base_url = self.settings.adguard.base_url
-            creds = f"{self.settings.adguard.username}:{self.settings.adguard.password}".encode("utf-8")
-            headers = {
-                "Authorization": f"Basic {base64.b64encode(creds).decode('ascii')}",
-                "Content-Type": "application/json"
-            }
+            # 2. Update AdGuard Home user_rules via serialized RMW helper
             allow_rule = f"@@||{domain}^"
-
-            adguard_updated = False
-            try:
-                timeout = aiohttp.ClientTimeout(total=3.0)
-                async with aiohttp.ClientSession(timeout=timeout) as session:
-                    async with session.get(f"{base_url}/control/filtering/status", headers=headers) as resp:
-                        if resp.status == 200:
-                            filt_data = await resp.json()
-                            user_rules = filt_data.get("user_rules", [])
-                            if allow_rule not in user_rules:
-                                user_rules.append(allow_rule)
-                                async with session.post(
-                                    f"{base_url}/control/filtering/set_rules",
-                                    headers=headers,
-                                    json={"rules": user_rules}
-                                ) as post_resp:
-                                    if post_resp.status == 200:
-                                        adguard_updated = True
-                            else:
-                                adguard_updated = True
-            except Exception as ag_err:
-                logger.warning(f"AdGuard Home unbreak sync notice: {ag_err}")
+            adguard_updated = await self._inject_adguard_user_rule(allow_rule)
 
             return web.json_response({
                 "status": "success",
@@ -1677,23 +1791,9 @@ class SentinelDashboard:
             if hasattr(self.storage, "set_device_status"):
                 self.storage.set_device_status(ip, "BLOCKED", notes="Quarantined via Dashboard")
             
-            # Inject AdGuard blocking rule
-            base_url = self.settings.adguard.base_url
-            creds = f"{self.settings.adguard.username}:{self.settings.adguard.password}".encode("utf-8")
-            headers = {"Authorization": f"Basic {base64.b64encode(creds).decode('ascii')}", "Content-Type": "application/json"}
+            # Inject AdGuard blocking rule atomically
             quarantine_rule = f"||*$client={ip}"
-            try:
-                timeout = aiohttp.ClientTimeout(total=3.0)
-                async with aiohttp.ClientSession(timeout=timeout) as session:
-                    async with session.get(f"{base_url}/control/filtering/status", headers=headers) as resp:
-                        if resp.status == 200:
-                            data = await resp.json()
-                            user_rules = data.get("user_rules", [])
-                            if quarantine_rule not in user_rules:
-                                user_rules.append(quarantine_rule)
-                                await session.post(f"{base_url}/control/filtering/set_rules", headers=headers, json={"rules": user_rules})
-            except Exception as ag_err:
-                logger.warning(f"AdGuard quarantine rule notice: {ag_err}")
+            await self._inject_adguard_user_rule(quarantine_rule)
 
             return web.json_response({"status": "success", "ip": ip, "approval_status": "BLOCKED"})
         except Exception as e:
@@ -1754,7 +1854,7 @@ class SentinelDashboard:
         await self.runner.setup()
         self._site = web.TCPSite(self.runner, host, port)
         await self._site.start()
-        logger.info(f"🚀 Sentinel Cyber Defense Dashboard live at http://{host}:{port}")
+        logger.info(f"🚀 Sentinel Core Dashboard live at http://{host}:{port}")
 
     async def stop(self):
         if self.runner:

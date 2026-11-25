@@ -154,17 +154,14 @@ class OffendersAnalyticsEngine:
         - by_geography
         """
         if not top_blocked:
-            # Baseline mock dataset for clean demonstration when zero traffic is blocked yet
-            top_blocked = [
-                {"domain": "sa-eu-datasink.ecouser.net", "count": 850},
-                {"domain": "samsungqbe.com", "count": 1500},
-                {"domain": "api.ad.intl.xiaomi.com", "count": 1200},
-                {"domain": "static.criteo.net", "count": 620},
-                {"domain": "telemetry.lexisnexis.com", "count": 450},
-                {"domain": "p2pcam.net", "count": 310},
-                {"domain": "cloud-telemetry.bambulab.com", "count": 280},
-                {"domain": "crash-report.nintendo.net", "count": 180},
-            ]
+            return {
+                "total_offenses": 0,
+                "by_brand": [],
+                "by_device": [],
+                "by_category": [],
+                "by_geography": [],
+                "summary": "Nessuna telemetria bloccata rilevata al momento.",
+            }
 
         total_blocks = sum(item.get("count", 1) for item in top_blocked)
         if total_blocks == 0:
@@ -250,14 +247,7 @@ class OffendersAnalyticsEngine:
                     "percentage": round((cnt / dev_total) * 100, 1)
                 })
         else:
-            # Contextual device distribution derived from brands
-            by_device = [
-                {"name": "Samsung Smart TV", "ip": "192.168.1.104", "icon": "📺", "category": "SMART_TV", "count": brand_counts.get("Samsung", 1500), "percentage": round((brand_counts.get("Samsung", 1500) / total_blocks) * 100, 1)},
-                {"name": "Xiaomi TV Box", "ip": "192.168.1.140", "icon": "📱", "category": "BUDGET_AOSP_DEVICE", "count": brand_counts.get("Xiaomi", 1200), "percentage": round((brand_counts.get("Xiaomi", 1200) / total_blocks) * 100, 1)},
-                {"name": "Ecovacs Deebot T20", "ip": "192.168.1.177", "icon": "🧹", "category": "VACUUM_ROBOT", "count": brand_counts.get("Ecovacs", 850), "percentage": round((brand_counts.get("Ecovacs", 850) / total_blocks) * 100, 1)},
-                {"name": "Tesla Model Y", "ip": "192.168.1.189", "icon": "🚗", "category": "CONNECTED_CAR", "count": brand_counts.get("LexisNexis Risk Solutions", 450), "percentage": round((brand_counts.get("LexisNexis Risk Solutions", 450) / total_blocks) * 100, 1)},
-                {"name": "Bambu Lab P1S", "ip": "192.168.1.199", "icon": "🖨️", "category": "3D_PRINTER", "count": brand_counts.get("Bambu Lab", 280), "percentage": round((brand_counts.get("Bambu Lab", 280) / total_blocks) * 100, 1)},
-            ]
+            by_device = []
 
         # Top offender summary statement
         top_brand = by_brand[0] if by_brand else {"brand": "Sconosciuto", "percentage": 0, "country": "Sconosciuto"}

@@ -4,92 +4,332 @@
   <meta charset="UTF-8">
   <title>Sentinel Shield</title>
   <style>
+    :root {
+      --bg: #090d14;
+      --surface: #101622;
+      --surface-alt: #0d121c;
+      --border: #1e293b;
+      --text-primary: #f8fafc;
+      --text-secondary: #94a3b8;
+      --accent: #00e599;
+      --accent-secondary: #00bfa5;
+      --accent-glow: rgba(0, 229, 153, 0.14);
+      --warning: #f59e0b;
+      --warning-bg: rgba(245, 158, 11, 0.12);
+      --danger: #f87171;
+    }
+    * {
+      box-sizing: border-box;
+    }
     body {
-      width: 320px;
+      width: 348px;
       margin: 0;
       padding: 16px;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background: #0f172a;
-      color: #f8fafc;
-      box-sizing: border-box;
+      background: var(--bg);
+      color: var(--text-primary);
     }
     .header {
       display: flex;
       align-items: center;
-      gap: 8px;
-      margin-bottom: 16px;
-      border-bottom: 1px solid #334155;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 14px;
       padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
     }
-    .header h2 {
+    .brand-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .brand-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      border: 1px solid rgba(0, 229, 153, 0.3);
+      box-shadow: 0 0 12px rgba(0, 229, 153, 0.2);
+    }
+    .brand-text h2 {
       margin: 0;
-      font-size: 16px;
+      font-size: 14px;
+      font-weight: 800;
+      letter-spacing: -0.2px;
+      line-height: 1.2;
+    }
+    .brand-sub {
+      font-size: 10px;
+      color: var(--accent);
       font-weight: 600;
+      letter-spacing: 0.4px;
+      text-transform: uppercase;
+    }
+    .version-pill {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 10px;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: 9999px;
+      background: rgba(0, 229, 153, 0.1);
+      border: 1px solid rgba(0, 229, 153, 0.3);
+      color: var(--accent);
     }
     .status-box {
-      border-radius: 8px;
-      padding: 12px;
-      margin-bottom: 16px;
+      border-radius: 12px;
+      padding: 12px 14px;
+      margin-bottom: 14px;
+      transition: border-color 0.2s ease;
     }
     .status-safe {
-      background: #064e3b;
-      border: 1px solid #059669;
-      color: #a7f3d0;
+      background: linear-gradient(180deg, rgba(0, 229, 153, 0.11) 0%, var(--surface) 100%);
+      border: 1px solid rgba(0, 229, 153, 0.35);
+      color: #d1fae5;
     }
     .status-warning {
-      background: #7c2d12;
-      border: 1px solid #ea580c;
-      color: #fed7aa;
+      background: linear-gradient(180deg, var(--warning-bg) 0%, var(--surface) 100%);
+      border: 1px solid rgba(245, 158, 11, 0.55);
+      color: #fde68a;
     }
     .status-title {
-      font-weight: bold;
+      font-weight: 700;
       margin-bottom: 4px;
-      font-size: 14px;
+      font-size: 13px;
+      color: var(--text-primary);
     }
     .status-desc {
       font-size: 12px;
-      line-height: 1.4;
+      line-height: 1.45;
+      color: var(--text-secondary);
+    }
+    .status-safe .status-desc {
+      color: #a7f3d0;
+    }
+    .official-hint {
+      margin-top: 8px;
+      padding: 6px 8px;
+      border-radius: 6px;
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 11px;
+      color: var(--accent);
+      display: none;
+    }
+    .shields-panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px;
+      margin-bottom: 12px;
+    }
+    .section-label {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.7px;
+      color: var(--text-secondary);
+      margin-bottom: 10px;
+    }
+    .shield-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(30, 41, 59, 0.7);
+    }
+    .shield-row:last-child {
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+    .shield-info {
+      flex: 1;
+      min-width: 0;
+    }
+    .shield-name {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .shield-tag {
+      font-family: ui-monospace, monospace;
+      font-size: 9px;
+      padding: 1px 5px;
+      border-radius: 4px;
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+      color: var(--text-secondary);
+    }
+    .shield-tag.active {
+      border-color: rgba(0, 229, 153, 0.35);
+      color: var(--accent);
+    }
+    .shield-sub {
+      font-size: 11px;
+      color: var(--text-secondary);
+      line-height: 1.3;
+      margin-top: 2px;
+    }
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 38px;
+      height: 21px;
+      flex-shrink: 0;
+    }
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      inset: 0;
+      background-color: #1e293b;
+      transition: 0.2s;
+      border-radius: 9999px;
+      border: 1px solid #334155;
+    }
+    .slider::before {
+      position: absolute;
+      content: "";
+      height: 15px;
+      width: 15px;
+      left: 2px;
+      bottom: 2px;
+      background-color: #94a3b8;
+      transition: 0.2s;
+      border-radius: 50%;
+    }
+    input:checked + .slider {
+      background-color: rgba(0, 229, 153, 0.22);
+      border-color: var(--accent);
+    }
+    input:checked + .slider::before {
+      transform: translateX(17px);
+      background-color: var(--accent);
+    }
+    .site-actions {
+      display: none;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 10px;
     }
     .btn {
       width: 100%;
       padding: 8px 12px;
       font-size: 12px;
       font-weight: 600;
-      border-radius: 6px;
+      border-radius: 8px;
       cursor: pointer;
-      border: none;
+      border: 1px solid var(--border);
       margin-top: 8px;
+      transition: background 0.15s ease, border-color 0.15s ease;
+    }
+    .site-actions .btn {
+      margin-top: 0;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent) 0%, var(--accent-secondary) 100%);
+      color: #051410;
+      border: none;
+      font-weight: 700;
+    }
+    .btn-primary:hover {
+      filter: brightness(1.06);
     }
     .btn-secondary {
-      background: #334155;
-      color: #f8fafc;
+      background: var(--surface-alt);
+      color: var(--text-primary);
     }
     .btn-secondary:hover {
-      background: #475569;
+      background: #162033;
+      border-color: rgba(0, 229, 153, 0.4);
+    }
+    .btn:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+    .feedback-note {
+      font-size: 11px;
+      color: var(--accent);
+      text-align: center;
+      min-height: 15px;
+      margin-top: 4px;
     }
     .footer {
-      font-size: 11px;
-      color: #64748b;
+      font-size: 10px;
+      color: var(--text-secondary);
       text-align: center;
-      margin-top: 12px;
+      padding-top: 8px;
+      border-top: 1px solid var(--border);
     }
   </style>
 </head>
 <body>
   <div class="header">
-    <span>🛡️</span>
-    <h2>Sentinel Shield</h2>
+    <div class="brand-group">
+      <img src="../icons/icon48.png" alt="Sentinel Logo" class="brand-icon">
+      <div class="brand-text">
+        <h2>Sentinel Shield</h2>
+        <div class="brand-sub">Zero-Telemetry Local Guard</div>
+      </div>
+    </div>
+    <span class="version-pill">v0.4.1</span>
   </div>
 
   <div id="statusContainer" class="status-box status-safe">
     <div class="status-title" id="statusTitle">Nessun Avviso</div>
     <div class="status-desc" id="statusDesc">Nessuna anomalia riscontrata per i brand monitorati. Verifica euristica locale attiva.</div>
+    <div class="official-hint" id="officialDomainHint"></div>
     <button class="btn btn-secondary" id="btnException" style="display: none;">Segnala come sito fidato</button>
-    <button class="btn btn-secondary" id="btnBypassDnr" style="display: none;">Sblocca dominio (Bypass sessione)</button>
+    <button class="btn btn-primary" id="btnBypassDnr" style="display: none;">Sblocca dominio (Bypass sessione)</button>
+  </div>
+
+  <div class="shields-panel">
+    <div class="section-label">Scudi Privacy &amp; Cookie</div>
+
+    <div class="shield-row">
+      <div class="shield-info">
+        <div class="shield-name">
+          Anti-Dynamic Pricing
+          <span class="shield-tag active" id="pricingTag">0-PERM</span>
+        </div>
+        <div class="shield-sub">Blocca 70 reti di rincaro tariffe e tracker di 3ª parte</div>
+      </div>
+      <label class="switch" title="Attiva/Disattiva Anti-Dynamic Pricing">
+        <input type="checkbox" id="togglePricingShield" checked>
+        <span class="slider"></span>
+      </label>
+    </div>
+
+    <div class="shield-row">
+      <div class="shield-info">
+        <div class="shield-name">
+          Cookie &amp; Param Guard
+          <span class="shield-tag" id="cookieTag">OPT-IN</span>
+        </div>
+        <div class="shield-sub">Rimuove header Cookie 3ª parte e parametri fbclid/utm</div>
+      </div>
+      <label class="switch" title="Attiva/Disattiva Scudo Cookie Opt-In">
+        <input type="checkbox" id="toggleCookieGuard">
+        <span class="slider"></span>
+      </label>
+    </div>
+  </div>
+
+  <div class="site-actions" id="siteActions">
+    <button class="btn btn-secondary" id="btnCleanCookies" style="display: none;">Pulisci Cookie Sito</button>
+    <button class="btn btn-secondary" id="btnSitePrivacyToggle">Escludi questo sito dagli scudi</button>
+    <div class="feedback-note" id="feedbackNote"></div>
   </div>
 
   <div class="footer">
-    Verifica locale degli URL visitati • Zero telemetria cloud
+    Sentinel Shield • 100% locale • Zero telemetria cloud
   </div>
 
   <script src="popup.js"></script>

@@ -1,0 +1,27 @@
+[
+  {
+    "label": "claim-airdrop",
+    "pattern": "(^|[-_0-9.])(claim[-_]?airdrop|airdrop[-_]?claim)([-_0-9.]|$)",
+    "description": "Finto airdrop Web3 progettato per autorizzare lo svuotamento del wallet."
+  },
+  {
+    "label": "connect-wallet",
+    "pattern": "(^|[-_0-9.])(connect[-_]?wallet|sync[-_]?wallet|rectify[-_]?wallet)([-_0-9.]|$)",
+    "description": "Phishing kit di 'rettifica' o 'connessione' wallet."
+  },
+  {
+    "label": "claim-reward",
+    "pattern": "(^|[-_0-9.])(claim[-_]?reward|token[-_]?reward|presale[-_]?token)([-_0-9.]|$)",
+    "description": "Esca per minting o presale malevola."
+  },
+  {
+    "label": "wallet-backup",
+    "pattern": "(^|[-_0-9.])(ledger[-_]?live[-_]?update|trezor[-_]?firmware|hardware[-_]?wallet[-_]?backup|seed[-_]?phrase[-_]?backup)([-_0-9.]|$)",
+    "description": "Falso aggiornamento firmware o backup per estorsione di chiavi o seed phrase."
+  },
+  {
+    "label": "rwa-yield",
+    "pattern": "(^|[-_0-9.])(rwa[-_]?yield|property[-_]?token|asset[-_]?token|token[-_]?dividend)([-_0-9.]|$)",
+    "description": "Phishing mirato per finto claim di dividendi o token RWA."
+  }
+]

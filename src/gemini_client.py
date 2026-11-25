@@ -4,7 +4,7 @@ import logging
 from typing import Optional
 from pydantic import BaseModel, Field
 
-logger = logging.getLogger("ai_hunter.gemini")
+logger = logging.getLogger("sentinel.gemini")
 
 class DomainClassification(BaseModel):
     classification: str = Field(description="TELEMETRY, DGA_MALWARE, BENIGN, or SUSPICIOUS")

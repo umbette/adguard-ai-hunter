@@ -345,6 +345,19 @@ def test_device_profiles_yaml_catalog_loading():
     add_runtime_allowlist_domain(custom_dom)
     assert is_essential_companion_domain(custom_dom) is True
 
+    # Verify data_plane.blocked_domains loaded from device_profiles.yaml are actually enforced
+    smart_tv_match = evaluate_device_shield("samsungacr.com")
+    assert smart_tv_match is not None
+    assert smart_tv_match.shield_type == "SMART_TV_STEALTH"
+
+    prusa_match = evaluate_device_shield("analytics.prusa3d.com")
+    assert prusa_match is not None
+    assert prusa_match.shield_type == "MAKER_3DPRINTER"
+
+    shelly_match = evaluate_device_shield("tracking.shelly.cloud")
+    assert shelly_match is not None
+    assert shelly_match.shield_type == "APPLIANCE_PRIVACY"
+
 
 def test_public_venue_guest_shield():
     # 1. Blocks torrent bootstrap trackers

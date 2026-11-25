@@ -12,7 +12,7 @@ from src.config import Settings
 from src.storage import StorageEngine
 from src.device_resolver import DeviceResolver, DeviceInfo
 
-logger = logging.getLogger("ai_hunter.dispatcher")
+logger = logging.getLogger("sentinel.dispatcher")
 
 tld_cache_env = os.environ.get("TLD_CACHE_DIR")
 if tld_cache_env:
@@ -41,6 +41,7 @@ class Dispatcher:
         self.device_resolver = device_resolver or DeviceResolver(settings)
         self._running = False
         self._session: Optional[aiohttp.ClientSession] = None
+        self._rules_lock = asyncio.Lock()
 
     async def get_session(self) -> aiohttp.ClientSession:
         if self._session is None or self._session.closed:
@@ -70,38 +71,39 @@ class Dispatcher:
         headers = {"Authorization": auth_header}
         base_url = self.settings.adguard.base_url
 
-        try:
-            # 1. Read existing filtering status & rules
-            async with session.get(f"{base_url}/control/filtering/status", headers=headers, timeout=5.0) as resp:
-                if resp.status != 200:
-                    logger.error(f"Failed to fetch AdGuard rules: HTTP {resp.status}")
-                    return False
-                data = await resp.json()
+        async with self._rules_lock:
+            try:
+                # 1. Read existing filtering status & rules
+                async with session.get(f"{base_url}/control/filtering/status", headers=headers, timeout=5.0) as resp:
+                    if resp.status != 200:
+                        logger.error(f"Failed to fetch AdGuard rules: HTTP {resp.status}")
+                        return False
+                    data = await resp.json()
 
-            current_rules = data.get("user_rules") or []
-            
-            # 2. Check if rule is already present
-            rule_core = rule_clean.split("#")[0].strip()
-            for r in current_rules:
-                if r.split("#")[0].strip() == rule_core:
-                    logger.info(f"Rule already exists in AdGuard Home: {rule_core}")
-                    return True
+                current_rules = data.get("user_rules") or []
 
-            # 3. Append rule and write back complete array
-            current_rules.append(rule_clean)
-            payload = {"rules": current_rules}
+                # 2. Check if rule is already present
+                rule_core = rule_clean.split("#")[0].strip()
+                for r in current_rules:
+                    if r.split("#")[0].strip() == rule_core:
+                        logger.info(f"Rule already exists in AdGuard Home: {rule_core}")
+                        return True
 
-            async with session.post(f"{base_url}/control/filtering/set_rules", headers=headers, json=payload, timeout=5.0) as resp:
-                if resp.status in (200, 204):
-                    logger.info(f"Successfully injected rule into AdGuard Home: {rule_clean}")
-                    return True
-                else:
-                    text = await resp.text()
-                    logger.error(f"Failed to post rules to AdGuard Home: HTTP {resp.status} - {text}")
-                    return False
-        except Exception as e:
-            logger.error(f"Error during AdGuard RMW rule injection: {e}")
-            return False
+                # 3. Append rule and write back complete array
+                current_rules.append(rule_clean)
+                payload = {"rules": current_rules}
+
+                async with session.post(f"{base_url}/control/filtering/set_rules", headers=headers, json=payload, timeout=5.0) as resp:
+                    if resp.status in (200, 204):
+                        logger.info(f"Successfully injected rule into AdGuard Home: {rule_clean}")
+                        return True
+                    else:
+                        text = await resp.text()
+                        logger.error(f"Failed to post rules to AdGuard Home: HTTP {resp.status} - {text}")
+                        return False
+            except Exception as e:
+                logger.error(f"Error during AdGuard RMW rule injection: {e}")
+                return False
 
     # -------------------------------------------------------------
     # 2. Home Assistant Mobile & Persistent Notification Dispatch
@@ -121,7 +123,7 @@ class Dispatcher:
             "Content-Type": "application/json"
         }
 
-        title = f"🛡️ Hunter: {classification.upper()} Rilevato"
+        title = f"🛡️ Sentinel: {classification.upper()} Rilevato"
         message = f"{summary}\n\n• Dispositivo: {device.display_name}\n• Dominio: {domain}"
 
         # 1. Actionable Mobile Push Notification (Companion App)
@@ -169,7 +171,7 @@ class Dispatcher:
             "notification_id": clean_id,
             "title": title,
             "message": (
-                f"### Anomalia DNS Rilevata da AI Hunter\n\n"
+                f"### Anomalia DNS Rilevata da Sentinel Core\n\n"
                 f"**Diagnosi:** {summary}\n\n"
                 f"* **Dispositivo:** {device.icon} **{device.name}** (`{client_ip}`)\n"
                 f"* **Dominio:** `{domain}`\n"

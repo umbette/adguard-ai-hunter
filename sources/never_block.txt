@@ -1,5 +1,5 @@
 # ==============================================================================
-# AI Hunter - Never-Block Protective Whitelist
+# Sentinel Shield - Never-Block Protective Whitelist
 # Domains listed here will NEVER be included in the compiled blacklist.
 # ==============================================================================
 

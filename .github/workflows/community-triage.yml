@@ -101,9 +101,9 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            const comment = `### 👋 Welcome to the RePlug™ Ecosystem!\n\n` +
-              `Thank you for contributing to **RePlug™** (**Sentinel Shield** & **Nozzle Guardian**).\n` +
-              `* If you are requesting **Alpha Access**, our team has logged your hardware profile and will notify you here upon release.\n` +
+            const comment = `### 👋 Welcome to Sentinel!\n\n` +
+              `Thank you for contributing to **Sentinel Core** & **Sentinel Shield**.\n` +
+              `* If you are requesting **Early Testing / Integration**, our team has logged your environment profile and will respond here.\n` +
               `* If reporting a **DNS false positive**, include the domain, device type, and entropy score if known.`;
             await github.rest.issues.addLabels({
               owner: context.repo.owner,

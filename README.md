@@ -1,58 +1,38 @@
-# RePlug™ — The Ethical Upcycling Ecosystem
+# Sentinel Core & Sentinel Shield
 
 <div align="center">
-  <img src="assets/replug_logo.png" alt="RePlug Official Logo" width="180" style="border-radius: 22px; margin-bottom: 14px;" />
-  <h3>Give Old Tech a New Mission — Upcycled. Connected. Secure.</h3>
+  <img src="extension/icons/icon128.png" alt="Sentinel Official Logo" width="128" style="border-radius: 22px; margin-bottom: 14px;" />
+  <h3>100% Local-First DNS Defense, IoT Privacy Console &amp; Zero-Telemetry MV3 Extension</h3>
   <p>
-    <strong>Transform dormant smartphones and tablets into local-first cyber sentinels and automated printer guardians.</strong>
+    <strong>Hardware-independent home &amp; endpoint cyber-defense bridging AdGuard Home / Pi-hole, Home Assistant, and Chrome/Edge MV3.</strong>
   </p>
   <p>
     <a href="https://umbette.github.io/sentinel/"><strong>🌐 Official Website</strong></a> •
-    <a href="docs/ECOSYSTEM_ARCHITECTURE.md"><strong>📐 Architecture &amp; Prior Art Spec</strong></a> •
-    <a href="#-ecosystem-modules"><strong>📦 Ecosystem Modules</strong></a> •
+    <a href="#-core-capabilities"><strong>🛡️ Core Capabilities</strong></a> •
+    <a href="#-15-specialized-cyber-defense--privacy-shields"><strong>🔒 15 IoT Shields</strong></a> •
     <a href="#-installation--quick-start"><strong>🚀 Quick Start</strong></a> •
-    <a href="#-ownership-intellectual-property--trademark"><strong>⚖️ Ownership &amp; IP</strong></a>
+    <a href="#-companion-chrome-extension-sentinel-shield-041-mv3"><strong>🧩 MV3 Extension</strong></a>
   </p>
 </div>
 
 [![CI Test Suite](https://github.com/umbette/sentinel/actions/workflows/ci.yml/badge.svg)](https://github.com/umbette/sentinel/actions/workflows/ci.yml)
-[![Tests: 98 Passing](https://img.shields.io/badge/Tests-98%20Passing-brightgreen.svg)](tests/)
 [![Shields: 15 Active](https://img.shields.io/badge/Shields-15%20Active-10b981.svg)](#-15-specialized-cyber-defense--privacy-shields)
 [![Privacy: Zero-Telemetry](https://img.shields.io/badge/Privacy-Zero--Telemetry-blueviolet.svg)](#-zero-knowledge-device-catalog--1-click-unbreak)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![License: AGPL v3](https://img.shields.io/badge/License-AGPLv3-blue.svg)](LICENSE)
+[![Hardware License: PolyForm NC](https://img.shields.io/badge/Hardware%20%26%20Appliances-Noncommercial-orange.svg)](LICENSE-COMMERCIAL-HARDWARE)
 [![Home Assistant Add-on](https://img.shields.io/badge/Home%20Assistant-Add--on%20Ready-blue?logo=home-assistant)](ha-addon/)
 [![Docker](https://img.shields.io/badge/Docker-Multi--Arch-2496ED?logo=docker)](Dockerfile)
 
 ---
 
-## 🌍 The RePlug™ Cultural Thesis
+## 🛡️ Core Capabilities
 
-Over **5 billion functional smartphones and tablets** sit abandoned in drawers across the world. Each houses an ARM multi-core processor, gigabytes of RAM, high-resolution cameras, Wi-Fi/Bluetooth radios, and an internal battery.
+**Sentinel** protects your household LAN and browsers strictly on your own hardware (**zero cloud telemetry, zero phone-home pings, zero external accounts**):
 
-Meanwhile, consumer hardware vendors continue selling disposable plastic dongles and proprietary hubs powered by weak microcontrollers and mandatory cloud subscriptions.
-
-**RePlug rejects this cycle.**  
-By converting dormant consumer hardware into sovereign local-first appliances, RePlug delivers network security, printer longevity, and ambient home awareness:
-* **Zero New Plastic:** Never buy single-use IoT hardware when dormant smartphones can perform the task better.
-* **100% Local-First:** DNS filtering, anomaly heuristics, and optical checks execute inside your LAN with zero cloud telemetry.
-* **Thermal Battery Safeguard:** Closed-loop Home Assistant smart-plug integration keeps 24/7 repurposed cells safely between 50% and 80% SoC.
-
----
-
-## 📦 Ecosystem Modules
-
-RePlug connects modular local capabilities documented in full inside **[docs/ECOSYSTEM_ARCHITECTURE.md](docs/ECOSYSTEM_ARCHITECTURE.md)**:
-
-### 1. 🛡️ RePlug Sentinel Shield *(Production Core — Included in this repository)*
-Autonomous cyber-defense console, 15 specialized IoT privacy shields, anti-dynamic pricing blocker, and zero-knowledge unbreak catalog for local DNS resolvers (**AdGuard Home**, **Pi-hole**) and **Home Assistant**.
-
-### 2. 🖨️ RePlug Nozzle Guardian *(Architecture & Alpha Track)*
-Automated maintenance engine for inkjet (CISS EcoTank) and 3D printers. Polls local printers via **RFC 8011 IPP** to detect true idle duration, schedules ultra-low-waste micro-purges before printhead ink dries out, and leverages on-device camera optics for nozzle test-pattern and first-layer inspection.
-
-### 3. ⚡ Ambient & Blackout Sentinels *(Roadmap Nodes)*
-* **Blackout Beacon:** Detects grid outages instantly via battery telemetry, illuminates a hallway LED beacon, and dispatches alerts.
-* **Acoustic Sentry:** Edge-AI audio classification for smoke/CO alarms cleanly inside RAM without external streaming.
-* **Optical Meter OCR:** Macro optical logging for legacy analog water/gas meters.
+* **Sentinel Core (`src/`):** Autonomous DNS anomaly daemon integrating with **AdGuard Home** and **Home Assistant** — combining Multi-Label Shannon Entropy DGA detection (`H > 3.85`), CDN-safe Malicious IP & DNS-answer correlation (`src/ip_intel.py`), Zero-Trust Device Admission Control, Scan on Demand network auditing, and a dark-mode Ingress/Web Cockpit on port `8087`.
+* **15 Deterministic IoT & Privacy Shields:** Stops Smart TV ACR snooping, vacuum camera/LiDAR uploads, 3D printer cloud telemetry, Badbox/Peachpit AOSP C2 beacons, automotive driving brokers, and dynamic travel pricing trackers without breaking companion apps.
+* **Sentinel Shield (`extension/` — Chrome/Edge MV3 `0.4.1`):** Zero-permission-by-default browser extension with Punycode/homograph & brand impersonation detection across 47 SSOT-compiled brands, bare-IP threat protection, Anti-Dynamic Pricing DNR ruleset, and opt-in Cookie & Tracking Param Guard.
+* **Proactive Threat Intelligence (`scripts/proactive_miner.py`):** Compiles zero-trust domain & CDN-excluded C2 IP feeds with sliding TTLs and strict Public Suffix List / RFC 1123 sanitization.
 
 ---
 
@@ -112,7 +92,7 @@ Sentinel solves over-blocking through an open crowdsourced catalog and a 3-tier 
 ```
 
 * **Open Community Catalog:** Check [`sources/device_profiles.yaml`](sources/device_profiles.yaml) for verified device rules covering Ecovacs, Roborock, Dreame, Bambu Lab, Prusa, Cosori, Shelly, Tuya, Tesla, BMW, and Smart TVs.
-* **100% Zero-Tracking Guarantee:** RePlug contains **zero telemetry, zero phone-home pings, and zero analytics**.
+* **100% Zero-Tracking Guarantee:** Sentinel contains **zero telemetry, zero phone-home pings, and zero analytics**.
 
 ---
 
@@ -181,7 +161,7 @@ Sentinel includes a responsive, dark-mode web console running at `http://localho
    ```text
    https://github.com/umbette/sentinel
    ```
-3. Select **Sentinel Core**, configure your DNS credentials, and click **Start**.
+3. Select **Sentinel Core**, configure your AdGuard/Home Assistant options, and click **Start**.
 
 ### Option B: Docker Compose (Standalone Server / Proxmox / Unraid)
 
@@ -197,34 +177,45 @@ Access the Cyber Defense Console at `http://your-server-ip:8087`.
 
 ---
 
-## 🧩 Companion Chrome Extension: Sentinel Shield (MV3)
+## 🧩 Companion Chrome Extension: Sentinel Shield `0.4.1` (MV3)
 
-For endpoint protection when traveling or using public Wi-Fi outside your home network, this repository includes **Sentinel Shield**, an ultra-lightweight Manifest V3 Chrome/Edge extension located in [`extension/`](extension/).
+For endpoint protection when traveling or using public Wi-Fi outside your home network, this repository includes **Sentinel Shield (`0.4.1`)**, an ultra-lightweight Manifest V3 Chrome/Edge extension located in [`extension/`](extension/).
 
-* **Declarative Net Request (DNR):** 0 host permissions required (`action: "block"`).
-* **Zero Cloud Telemetry:** Operates 100% offline using a compiled snapshot of the Public Suffix List (8,700+ suffixes) and verified brand heuristics.
+* **Declarative Net Request (DNR) + Cookie Guard:** 0 always-on host permissions required for blocking (`pricing_trackers.json` + compact malicious domain ruleset), plus opt-in per-site Cookie Guard tracker stripping.
+* **Single Source of Truth (`spec/`):** Syncs all 47 protected brands and wallet-drainer patterns from `spec/` alongside a compiled snapshot of the Public Suffix List (8,700+ suffixes).
 
 ---
 
 ## 🧪 Test Suite & Verification
 
-The codebase is validated by automated test suites:
+The codebase is validated by automated test suites and Single Source of Truth checks:
 
 ```bash
-# Run Python backend unit, integration, and Selenium headless e2e tests (89 tests)
+# Verify SSOT sync (brands, drainer patterns, pricing DNR, and 15-shield parity)
+PYTHONPATH=. .venv/bin/python scripts/compile_ssot.py --check
+
+# Run Python backend unit, integration, and Selenium headless e2e tests
 PYTHONPATH=. .venv/bin/pytest -v tests/
 
-# Run Manifest V3 sandboxed browser runtime tests (9 tests)
+# Run Manifest V3 sandboxed browser runtime tests
 node tests/test_extension_runtime.mjs
 ```
 
-**Total:** 98 passed (89 Python + 9 Manifest V3 runtime tests — 100% pass rate).
+---
+
+## 📱 Platforms, Mobile (iOS/Android), Desktop & Repurposed Linux Nodes
+
+See **[docs/PLATFORMS_GUIDE.md](docs/PLATFORMS_GUIDE.md)** for full setup guides across:
+* **Home Server & Domotica:** Home Assistant Add-on (`ha-addon/`) & Docker Compose.
+* **Active Owner Smartphones (iOS & Android):** Installable PWA Console (`/manifest.json`), Apple `.mobileconfig` Encrypted DNS Generator (`scripts/generate_ios_dns_profile.py`), iOS/macOS Safari Web Extension converter (`scripts/export_ios_safari_extension.sh`), and WireGuard Android Auto Split-Tunneling ([MOBILE_AND_AUTO_VPN_GUIDE.md](docs/MOBILE_AND_AUTO_VPN_GUIDE.md)).
+* **PC Browsers:** Chrome/Edge/Brave MV3 Extension (`sentinel-shield-v0.4.1.zip`).
+* **Old Linux Laptops / Raspberry Pi / TV Boxes:** `./scripts/setup_old_device.sh`.
 
 ---
 
-## ⚖️ Ownership, Intellectual Property & Trademark
+## ⚖️ Prior Art, Trademarks & Licensing (Hybrid Open-Core)
 
 * **Original Concept & System Architecture:** Conceived, designed, and authored by **Umberto** (`umbette`) & contributors.
-* **Prior Art Record:** Established in **[docs/ECOSYSTEM_ARCHITECTURE.md](docs/ECOSYSTEM_ARCHITECTURE.md)** covering unified repurposed-device IPP printer preservation (`Nozzle Guardian`), local network defense (`Sentinel Shield`), and closed-loop 50%–80% battery swelling prevention.
-* **Trademark Policy:** **RePlug™**, **Sentinel Shield™**, **Nozzle Guardian™**, and the Infinity-Ascension emblem are owned by Umberto. See **[TRADEMARKS.md](TRADEMARKS.md)** and **[SECURITY.md](SECURITY.md)**.
-* **Code License:** The software codebase is licensed under the [MIT License](LICENSE).
+* **Prior Art & Defensive Disclosure:** **[docs/PRIOR_ART.md](docs/PRIOR_ART.md)** • **[CITATION.cff](CITATION.cff)** • **[TRADEMARKS.md](TRADEMARKS.md)** • **[SECURITY.md](SECURITY.md)**.
+* **Software Core, Home Assistant Add-on & MV3 Extension:** Licensed under **[GNU AGPLv3](LICENSE)** (Anti-Tivoization & network copyleft).
+* **Hardware Blueprints (`hardware/` Sentinel Drive) & OEM Appliances:** Governed by **[PolyForm Noncommercial License 1.0.0](LICENSE-COMMERCIAL-HARDWARE)** — free for personal home use; commercial hardware dongles, router boxes, or OEM appliances require a Commercial License from Umberto (`umbette`).

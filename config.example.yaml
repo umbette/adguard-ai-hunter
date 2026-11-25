@@ -1,15 +1,20 @@
 adguard:
+  scheme: "http"
   host: "127.0.0.1"
   port: 8080
+  username: ""
+  password: ""
   poll_interval_sec: 15
   batch_limit: 200
 
 home_assistant:
   base_url: "http://127.0.0.1:8123"
   ws_url: "ws://127.0.0.1:8123/api/websocket"
-  notify_service: "notify" # or mobile_app_your_phone
+  token: ""
+  notify_service: "notify" # e.g. mobile_app_your_phone
 
 gemini:
+  api_key: ""
   model: "gemini-2.0-flash"
   timeout_sec: 10.0
 
@@ -21,3 +26,18 @@ heuristics:
 
 storage:
   db_path: "/app/data/hunter_decisions.db"
+
+dashboard:
+  host: "0.0.0.0"
+  port: 8087
+  enabled: true
+  api_key: "" # Optional local API key / Bearer token for standalone exposure
+
+admission:
+  enabled: false
+  quarantine_unapproved: false
+  notify_on_new_device: true
+
+audit:
+  enabled: true
+  retrospective_hours: 48

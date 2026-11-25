@@ -22,7 +22,7 @@ from src.dynamic_pricing import evaluate_dynamic_pricing_tracker
 from src.heuristics import HeuristicsEngine
 from src.storage import StorageEngine
 
-logger = logging.getLogger("ai_hunter.audit")
+logger = logging.getLogger("sentinel.audit")
 
 HIGH_RISK_PORTS = [
     {
@@ -128,43 +128,8 @@ class NetworkAuditEngine:
             except Exception as e:
                 logger.debug(f"Audit could not query AdGuard clients: {e}")
 
-        # 2. Retrieve all registered devices from StorageEngine
-        stored_devices = self.storage.get_devices()
-
-        # Fallback baseline devices if running in isolated sandbox/mock environment
-        if not stored_devices:
-            baseline = [
-                {
-                    "ip": "192.168.1.1",
-                    "hostname": "Router Gateway",
-                    "category": "GATEWAY",
-                    "icon": "🌐",
-                    "approval_status": "APPROVED",
-                },
-                {
-                    "ip": "192.168.1.104",
-                    "hostname": "Samsung Smart TV",
-                    "category": "SMART_TV",
-                    "icon": "📺",
-                    "approval_status": "APPROVED",
-                },
-                {
-                    "ip": "192.168.1.177",
-                    "hostname": "Roborock Vacuum S8",
-                    "category": "VACUUM_ROBOT",
-                    "icon": "🧹",
-                    "approval_status": "APPROVED",
-                },
-            ]
-            for b in baseline:
-                self.storage.upsert_device(
-                    ip=b["ip"],
-                    hostname=b["hostname"],
-                    category=b["category"],
-                    icon=b["icon"],
-                    default_status=b["approval_status"],
-                )
-            stored_devices = self.storage.get_devices()
+        # 2. Retrieve registered devices from StorageEngine honestly (never seed synthetic devices)
+        stored_devices = self.storage.get_devices() or []
 
         approved = [d for d in stored_devices if d.get("approval_status") == "APPROVED"]
         pending = [d for d in stored_devices if d.get("approval_status") == "PENDING"]

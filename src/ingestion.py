@@ -10,20 +10,23 @@ from src.heuristics import HeuristicsEngine
 from src.gemini_client import GeminiClassifier
 from src.dispatcher import Dispatcher
 from src.dynamic_pricing import evaluate_dynamic_pricing_tracker
-from src.crypto_shield import evaluate_crypto_financial_threat
-from src.device_shield import evaluate_device_shield
+from src.crypto_shield import ESSENTIAL_TRANSACTION_INFRASTRUCTURE, evaluate_crypto_financial_threat, evaluate_sterile_chamber_domain
+from src.device_shield import evaluate_device_shield, is_shield_active
+from src.ip_intel import ThreatIPIndex, extract_answer_ips
 
-logger = logging.getLogger("ai_hunter.ingestion")
+logger = logging.getLogger("sentinel.ingestion")
 
 class IngestionWorker:
     def __init__(self, settings: Settings, storage: StorageEngine, 
                  heuristics: HeuristicsEngine, gemini: GeminiClassifier, 
-                 dispatcher: Dispatcher):
+                 dispatcher: Dispatcher,
+                 ip_intel: Optional[ThreatIPIndex] = None):
         self.settings = settings
         self.storage = storage
         self.heuristics = heuristics
         self.gemini = gemini
         self.dispatcher = dispatcher
+        self.ip_intel = ip_intel or ThreatIPIndex()
         self._running = False
         # In-memory recent notification cache: domain -> timestamp to avoid alert storm
         self._notified_cache: Dict[str, float] = {}
@@ -156,8 +159,25 @@ class IngestionWorker:
                 # Already handled by prior human approval / whitelist
                 continue
 
+            # 1.5 Enforce Active Stanza Sterile (SPEC-024): blackhole non-authorized traffic for shielded IP
+            sterile_ok, sterile_reason = evaluate_sterile_chamber_domain(client_ip, domain)
+            if not sterile_ok:
+                await self.dispatcher.inject_adguard_rule(f"||{domain}^$client={client_ip}")
+                now_ts = datetime.datetime.now().timestamp()
+                if (now_ts - self._notified_cache.get(f"sterile:{client_ip}:{domain}", 0)) >= 300:
+                    self._notified_cache[f"sterile:{client_ip}:{domain}"] = now_ts
+                    logger.warning(f"🔒 STANZA STERILE BLOCK: {domain} from {client_ip}")
+                    await self.dispatcher.send_mobile_alert(
+                        domain=domain,
+                        client_ip=client_ip,
+                        classification="STERILE_CHAMBER_BLOCK",
+                        summary=f"🔒 {sterile_reason}",
+                        suggested_rule=f"||{domain}^$client={client_ip}"
+                    )
+                continue
+
             # 2. Check Crypto Vault & Financial Threat (High Priority)
-            crypto_match = evaluate_crypto_financial_threat(domain)
+            crypto_match = evaluate_crypto_financial_threat(domain) if is_shield_active("crypto_vault") else None
             if crypto_match:
                 now_ts = datetime.datetime.now().timestamp()
                 if (now_ts - self._notified_cache.get(domain, 0)) >= 600:
@@ -173,7 +193,7 @@ class IngestionWorker:
                 continue
 
             # 3. Check Anti-Dynamic Pricing & Cross-App Fingerprinting
-            pricing_match = evaluate_dynamic_pricing_tracker(domain)
+            pricing_match = evaluate_dynamic_pricing_tracker(domain) if is_shield_active("dynamic_pricing") else None
             if pricing_match:
                 now_ts = datetime.datetime.now().timestamp()
                 if (now_ts - self._notified_cache.get(domain, 0)) >= 600:
@@ -203,6 +223,48 @@ class IngestionWorker:
                         suggested_rule=f"||{domain}^$client={client_ip}"
                     )
                 continue
+
+            # 4.5 Passive DNS Answer Correlation against High-Confidence Malicious IPs / C2 CIDRs
+            if (
+                self.ip_intel
+                and self.ip_intel.total_entries > 0
+                and domain not in ESSENTIAL_TRANSACTION_INFRASTRUCTURE
+                and not any(domain.endswith(f".{safe}") for safe in ESSENTIAL_TRANSACTION_INFRASTRUCTURE)
+            ):
+                resolved_ips = extract_answer_ips(entry)
+                matched_ip_threat = None
+                for resolved_ip in resolved_ips:
+                    candidate_match = self.ip_intel.match_ip(resolved_ip)
+                    if candidate_match is not None:
+                        matched_ip_threat = candidate_match
+                        break
+
+                if matched_ip_threat is not None:
+                    now_ts = datetime.datetime.now().timestamp()
+                    cache_key = f"ip_correl:{domain}:{matched_ip_threat.ip}"
+                    if (now_ts - self._notified_cache.get(cache_key, 0)) >= 600:
+                        self._notified_cache[cache_key] = now_ts
+                        summary = (
+                            f"🚨 Risoluzione DNS verso IP malevolo {matched_ip_threat.ip} "
+                            f"(match: {matched_ip_threat.matched_ioc}, feed: {matched_ip_threat.source}, family: {matched_ip_threat.family})."
+                        )
+                        logger.warning(f"MALICIOUS IP RESOLUTION: {domain} -> {matched_ip_threat.ip} from {client_ip}")
+                        self.storage.record_candidate(
+                            domain=domain,
+                            client_ip=client_ip,
+                            entropy=0.0,
+                            classification="MALICIOUS_IP_RESOLUTION",
+                            summary=summary,
+                            status="NOTIFIED",
+                        )
+                        await self.dispatcher.send_mobile_alert(
+                            domain=domain,
+                            client_ip=client_ip,
+                            classification="MALICIOUS_IP_RESOLUTION",
+                            summary=summary,
+                            suggested_rule=f"||{domain}^$client={client_ip}",
+                        )
+                    continue
 
             # 5. Track rate burst
             is_burst, burst_count = self.heuristics.record_query_and_check_burst(client_ip, domain)

@@ -1,0 +1,21 @@
+{
+  "title": "Sentinel Core & Sentinel Shield: Zero-Telemetry Home & Browser Cyber Defense",
+  "description": "Defensive prior art disclosure and software suite implementing 15 deterministic IoT privacy shields, CDN-safe DNS-answer C2 IP correlation, Zero-Trust Device Admission Control, MV3 Sentinel Shield extension, and Sentinel Drive automotive gateway blueprint.",
+  "upload_type": "software",
+  "license": "agpl-3.0-only",
+  "creators": [
+    {
+      "name": "Umberto (umbette)"
+    }
+  ],
+  "keywords": [
+    "Sentinel Core",
+    "Sentinel Shield",
+    "AdGuard Home",
+    "Home Assistant",
+    "Manifest V3",
+    "Anti-Phishing",
+    "Prior Art",
+    "Defensive Publication"
+  ]
+}
