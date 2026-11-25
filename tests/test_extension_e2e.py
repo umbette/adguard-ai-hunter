@@ -12,21 +12,34 @@ Validates:
 import asyncio
 import json
 import os
+import shutil
 import subprocess
 import tempfile
 import time
 import urllib.request
-import pytest
-import websockets
 from pathlib import Path
-from selenium import webdriver
+
+import pytest
+
+websockets = pytest.importorskip("websockets", reason="websockets required for Chrome CDP E2E tests")
+webdriver = pytest.importorskip("selenium.webdriver", reason="selenium required for Chrome E2E tests")
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
-CHROME_BIN = "/home/umbette/.local/share/chrome-linux64/chrome"
+CHROME_BIN = os.getenv("CHROME_BIN") or "/home/umbette/.local/share/chrome-linux64/chrome"
 EXTENSION_DIR = Path(__file__).resolve().parent.parent / "extension"
+
+
+def _resolve_chrome_binary() -> str:
+    if CHROME_BIN and Path(CHROME_BIN).exists():
+        return CHROME_BIN
+    for candidate in ("google-chrome", "chromium", "chromium-browser"):
+        found = shutil.which(candidate)
+        if found:
+            return found
+    return ""
 
 
 @pytest.fixture(scope="module")
@@ -35,14 +48,16 @@ def chrome_env():
     Spawns a clean Chrome for Testing instance with Sentinel Shield MV3 extension.
     Yields (driver, ext_id, ws_url, port).
     """
-    assert Path(CHROME_BIN).exists(), f"Chrome for Testing binary missing at {CHROME_BIN}"
+    chrome_path = _resolve_chrome_binary()
+    if not chrome_path:
+        pytest.skip("Chrome for Testing / Chromium binary not available in this environment")
     assert EXTENSION_DIR.exists(), f"Extension dir missing at {EXTENSION_DIR}"
 
     user_data = tempfile.mkdtemp(prefix="sentinel_cft_test_")
     port = 9977
 
     cmd = [
-        CHROME_BIN,
+        chrome_path,
         "--headless=new",
         f"--user-data-dir={user_data}",
         f"--load-extension={EXTENSION_DIR}",
@@ -75,7 +90,7 @@ def chrome_env():
 
     # Attach Selenium WebDriver for UI tests
     options = Options()
-    options.binary_location = CHROME_BIN
+    options.binary_location = chrome_path
     options.add_experimental_option("debuggerAddress", f"127.0.0.1:{port}")
     driver = webdriver.Chrome(options=options)
 
